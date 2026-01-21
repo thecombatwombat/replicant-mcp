@@ -1,6 +1,6 @@
-# Architecture
+# replicant-mcp Design Document
 
-Design decisions and technical architecture for replicant-mcp.
+An Android MCP server modeled after xc-mcp (iOS). Production-grade, token-optimized, accessibility-first.
 
 ## Tech Stack
 

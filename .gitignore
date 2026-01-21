@@ -21,12 +21,3 @@ dist/
 
 # Worktrees
 .worktrees/
-
-# Coverage
-coverage/
-
-# Claude Code
-.claude/
-
-# Beads (internal issue tracking)
-.beads/

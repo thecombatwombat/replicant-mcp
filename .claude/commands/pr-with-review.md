@@ -62,10 +62,14 @@ Execute these steps in sequence:
    DEFAULT_BRANCH=$(gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name')
    gh pr create --title "$TITLE" --body "$BODY" --base "$DEFAULT_BRANCH"
    ```
-   - Capture the PR URL from output
-   - Store PR number for polling
 
-6. **Extract owner and repo for API calls**
+6. **Capture PR number for polling**
+   ```bash
+   PR_NUMBER=$(gh pr view --json number --jq '.number')
+   PR_URL=$(gh pr view --json url --jq '.url')
+   ```
+
+7. **Extract owner and repo for API calls**
    ```bash
    OWNER=$(gh repo view --json owner --jq '.owner.login')
    REPO=$(gh repo view --json name --jq '.name')
@@ -85,12 +89,12 @@ For each cycle (1 to 5):
 
 2. **Check PR review status**
    ```bash
-   gh pr view <pr_number> --json reviews,comments,state
+   gh pr view $PR_NUMBER --json reviews,comments,state
    ```
 
 3. **Check for Greptile comments**
    ```bash
-   gh api repos/$OWNER/$REPO/pulls/<pr_number>/comments
+   gh api repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments
    ```
    - Greptile comments come from user "greptile-apps[bot]"
    - Actionable comment types (require code changes): logic, syntax, security
@@ -102,7 +106,7 @@ For each cycle (1 to 5):
 
 5. **Check for human approval**
    ```bash
-   gh pr view <pr_number> --json reviews --jq '.reviews[] | select(.state == "APPROVED")'
+   gh pr view $PR_NUMBER --json reviews --jq '.reviews[] | select(.state == "APPROVED")'
    ```
    - If approved by a human reviewer, proceed to Phase 4 (Merge)
 
@@ -135,7 +139,7 @@ When Greptile comments are found:
 
 4. **Reply to Greptile comments** (add PR comment acknowledging fixes)
    ```bash
-   gh pr comment <pr_number> --body "Addressed Greptile feedback in latest commit."
+   gh pr comment $PR_NUMBER --body "Addressed Greptile feedback in latest commit."
    ```
 
 5. **Continue polling** for human approval
@@ -146,19 +150,19 @@ When a human approves the PR:
 
 1. **Verify approval**
    ```bash
-   gh pr view <pr_number> --json reviews --jq '.reviews[] | select(.state == "APPROVED") | .author.login'
+   gh pr view $PR_NUMBER --json reviews --jq '.reviews[] | select(.state == "APPROVED") | .author.login'
    ```
 
 2. **Wait for CI checks to pass**
    ```bash
-   gh pr checks <pr_number> --watch
+   gh pr checks $PR_NUMBER --watch
    ```
    - This blocks until all checks complete
    - If any check fails, report and exit without merging
 
 3. **Merge the PR**
    ```bash
-   gh pr merge <pr_number> --squash --delete-branch
+   gh pr merge $PR_NUMBER --squash --delete-branch
    ```
    - Use squash merge to keep history clean
    - Delete the branch after merge

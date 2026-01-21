@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { createGradleCommand } from "./cli/gradle.js";
-import { createAdbCommand } from "./cli/adb.js";
-import { createEmulatorCommand } from "./cli/emulator.js";
-import { createUiCommand } from "./cli/ui.js";
-import { createCacheCommand } from "./cli/cache.js";
+import {
+  createGradleCommand,
+  createAdbCommand,
+  createEmulatorCommand,
+  createUiCommand,
+  createCacheCommand,
+} from "./cli/index.js";
 
 const program = new Command();
 

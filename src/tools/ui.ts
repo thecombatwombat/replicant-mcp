@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
-import { CACHE_TTLS } from "../types/index.js";
+import { CACHE_TTLS, OcrElement } from "../types/index.js";
 import { AccessibilityNode } from "../parsers/ui-dump.js";
 
 export const uiInputSchema = z.object({
@@ -17,12 +17,25 @@ export const uiInputSchema = z.object({
   text: z.string().optional(),
   localPath: z.string().optional(),
   inline: z.boolean().optional(),
+  debug: z.boolean().optional(),
 });
 
 export type UiInput = z.infer<typeof uiInputSchema>;
 
 // Store last find results for elementIndex reference
-let lastFindResults: AccessibilityNode[] = [];
+// Updated to support both accessibility and OCR elements
+let lastFindResults: (AccessibilityNode | OcrElement)[] = [];
+
+// Helper to get center coordinates from either element type
+function getElementCenter(element: AccessibilityNode | OcrElement): { x: number; y: number } {
+  if ("centerX" in element) {
+    // AccessibilityNode
+    return { x: element.centerX, y: element.centerY };
+  } else {
+    // OcrElement
+    return element.center;
+  }
+}
 
 export async function handleUiTool(
   input: UiInput,
@@ -60,6 +73,54 @@ export async function handleUiTool(
       if (!input.selector) {
         throw new Error("selector is required for find operation");
       }
+
+      const debug = input.debug ?? false;
+
+      // Use findWithOcrFallback for text-based selectors
+      if (input.selector.text || input.selector.textContains) {
+        const result = await context.ui.findWithOcrFallback(deviceId, input.selector, { debug });
+        lastFindResults = result.elements;
+
+        const response: Record<string, unknown> = {
+          elements: result.elements.map((el, index) => {
+            if ("centerX" in el) {
+              // AccessibilityNode
+              return {
+                index,
+                text: el.text,
+                resourceId: el.resourceId,
+                className: el.className,
+                centerX: el.centerX,
+                centerY: el.centerY,
+                bounds: el.bounds,
+                clickable: el.clickable,
+              };
+            } else {
+              // OcrElement
+              return {
+                index,
+                text: el.text,
+                center: el.center,
+                bounds: el.bounds,
+                confidence: debug ? el.confidence : undefined,
+              };
+            }
+          }),
+          count: result.elements.length,
+          deviceId,
+        };
+
+        if (debug) {
+          response.source = result.source;
+          if (result.fallbackReason) {
+            response.fallbackReason = result.fallbackReason;
+          }
+        }
+
+        return response;
+      }
+
+      // Non-text selectors use regular find (no OCR fallback)
       const elements = await context.ui.find(deviceId, input.selector);
       lastFindResults = elements;
 
@@ -87,8 +148,9 @@ export async function handleUiTool(
           throw new Error(`Element at index ${input.elementIndex} not found. Run 'find' first.`);
         }
         const element = lastFindResults[input.elementIndex];
-        x = element.centerX;
-        y = element.centerY;
+        const center = getElementCenter(element);
+        x = center.x;
+        y = center.y;
       } else if (input.x !== undefined && input.y !== undefined) {
         x = input.x;
         y = input.y;
@@ -152,6 +214,7 @@ export const uiToolDefinition = {
       text: { type: "string", description: "Text to input" },
       localPath: { type: "string", description: "Local path for screenshot (default: /tmp/replicant-screenshot-{timestamp}.png)" },
       inline: { type: "boolean", description: "Return base64 instead of file path (token-heavy, use sparingly)" },
+      debug: { type: "boolean", description: "Include source (accessibility/ocr) and confidence in response" },
     },
     required: ["operation"],
   },

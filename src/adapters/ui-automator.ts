@@ -1,6 +1,7 @@
 import { AdbAdapter } from "./adb.js";
 import { parseUiDump, findElements, flattenTree, AccessibilityNode } from "../parsers/ui-dump.js";
-import { ReplicantError, ErrorCode } from "../types/index.js";
+import { ReplicantError, ErrorCode, OcrElement } from "../types/index.js";
+import { extractText, searchText } from "../services/ocr.js";
 
 export interface ScreenshotOptions {
   localPath?: string;
@@ -12,6 +13,16 @@ export interface ScreenshotResult {
   path?: string;
   base64?: string;
   sizeBytes?: number;
+}
+
+export interface FindWithOcrResult {
+  elements: (AccessibilityNode | OcrElement)[];
+  source: "accessibility" | "ocr";
+  fallbackReason?: string;
+}
+
+export interface FindOptions {
+  debug?: boolean;
 }
 
 export class UiAutomatorAdapter {
@@ -109,6 +120,64 @@ export class UiAutomatorAdapter {
       clickableCount,
       textCount,
       totalElements: flat.length,
+    };
+  }
+
+  async findWithOcrFallback(
+    deviceId: string,
+    selector: {
+      resourceId?: string;
+      text?: string;
+      textContains?: string;
+      className?: string;
+    },
+    options: FindOptions = {}
+  ): Promise<FindWithOcrResult> {
+    // First try accessibility tree
+    const accessibilityResults = await this.find(deviceId, selector);
+
+    if (accessibilityResults.length > 0) {
+      return {
+        elements: accessibilityResults,
+        source: "accessibility",
+      };
+    }
+
+    // Fall back to OCR if we have a text-based selector
+    if (selector.text || selector.textContains) {
+      const searchTerm = selector.text || selector.textContains!;
+
+      // Take screenshot for OCR
+      const screenshotResult = await this.screenshot(deviceId, {});
+
+      try {
+        // Run OCR
+        const ocrResults = await extractText(screenshotResult.path!);
+        const matches = searchText(ocrResults, searchTerm);
+
+        const result: FindWithOcrResult = {
+          elements: matches,
+          source: "ocr",
+        };
+
+        if (options.debug) {
+          result.fallbackReason = "accessibility tree had no matching text";
+        }
+
+        return result;
+      } finally {
+        // Clean up local screenshot file
+        if (screenshotResult.path) {
+          const fs = await import("fs/promises");
+          await fs.unlink(screenshotResult.path).catch(() => {});
+        }
+      }
+    }
+
+    // No text selector, can't use OCR
+    return {
+      elements: [],
+      source: "accessibility",
     };
   }
 }

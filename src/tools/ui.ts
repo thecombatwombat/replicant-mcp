@@ -16,6 +16,7 @@ export const uiInputSchema = z.object({
   elementIndex: z.number().optional(),
   text: z.string().optional(),
   localPath: z.string().optional(),
+  inline: z.boolean().optional(),
 });
 
 export type UiInput = z.infer<typeof uiInputSchema>;
@@ -107,9 +108,11 @@ export async function handleUiTool(
     }
 
     case "screenshot": {
-      const localPath = input.localPath || `/tmp/screenshot-${Date.now()}.png`;
-      await context.ui.screenshot(deviceId, localPath);
-      return { path: localPath, deviceId };
+      const result = await context.ui.screenshot(deviceId, {
+        localPath: input.localPath,
+        inline: input.inline,
+      });
+      return { ...result, deviceId };
     }
 
     case "accessibility-check": {

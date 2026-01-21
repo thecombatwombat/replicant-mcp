@@ -42,30 +42,65 @@ npm install
 npm run install-skill
 ```
 
+## Script Location
+
+All scripts are in this skill's directory. Use the full path:
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/<script-name>.sh
+```
+
 ## Available Scripts
 
-| Script | Purpose |
-|--------|---------|
-| `build-apk.sh` | Build debug or release APK |
-| `run-tests.sh` | Run unit or instrumented tests |
-| `list-modules.sh` | List Gradle modules |
-| `build-details.sh` | Get full build/test output |
-| `list-emulators.sh` | Show available AVDs |
-| `start-emulator.sh` | Boot an emulator |
-| `stop-emulator.sh` | Shut down an emulator |
-| `snapshot.sh` | Manage emulator snapshots |
-| `list-devices.sh` | Show connected devices |
-| `select-device.sh` | Set active device |
-| `install-app.sh` | Install APK to device |
-| `launch-app.sh` | Start an app |
-| `stop-app.sh` | Force stop an app |
-| `uninstall-app.sh` | Remove app from device |
-| `clear-data.sh` | Clear app data |
-| `read-logs.sh` | Read filtered logcat |
-| `dump-ui.sh` | Get accessibility tree |
-| `find-element.sh` | Find UI elements |
-| `tap-element.sh` | Tap a UI element |
-| `input-text.sh` | Type text |
-| `screenshot.sh` | Capture screen |
-| `shell-cmd.sh` | Run adb shell command |
-| `cache-stats.sh` | View cache statistics |
+### Build & Test
+
+| Script | Usage |
+|--------|-------|
+| `build-apk.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/build-apk.sh <project-path> <debug\|release>` |
+| `run-tests.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/run-tests.sh <project-path> [module]` |
+| `list-modules.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/list-modules.sh <project-path>` |
+| `build-details.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/build-details.sh <build-id> [errors\|warnings\|full]` |
+
+### Emulator
+
+| Script | Usage |
+|--------|-------|
+| `list-emulators.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/list-emulators.sh` |
+| `start-emulator.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/start-emulator.sh <avd-name>` |
+| `stop-emulator.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/stop-emulator.sh <device-id>` |
+| `snapshot.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/snapshot.sh <save\|load\|list\|delete> <device-id> [name]` |
+
+### Device & App
+
+| Script | Usage |
+|--------|-------|
+| `list-devices.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/list-devices.sh` |
+| `select-device.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/select-device.sh <device-id>` |
+| `install-app.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/install-app.sh <apk-path> [device-id]` |
+| `launch-app.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/launch-app.sh <package> [activity]` |
+| `stop-app.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/stop-app.sh <package>` |
+| `uninstall-app.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/uninstall-app.sh <package>` |
+| `clear-data.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/clear-data.sh <package>` |
+
+### Logs & Debug
+
+| Script | Usage |
+|--------|-------|
+| `read-logs.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/read-logs.sh [package] [level] [lines]` |
+| `shell-cmd.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/shell-cmd.sh <command>` |
+
+### UI Automation
+
+| Script | Usage |
+|--------|-------|
+| `dump-ui.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/dump-ui.sh` |
+| `find-element.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/find-element.sh <text\|id\|class> <value>` |
+| `tap-element.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/tap-element.sh <element-index>` |
+| `input-text.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/input-text.sh <text> [element-index]` |
+| `screenshot.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/screenshot.sh [output-path]` |
+
+### Cache
+
+| Script | Usage |
+|--------|-------|
+| `cache-stats.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/cache-stats.sh [clear]` |

@@ -6,6 +6,33 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { CacheManager, DeviceStateManager, ProcessRunner } from "./services/index.js";
 import { AdbAdapter, EmulatorAdapter, GradleAdapter, UiAutomatorAdapter } from "./adapters/index.js";
+import { ReplicantError } from "./types/index.js";
+import {
+  cacheToolDefinition,
+  handleCacheTool,
+  rtfmToolDefinition,
+  handleRtfmTool,
+  adbDeviceToolDefinition,
+  handleAdbDeviceTool,
+  adbAppToolDefinition,
+  handleAdbAppTool,
+  adbLogcatToolDefinition,
+  handleAdbLogcatTool,
+  adbShellToolDefinition,
+  handleAdbShellTool,
+  emulatorDeviceToolDefinition,
+  handleEmulatorDeviceTool,
+  gradleBuildToolDefinition,
+  handleGradleBuildTool,
+  gradleTestToolDefinition,
+  handleGradleTestTool,
+  gradleListToolDefinition,
+  handleGradleListTool,
+  gradleGetDetailsToolDefinition,
+  handleGradleGetDetailsTool,
+  uiToolDefinition,
+  handleUiTool,
+} from "./tools/index.js";
 
 export interface ServerContext {
   cache: CacheManager;
@@ -45,7 +72,85 @@ export async function createServer(context: ServerContext): Promise<Server> {
     }
   );
 
-  // Tool handlers will be registered here in subsequent tasks
+  // Register tool list handler
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: [
+      cacheToolDefinition,
+      rtfmToolDefinition,
+      adbDeviceToolDefinition,
+      adbAppToolDefinition,
+      adbLogcatToolDefinition,
+      adbShellToolDefinition,
+      emulatorDeviceToolDefinition,
+      gradleBuildToolDefinition,
+      gradleTestToolDefinition,
+      gradleListToolDefinition,
+      gradleGetDetailsToolDefinition,
+      uiToolDefinition,
+    ],
+  }));
+
+  // Register tool call handler
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
+
+    try {
+      let result: Record<string, unknown>;
+
+      switch (name) {
+        case "cache":
+          result = await handleCacheTool(args as Parameters<typeof handleCacheTool>[0], context.cache);
+          break;
+        case "rtfm":
+          result = await handleRtfmTool(args as Parameters<typeof handleRtfmTool>[0]);
+          break;
+        case "adb-device":
+          result = await handleAdbDeviceTool(args as Parameters<typeof handleAdbDeviceTool>[0], context);
+          break;
+        case "adb-app":
+          result = await handleAdbAppTool(args as Parameters<typeof handleAdbAppTool>[0], context);
+          break;
+        case "adb-logcat":
+          result = await handleAdbLogcatTool(args as Parameters<typeof handleAdbLogcatTool>[0], context);
+          break;
+        case "adb-shell":
+          result = await handleAdbShellTool(args as Parameters<typeof handleAdbShellTool>[0], context);
+          break;
+        case "emulator-device":
+          result = await handleEmulatorDeviceTool(args as Parameters<typeof handleEmulatorDeviceTool>[0], context);
+          break;
+        case "gradle-build":
+          result = await handleGradleBuildTool(args as Parameters<typeof handleGradleBuildTool>[0], context);
+          break;
+        case "gradle-test":
+          result = await handleGradleTestTool(args as Parameters<typeof handleGradleTestTool>[0], context);
+          break;
+        case "gradle-list":
+          result = await handleGradleListTool(args as Parameters<typeof handleGradleListTool>[0], context);
+          break;
+        case "gradle-get-details":
+          result = await handleGradleGetDetailsTool(args as Parameters<typeof handleGradleGetDetailsTool>[0], context);
+          break;
+        case "ui":
+          result = await handleUiTool(args as Parameters<typeof handleUiTool>[0], context);
+          break;
+        default:
+          throw new Error(`Unknown tool: ${name}`);
+      }
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error) {
+      if (error instanceof ReplicantError) {
+        return {
+          content: [{ type: "text", text: JSON.stringify(error.toToolError(), null, 2) }],
+          isError: true,
+        };
+      }
+      throw error;
+    }
+  });
 
   return server;
 }

@@ -12,7 +12,7 @@ Automate npm publishing via GitHub Actions, triggered by git tags. Removes manua
 | Version source | Tag (extracts version from `v1.2.3`) |
 | GitHub Release | Yes, with auto-generated release notes |
 | Prerelease support | No (can add later if needed) |
-| Required secret | `NPM_TOKEN` |
+| Authentication | npm Trusted Publisher (OIDC) |
 
 ## Workflow
 
@@ -31,6 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write  # For creating GitHub releases
+      id-token: write  # For npm provenance via OIDC
 
     steps:
       - name: Validate tag format
@@ -59,9 +60,7 @@ jobs:
         run: npm version ${{ env.VERSION }} --no-git-tag-version
 
       - name: Publish to npm
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -99,18 +98,23 @@ git describe --tags --abbrev=0
 
 ## One-Time Setup
 
-### Create npm Token
+### Configure npm Trusted Publisher
 
-1. Go to [npmjs.com](https://www.npmjs.com) → Access Tokens
-2. Generate New Token → **Classic Token** → **Automation** type
-3. Copy the token
+1. Go to [npmjs.com/package/replicant-mcp/access](https://www.npmjs.com/package/replicant-mcp/access)
+2. Under "Trusted Publisher", click "GitHub Actions"
+3. Fill in the form:
+   - **Organization or user:** `thecombatwombat`
+   - **Repository:** `replicant-mcp`
+   - **Workflow filename:** `release.yml`
+   - **Environment name:** (leave blank)
+4. Click "Set up connection" and authenticate with 2FA
+5. Done! No secrets to configure in GitHub
 
-### Add GitHub Secret
-
-1. GitHub Repository → Settings → Secrets and variables → Actions
-2. New repository secret
-3. Name: `NPM_TOKEN`
-4. Value: paste the npm token
+**Benefits of Trusted Publisher (OIDC):**
+- No tokens to manage or rotate
+- No 2FA bypass needed
+- Automatic provenance attestation
+- More secure than token-based auth
 
 ## Future Enhancements (if needed)
 

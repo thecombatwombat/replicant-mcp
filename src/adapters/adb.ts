@@ -64,6 +64,17 @@ export class AdbAdapter {
     return this.adb(["-s", deviceId, "shell", command], timeoutMs);
   }
 
+  async pull(deviceId: string, remotePath: string, localPath: string): Promise<void> {
+    const result = await this.adb(["-s", deviceId, "pull", remotePath, localPath]);
+    if (result.exitCode !== 0) {
+      throw new ReplicantError(
+        ErrorCode.PULL_FAILED,
+        `Failed to pull ${remotePath} to ${localPath}`,
+        result.stderr || "Check device connection and file paths"
+      );
+    }
+  }
+
   async logcat(
     deviceId: string,
     options: { lines?: number; filter?: string }
@@ -100,6 +111,6 @@ export class AdbAdapter {
   }
 
   private async adb(args: string[], timeoutMs?: number): Promise<RunResult> {
-    return this.runner.run("adb", args, { timeoutMs });
+    return this.runner.runAdb(args, { timeoutMs });
   }
 }

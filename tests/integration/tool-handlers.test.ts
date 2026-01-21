@@ -5,7 +5,7 @@
  * They test the full flow from tool input to structured output.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createServerContext, ServerContext } from "../../src/server.js";
 
 // Mock execa to control CLI output
@@ -13,15 +13,45 @@ vi.mock("execa", () => ({
   execa: vi.fn(),
 }));
 
+// Mock fs for environment detection
+vi.mock("fs", async () => {
+  const actual = await vi.importActual("fs");
+  return {
+    ...actual,
+    existsSync: vi.fn((path: string) => {
+      // Return true for SDK tool paths in tests
+      if (path.includes("platform-tools/adb") ||
+          path.includes("emulator/emulator") ||
+          path.includes("cmdline-tools") ||
+          path.includes("tools/bin/avdmanager")) {
+        return true;
+      }
+      return false;
+    }),
+  };
+});
+
 import { execa } from "execa";
 const mockedExeca = vi.mocked(execa);
 
 describe("Tool Handler Integration", () => {
   let context: ServerContext;
+  const originalAndroidHome = process.env.ANDROID_HOME;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Set ANDROID_HOME for environment detection
+    process.env.ANDROID_HOME = "/fake/android/sdk";
     context = createServerContext();
+  });
+
+  afterEach(() => {
+    // Restore original env
+    if (originalAndroidHome) {
+      process.env.ANDROID_HOME = originalAndroidHome;
+    } else {
+      delete process.env.ANDROID_HOME;
+    }
   });
 
   describe("adb-device tool", () => {

@@ -1,5 +1,18 @@
 import { AdbAdapter } from "./adb.js";
 import { parseUiDump, findElements, flattenTree, AccessibilityNode } from "../parsers/ui-dump.js";
+import { ReplicantError, ErrorCode } from "../types/index.js";
+
+export interface ScreenshotOptions {
+  localPath?: string;
+  inline?: boolean;
+}
+
+export interface ScreenshotResult {
+  mode: "file" | "inline";
+  path?: string;
+  base64?: string;
+  sizeBytes?: number;
+}
 
 export class UiAutomatorAdapter {
   constructor(private adb: AdbAdapter = new AdbAdapter()) {}
@@ -44,16 +57,39 @@ export class UiAutomatorAdapter {
     await this.adb.shell(deviceId, `input text "${escaped}"`);
   }
 
-  async screenshot(deviceId: string, localPath: string): Promise<void> {
-    const remotePath = "/sdcard/screenshot.png";
-    await this.adb.shell(deviceId, `screencap -p ${remotePath}`);
+  async screenshot(deviceId: string, options: ScreenshotOptions = {}): Promise<ScreenshotResult> {
+    const remotePath = "/sdcard/replicant-screenshot.png";
 
-    // Pull to local (using adb pull via shell workaround)
-    // In real implementation, would use adb pull directly
-    const result = await this.adb.shell(deviceId, `base64 ${remotePath}`);
+    // Capture screenshot on device
+    const captureResult = await this.adb.shell(deviceId, `screencap -p ${remotePath}`);
+    if (captureResult.exitCode !== 0) {
+      throw new ReplicantError(
+        ErrorCode.SCREENSHOT_FAILED,
+        "Failed to capture screenshot",
+        captureResult.stderr || "Ensure device screen is on and unlocked"
+      );
+    }
 
-    // For now, just verify it worked
-    await this.adb.shell(deviceId, `rm ${remotePath}`);
+    try {
+      if (options.inline) {
+        // Inline mode: return base64
+        const base64Result = await this.adb.shell(deviceId, `base64 ${remotePath}`);
+        const sizeResult = await this.adb.shell(deviceId, `stat -c%s ${remotePath}`);
+        return {
+          mode: "inline",
+          base64: base64Result.stdout.trim(),
+          sizeBytes: parseInt(sizeResult.stdout.trim(), 10),
+        };
+      } else {
+        // File mode (default): pull to local
+        const localPath = options.localPath || `/tmp/replicant-screenshot-${Date.now()}.png`;
+        await this.adb.pull(deviceId, remotePath, localPath);
+        return { mode: "file", path: localPath };
+      }
+    } finally {
+      // Always clean up remote file
+      await this.adb.shell(deviceId, `rm -f ${remotePath}`);
+    }
   }
 
   async accessibilityCheck(deviceId: string): Promise<{

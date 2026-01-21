@@ -12,8 +12,8 @@ export class EmulatorAdapter {
 
   async list(): Promise<EmulatorListResult> {
     const [avdResult, runningResult] = await Promise.all([
-      this.runner.run("avdmanager", ["list", "avd"]),
-      this.runner.run("emulator", ["-list-avds"]),
+      this.runner.runAvdManager(["list", "avd"]),
+      this.runner.runEmulator(["-list-avds"]),
     ]);
 
     return {
@@ -27,7 +27,7 @@ export class EmulatorAdapter {
     device: string,
     systemImage: string
   ): Promise<void> {
-    const result = await this.runner.run("avdmanager", [
+    const result = await this.runner.runAvdManager([
       "create", "avd",
       "-n", name,
       "-k", systemImage,
@@ -47,7 +47,7 @@ export class EmulatorAdapter {
   async start(avdName: string): Promise<string> {
     // Start emulator in background - don't wait for it
     // Returns immediately, emulator boots in background
-    this.runner.run("emulator", [
+    this.runner.runEmulator([
       "-avd", avdName,
       "-no-snapshot-load",
       "-no-boot-anim",
@@ -59,7 +59,7 @@ export class EmulatorAdapter {
     await new Promise((r) => setTimeout(r, 2000));
 
     // Find the new emulator ID
-    const result = await this.runner.run("adb", ["devices"]);
+    const result = await this.runner.runAdb(["devices"]);
     const match = result.stdout.match(/emulator-\d+/);
 
     if (!match) {
@@ -74,29 +74,29 @@ export class EmulatorAdapter {
   }
 
   async kill(emulatorId: string): Promise<void> {
-    await this.runner.run("adb", ["-s", emulatorId, "emu", "kill"]);
+    await this.runner.runAdb(["-s", emulatorId, "emu", "kill"]);
   }
 
   async wipe(avdName: string): Promise<void> {
-    await this.runner.run("emulator", ["-avd", avdName, "-wipe-data", "-no-window"], { timeoutMs: 5000 }).catch(() => {
+    await this.runner.runEmulator(["-avd", avdName, "-wipe-data", "-no-window"], { timeoutMs: 5000 }).catch(() => {
       // Expected behavior
     });
   }
 
   async snapshotSave(emulatorId: string, name: string): Promise<void> {
-    await this.runner.run("adb", ["-s", emulatorId, "emu", "avd", "snapshot", "save", name]);
+    await this.runner.runAdb(["-s", emulatorId, "emu", "avd", "snapshot", "save", name]);
   }
 
   async snapshotLoad(emulatorId: string, name: string): Promise<void> {
-    await this.runner.run("adb", ["-s", emulatorId, "emu", "avd", "snapshot", "load", name]);
+    await this.runner.runAdb(["-s", emulatorId, "emu", "avd", "snapshot", "load", name]);
   }
 
   async snapshotList(emulatorId: string): Promise<string[]> {
-    const result = await this.runner.run("adb", ["-s", emulatorId, "emu", "avd", "snapshot", "list"]);
+    const result = await this.runner.runAdb(["-s", emulatorId, "emu", "avd", "snapshot", "list"]);
     return parseSnapshotList(result.stdout);
   }
 
   async snapshotDelete(emulatorId: string, name: string): Promise<void> {
-    await this.runner.run("adb", ["-s", emulatorId, "emu", "avd", "snapshot", "delete", name]);
+    await this.runner.runAdb(["-s", emulatorId, "emu", "avd", "snapshot", "delete", name]);
   }
 }

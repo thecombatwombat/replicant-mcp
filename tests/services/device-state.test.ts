@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { DeviceStateManager } from "../../src/services/device-state.js";
 
 describe("DeviceStateManager", () => {
@@ -71,6 +71,51 @@ describe("DeviceStateManager", () => {
       ];
       state.autoSelectIfSingle(devices);
       expect(state.getCurrentDevice()).toBeNull();
+    });
+  });
+
+  describe("ensureDevice", () => {
+    it("returns current device if already selected", async () => {
+      const device = { id: "emulator-5554", type: "emulator" as const, name: "test", status: "online" as const };
+      state.setCurrentDevice(device);
+      const mockAdb = { getDevices: vi.fn() };
+
+      const result = await state.ensureDevice(mockAdb as any);
+
+      expect(result).toBe(device);
+      expect(mockAdb.getDevices).not.toHaveBeenCalled();
+    });
+
+    it("auto-selects when exactly one device connected", async () => {
+      const device = { id: "emulator-5554", type: "emulator" as const, name: "test", status: "online" as const };
+      const mockAdb = { getDevices: vi.fn().mockResolvedValue([device]) };
+
+      const result = await state.ensureDevice(mockAdb as any);
+
+      expect(result).toEqual(device);
+      expect(state.getCurrentDevice()).toEqual(device);
+    });
+
+    it("throws NO_DEVICES when no devices connected", async () => {
+      const mockAdb = { getDevices: vi.fn().mockResolvedValue([]) };
+
+      await expect(state.ensureDevice(mockAdb as any)).rejects.toMatchObject({
+        code: "NO_DEVICES",
+        suggestion: expect.stringContaining("emulator"),
+      });
+    });
+
+    it("throws MULTIPLE_DEVICES when multiple devices connected", async () => {
+      const devices = [
+        { id: "emulator-5554", type: "emulator" as const, name: "test1", status: "online" as const },
+        { id: "device-1234", type: "physical" as const, name: "test2", status: "online" as const },
+      ];
+      const mockAdb = { getDevices: vi.fn().mockResolvedValue(devices) };
+
+      await expect(state.ensureDevice(mockAdb as any)).rejects.toMatchObject({
+        code: "MULTIPLE_DEVICES",
+        message: expect.stringContaining("emulator-5554"),
+      });
     });
   });
 });

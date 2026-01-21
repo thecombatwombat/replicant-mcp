@@ -1,5 +1,6 @@
 import { execa } from "execa";
 import { ReplicantError, ErrorCode } from "../types/index.js";
+import type { EnvironmentService } from "./environment.js";
 
 export interface RunOptions {
   timeoutMs?: number;
@@ -24,6 +25,8 @@ const BLOCKED_PATTERNS = [
 export class ProcessRunner {
   private readonly defaultTimeoutMs = 30_000;
   private readonly maxTimeoutMs = 120_000;
+
+  constructor(private environment?: EnvironmentService) {}
 
   async run(
     command: string,
@@ -79,6 +82,34 @@ export class ProcessRunner {
       }
       throw error;
     }
+  }
+
+  async runAdb(args: string[], options: RunOptions = {}): Promise<RunResult> {
+    if (!this.environment) {
+      // Fallback to bare "adb" if no environment service
+      return this.run("adb", args, options);
+    }
+
+    const adbPath = await this.environment.getAdbPath();
+    return this.run(adbPath, args, options);
+  }
+
+  async runEmulator(args: string[], options: RunOptions = {}): Promise<RunResult> {
+    if (!this.environment) {
+      return this.run("emulator", args, options);
+    }
+
+    const emulatorPath = await this.environment.getEmulatorPath();
+    return this.run(emulatorPath, args, options);
+  }
+
+  async runAvdManager(args: string[], options: RunOptions = {}): Promise<RunResult> {
+    if (!this.environment) {
+      return this.run("avdmanager", args, options);
+    }
+
+    const avdManagerPath = await this.environment.getAvdManagerPath();
+    return this.run(avdManagerPath, args, options);
   }
 
   private validateCommand(command: string, args: string[]): void {

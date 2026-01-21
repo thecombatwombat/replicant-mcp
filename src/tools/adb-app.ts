@@ -13,7 +13,8 @@ export async function handleAdbAppTool(
   input: AdbAppInput,
   context: ServerContext
 ): Promise<Record<string, unknown>> {
-  const deviceId = context.deviceState.requireCurrentDevice().id;
+  const device = await context.deviceState.ensureDevice(context.adb);
+  const deviceId = device.id;
 
   switch (input.operation) {
     case "install": {
@@ -68,7 +69,7 @@ export async function handleAdbAppTool(
 
 export const adbAppToolDefinition = {
   name: "adb-app",
-  description: "Manage applications. Operations: install, uninstall, launch, stop, clear-data, list.",
+  description: "Manage applications. Auto-selects device if only one connected. Operations: install, uninstall, launch, stop, clear-data, list.",
   inputSchema: {
     type: "object",
     properties: {

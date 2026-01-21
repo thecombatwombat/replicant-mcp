@@ -12,7 +12,8 @@ export async function handleAdbShellTool(
   input: AdbShellInput,
   context: ServerContext
 ): Promise<Record<string, unknown>> {
-  const deviceId = context.deviceState.requireCurrentDevice().id;
+  const device = await context.deviceState.ensureDevice(context.adb);
+  const deviceId = device.id;
 
   const result = await context.adb.shell(deviceId, input.command, input.timeout);
 
@@ -26,7 +27,7 @@ export async function handleAdbShellTool(
 
 export const adbShellToolDefinition = {
   name: "adb-shell",
-  description: "Execute shell commands with safety guards. Dangerous commands are blocked.",
+  description: "Execute shell commands with safety guards. Auto-selects device if only one connected. Dangerous commands are blocked.",
   inputSchema: {
     type: "object",
     properties: {

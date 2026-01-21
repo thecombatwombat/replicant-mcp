@@ -16,6 +16,7 @@ export const uiInputSchema = z.object({
   elementIndex: z.number().optional(),
   text: z.string().optional(),
   localPath: z.string().optional(),
+  inline: z.boolean().optional(),
 });
 
 export type UiInput = z.infer<typeof uiInputSchema>;
@@ -27,7 +28,8 @@ export async function handleUiTool(
   input: UiInput,
   context: ServerContext
 ): Promise<Record<string, unknown>> {
-  const deviceId = context.deviceState.requireCurrentDevice().id;
+  const device = await context.deviceState.ensureDevice(context.adb);
+  const deviceId = device.id;
 
   switch (input.operation) {
     case "dump": {
@@ -107,9 +109,11 @@ export async function handleUiTool(
     }
 
     case "screenshot": {
-      const localPath = input.localPath || `/tmp/screenshot-${Date.now()}.png`;
-      await context.ui.screenshot(deviceId, localPath);
-      return { path: localPath, deviceId };
+      const result = await context.ui.screenshot(deviceId, {
+        localPath: input.localPath,
+        inline: input.inline,
+      });
+      return { ...result, deviceId };
     }
 
     case "accessibility-check": {
@@ -124,7 +128,7 @@ export async function handleUiTool(
 
 export const uiToolDefinition = {
   name: "ui",
-  description: "Interact with app UI via accessibility tree. Operations: dump, find, tap, input, screenshot, accessibility-check.",
+  description: "Interact with app UI via accessibility tree. Auto-selects device if only one connected. Operations: dump, find, tap, input, screenshot, accessibility-check.",
   inputSchema: {
     type: "object",
     properties: {
@@ -146,7 +150,8 @@ export const uiToolDefinition = {
       y: { type: "number", description: "Y coordinate (for tap)" },
       elementIndex: { type: "number", description: "Element index from last find (for tap)" },
       text: { type: "string", description: "Text to input" },
-      localPath: { type: "string", description: "Local path for screenshot" },
+      localPath: { type: "string", description: "Local path for screenshot (default: /tmp/replicant-screenshot-{timestamp}.png)" },
+      inline: { type: "boolean", description: "Return base64 instead of file path (token-heavy, use sparingly)" },
     },
     required: ["operation"],
   },

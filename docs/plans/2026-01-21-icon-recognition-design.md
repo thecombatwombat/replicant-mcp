@@ -106,8 +106,9 @@ This list covers ~90% of common Android icon interactions. Additional patterns c
    - Bounds indicate icon-sized region: **16-200px width/height, aspect ratio 0.5-2.0**
 2. Take screenshot
 3. Crop each candidate (max 128x128, JPEG 70% quality)
-4. Return to LLM with images (max 6 candidates)
-5. LLM picks by index → return element for tap
+4. Return to LLM with images (max 6 candidates, selected top-to-bottom by Y coordinate, then left-to-right by X)
+5. If >6 candidates exist, include `"truncated": true` and `"totalCandidates": N` in response
+6. LLM picks by index → return element for tap
 
 **Size constraints rationale:** Material Design icons are typically 24dp or 48dp. At 3.5x density (Pixel 7), this is 84-168px. The 16-200px range covers:
 - Minimum: small status icons (~16px)
@@ -155,6 +156,12 @@ ui {
 }
 ```
 
+**Schema location:** Add to `uiInputSchema` in `src/tools/ui.ts`:
+```typescript
+gridCell: z.number().min(1).max(24).optional(),
+gridPosition: z.number().min(1).max(5).optional(),
+```
+
 **Response schema (extended):**
 ```typescript
 interface FindResult {
@@ -179,8 +186,14 @@ interface FindResult {
   gridImage?: string; // base64, grid-overlaid screenshot
   gridCell?: number;  // Selected cell for refinement
   gridPositions?: string[]; // ["Top-left", "Top-right", "Center", ...]
+
+  // For Tier 4 truncation
+  truncated?: boolean;
+  totalCandidates?: number;
 }
 ```
+
+**Type migration:** Rename `FindWithOcrResult` → `FindWithFallbacksResult` in `src/adapters/ui-automator.ts`. The new fields are all optional, so existing code returning `{ elements, source }` remains valid. No breaking change to callers.
 
 ## Error Handling
 
@@ -222,7 +235,7 @@ interface FindResult {
 
 ## Token Efficiency
 
-**Token calculation basis:** ~330 tokens per KB for JPEG images (Claude's vision token rate).
+**Token calculation basis:** ~330 tokens per KB for JPEG images (Claude's vision token rate). All estimates rounded to nearest thousand for readability.
 
 **Tier 4 (Visual Candidates):**
 - Crop images: 128x128 max (scaled from bounds)

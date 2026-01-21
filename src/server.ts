@@ -4,7 +4,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { CacheManager, DeviceStateManager, ProcessRunner } from "./services/index.js";
+import { CacheManager, DeviceStateManager, ProcessRunner, EnvironmentService } from "./services/index.js";
 import { AdbAdapter, EmulatorAdapter, GradleAdapter, UiAutomatorAdapter } from "./adapters/index.js";
 import { ReplicantError } from "./types/index.js";
 import {
@@ -38,6 +38,7 @@ export interface ServerContext {
   cache: CacheManager;
   deviceState: DeviceStateManager;
   processRunner: ProcessRunner;
+  environment: EnvironmentService;
   adb: AdbAdapter;
   emulator: EmulatorAdapter;
   gradle: GradleAdapter;
@@ -45,13 +46,15 @@ export interface ServerContext {
 }
 
 export function createServerContext(): ServerContext {
-  const processRunner = new ProcessRunner();
+  const environment = new EnvironmentService();
+  const processRunner = new ProcessRunner(environment);
   const adb = new AdbAdapter(processRunner);
 
   return {
     cache: new CacheManager(),
     deviceState: new DeviceStateManager(),
     processRunner,
+    environment,
     adb,
     emulator: new EmulatorAdapter(processRunner),
     gradle: new GradleAdapter(processRunner),

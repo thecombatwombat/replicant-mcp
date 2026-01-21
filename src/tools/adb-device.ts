@@ -2,7 +2,7 @@ import { z } from "zod";
 import { ServerContext } from "../server.js";
 
 export const adbDeviceInputSchema = z.object({
-  operation: z.enum(["list", "select", "wait", "properties"]),
+  operation: z.enum(["list", "select", "wait", "properties", "health-check"]),
   deviceId: z.string().optional(),
 });
 
@@ -62,6 +62,44 @@ export async function handleAdbDeviceTool(
       };
     }
 
+    case "health-check": {
+      const env = await context.environment.detect();
+      let adbServerRunning = false;
+      let connectedDevices = 0;
+      const warnings: string[] = [];
+      const errors: string[] = [];
+
+      if (!env.isValid) {
+        errors.push(...env.issues);
+      } else {
+        // Test adb server
+        try {
+          const devices = await context.adb.getDevices();
+          adbServerRunning = true;
+          connectedDevices = devices.length;
+
+          if (devices.length === 0) {
+            warnings.push("No devices connected. Start an emulator or connect a USB device.");
+          }
+        } catch (e) {
+          errors.push("adb server not responding. Run 'adb kill-server && adb start-server'");
+        }
+      }
+
+      return {
+        healthy: errors.length === 0,
+        environment: {
+          sdkPath: env.sdkPath,
+          adbPath: env.adbPath,
+          platform: env.platform,
+        },
+        adbServerRunning,
+        connectedDevices,
+        warnings,
+        errors,
+      };
+    }
+
     default:
       throw new Error(`Unknown operation: ${input.operation}`);
   }
@@ -69,13 +107,13 @@ export async function handleAdbDeviceTool(
 
 export const adbDeviceToolDefinition = {
   name: "adb-device",
-  description: "Manage device connections. Operations: list, select, wait, properties.",
+  description: "Manage device connections. Operations: list, select, wait, properties, health-check.",
   inputSchema: {
     type: "object",
     properties: {
       operation: {
         type: "string",
-        enum: ["list", "select", "wait", "properties"],
+        enum: ["list", "select", "wait", "properties", "health-check"],
       },
       deviceId: { type: "string", description: "Device ID for select/wait/properties" },
     },

@@ -55,17 +55,17 @@ export function createGradleCommand(): Command {
         const duration = "0s";
         const cacheId = cache.generateId("build");
 
-        if (error instanceof ReplicantError && error.details?.buildResult) {
+        if (error instanceof ReplicantError && error.context?.buildResult) {
           cache.set(
             cacheId,
-            { result: error.details.buildResult, fullOutput: "" },
+            { result: error.context.buildResult, fullOutput: "" },
             "build",
             CACHE_TTLS.BUILD_OUTPUT
           );
 
           if (options.json) {
             console.log(
-              JSON.stringify({ error: error.message, result: error.details.buildResult, cacheId }, null, 2)
+              JSON.stringify({ error: error.message, result: error.context.buildResult, cacheId }, null, 2)
             );
           } else {
             console.log(

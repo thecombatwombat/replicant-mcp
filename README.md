@@ -12,7 +12,7 @@ replicant-mcp is a [Model Context Protocol](https://modelcontextprotocol.io/) se
 
 ## Demo
 
-https://github.com/thecombatwombat/replicant-mcp/raw/master/demo.mp4
+![replicant-mcp demo](demo.gif)
 
 ---
 

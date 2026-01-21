@@ -20,7 +20,8 @@
     "test:device": "tsx scripts/real-device-test.ts",
     "start": "node dist/index.js",
     "validate": "npm run build && npm run test -- --run",
-    "install-skill": "bash scripts/install-skill.sh"
+    "install-skill": "bash scripts/install-skill.sh",
+    "prepublishOnly": "npm run build && npm test -- --run"
   },
   "keywords": [
     "mcp",
@@ -39,6 +40,11 @@
     "type": "git",
     "url": "https://github.com/thecombatwombat/replicant-mcp.git"
   },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=18.0.0"
   },

@@ -1,0 +1,49 @@
+# Maps file patterns to README roadmap items
+# Update this when adding new roadmap items
+#
+# Used by /pr-with-review to detect when a PR might complete a roadmap feature
+# and prompt for README updates if needed.
+
+mappings:
+  # Visual Fallback
+  - patterns:
+      - src/services/ocr*
+      - src/tools/ui*ocr*
+      - tests/**/ocr*
+    roadmapItem: OCR fallback for text search
+    category: Visual Fallback
+    status: completed  # Merged in PR #15
+
+  - patterns:
+      - src/services/visual*
+      - src/tools/ui*visual*
+    roadmapItem: Screenshot + metadata on accessibility failure
+    category: Visual Fallback
+
+  - patterns:
+      - src/services/icon*
+      - src/tools/ui*icon*
+    roadmapItem: Icon recognition (template matching for common UI icons)
+    category: Visual Fallback
+
+  # Video Capture
+  - patterns:
+      - src/services/video*
+      - src/tools/video*
+      - src/adapters/screenrecord*
+    roadmapItem: Start/stop recording
+    category: Video Capture
+
+  # Custom Build Commands
+  - patterns:
+      - src/tools/gradle*
+      - src/adapters/gradle*
+    roadmapItem: Skill override for project-specific builds
+    category: Custom Build Commands
+
+  # Developer Experience
+  - patterns:
+      - src/utils/defineTool*
+      - src/tools/index*
+    roadmapItem: Simplified tool authoring with defineTool() helper
+    category: Developer Experience

@@ -6,12 +6,12 @@
 
 ## Problem Statement
 
-Apps like Pinterest don't expose text content in their accessibility tree. When Claude calls `ui { operation: "find", selector: { text: "Chobani" } }`, the accessibility-based search returns nothing even though "Chobani" is clearly visible on screen.
+Some apps don't expose text content in their accessibility tree. When Claude calls `ui { operation: "find", selector: { text: "Product Name" } }`, the accessibility-based search returns nothing even though the text is clearly visible on screen.
 
-Current behavior forces Claude to fall back to visual recognition of screenshots, which is unreliable. In the observed failure case, Claude looked directly at a screenshot containing a Chobani ad and said "I don't see it" - then proceeded to scroll the ad out of view while searching for it.
+Current behavior forces Claude to fall back to visual recognition of screenshots, which is unreliable. In observed failure cases, Claude looked directly at a screenshot containing the target text and said "I don't see it" - then proceeded to scroll the text out of view while searching for it.
 
 **Root causes identified:**
-1. Pinterest accessibility tree contains `pin_rep_id` elements with no text content
+1. Some apps use custom views that don't expose text to accessibility services
 2. LLM visual recognition is unreliable for finding specific text in busy UIs
 3. LLM couldn't detect that scrolling was changing the screen content
 
@@ -51,8 +51,8 @@ When `ui { operation: "find", selector: { text: "..." } }` is called:
 
 ### Text Matching
 
-- **Contains** (not exact match) - "Chobani" matches "Chobani High Protein Drinks"
-- **Case-insensitive** - "chobani" matches "CHOBANI"
+- **Contains** (not exact match) - "Product" matches "Product Name Here"
+- **Case-insensitive** - "product" matches "PRODUCT"
 
 ### Response Format
 
@@ -63,7 +63,7 @@ Same structure as accessibility results:
   "elements": [
     {
       "index": 0,
-      "text": "Chobani High Protein Drinks & Cups",
+      "text": "Product Name Here",
       "bounds": "[10,761][535,1200]",
       "center": { "x": 272, "y": 980 }
     }
@@ -133,7 +133,7 @@ interface OcrResult {
 **Text extraction:**
 - Extracts single word from clean image
 - Extracts multi-line text preserving structure
-- Extracts text from busy/cluttered backgrounds (like Pinterest feed)
+- Extracts text from busy/cluttered backgrounds (social media feeds, etc.)
 - Returns empty array for image with no text
 - Returns empty array for blank/solid color image
 
@@ -198,13 +198,13 @@ interface OcrResult {
 - Find text visible on screen but not in accessibility tree
 - Find text after scrolling
 - Tap on OCR-found element successfully interacts with app
-- Simulate the Chobani scenario: find sponsored ad by brand name
+- Simulate finding branded content by product name
 
 ```typescript
 // Runs on CI - uses fixture images
 describe('OCR integration (mocked)', () => {
-  it('finds text in Pinterest screenshot fixture', async () => {
-    // Uses test/fixtures/pinterest-feed.png
+  it('finds text in social feed screenshot fixture', async () => {
+    // Uses test/fixtures/social-feed.png
   });
 });
 
@@ -222,7 +222,7 @@ describeWithEmulator('OCR integration (real device)', () => {
 
 ### Test Fixtures
 
-- `test/fixtures/pinterest-feed.png` - Screenshot with mixed content
+- `test/fixtures/social-feed.png` - Screenshot with mixed content
 - `test/fixtures/clean-text.png` - Simple text for baseline
 - `test/fixtures/no-text.png` - Image without text
 - `test/fixtures/blurry-text.png` - Low quality text
@@ -238,6 +238,5 @@ describeWithEmulator('OCR integration (real device)', () => {
 
 ## References
 
-- [Chobani failure case video](/chobani_failure.mov) - Demonstrates the visual recognition failure
 - [Visual Fallback Phase 1 Design](/docs/plans/2025-01-21-visual-fallback-design.md) - Screenshot + metadata fallback
 - [MCP Server Design Guide](/Users/architjoshi/code/claude/mcp-writer/mcp-server-design-guide.md) - "One Tool = One Agent Step" principle

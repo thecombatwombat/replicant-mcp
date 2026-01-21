@@ -60,6 +60,7 @@ jobs:
 
       - name: Publish to npm
         run: npm publish --provenance --access public
+        # --provenance is REQUIRED for OIDC authentication with Trusted Publisher
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

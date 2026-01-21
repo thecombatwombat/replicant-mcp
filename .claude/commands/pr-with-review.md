@@ -208,7 +208,7 @@ Handle these error cases:
 
 3. **Merge conflicts**
    - Report: "Merge conflict detected. Manual resolution required."
-   - Provide: `git fetch origin $DEFAULT_BRANCH && git rebase origin/$DEFAULT_BRANCH`
+   - Provide: `git fetch origin "$DEFAULT_BRANCH" && git rebase "origin/$DEFAULT_BRANCH"`
    - Exit without merging
 
 4. **Failed CI checks**

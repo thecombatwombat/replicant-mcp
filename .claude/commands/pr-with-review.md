@@ -38,7 +38,7 @@ Execute these steps in sequence:
 
 1. **Create branch** (if not already on target branch)
    ```bash
-   git checkout -b <branch>
+   git checkout -b "$BRANCH"
    ```
 
 2. **Stage all changes**
@@ -53,7 +53,7 @@ Execute these steps in sequence:
 
 4. **Push to origin**
    ```bash
-   git push -u origin <branch>
+   git push -u origin "$BRANCH"
    ```
 
 5. **Create PR via gh CLI** (use proper quoting to prevent injection)

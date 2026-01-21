@@ -28,6 +28,7 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
 
       - run: npm ci
       - run: npm run lint --if-present
@@ -38,7 +39,7 @@ jobs:
         run: npm version ${{ env.VERSION }} --no-git-tag-version
 
       - name: Publish to npm
-        run: npm publish --provenance --access public
+        run: npm publish
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

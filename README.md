@@ -43,18 +43,17 @@ emulator -version  # Should show Android emulator version
 
 ### Installation
 
+**Option 1: npm (recommended)**
 ```bash
-# Clone the repo
+npm install -g replicant-mcp
+```
+
+**Option 2: From source**
+```bash
 git clone https://github.com/thecombatwombat/replicant-mcp.git
 cd replicant-mcp
-
-# Install dependencies
 npm install
-
-# Build
 npm run build
-
-# Verify everything works
 npm test
 ```
 
@@ -74,6 +73,21 @@ Add this to your Claude Desktop config (`~/Library/Application Support/Claude/cl
 ```
 
 Restart Claude Desktop. You should see "replicant" in the MCP servers list.
+
+### Connect to Claude Code
+
+Add the MCP server with environment variables for Android SDK:
+
+```bash
+claude mcp add replicant \
+  -e ANDROID_HOME=$HOME/Library/Android/sdk \
+  -e PATH="$HOME/Library/Android/sdk/platform-tools:$HOME/Library/Android/sdk/emulator:$HOME/Library/Android/sdk/cmdline-tools/latest/bin:$PATH" \
+  -- node $(npm root -g)/replicant-mcp/dist/index.js
+```
+
+> **Note:** Adjust `ANDROID_HOME` if your Android SDK is in a different location. On Linux, it's typically `$HOME/Android/Sdk`.
+
+Restart Claude Code to load the MCP server.
 
 ---
 

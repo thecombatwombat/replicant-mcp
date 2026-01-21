@@ -46,9 +46,9 @@ Execute these steps in sequence:
    git add -A
    ```
 
-3. **Create commit**
+3. **Create commit** (use proper quoting to prevent injection)
    ```bash
-   git commit -m "<commit_message>"
+   git commit -m "$COMMIT_MESSAGE"
    ```
 
 4. **Push to origin**
@@ -56,11 +56,11 @@ Execute these steps in sequence:
    git push -u origin <branch>
    ```
 
-5. **Create PR via gh CLI**
+5. **Create PR via gh CLI** (use proper quoting to prevent injection)
    ```bash
    # Detect default branch dynamically (don't assume master)
    DEFAULT_BRANCH=$(gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name')
-   gh pr create --title "<title>" --body "<body>" --base "$DEFAULT_BRANCH"
+   gh pr create --title "$TITLE" --body "$BODY" --base "$DEFAULT_BRANCH"
    ```
    - Capture the PR URL from output
    - Store PR number for polling
@@ -132,10 +132,9 @@ When Greptile comments are found:
    git push
    ```
 
-4. **Reply to Greptile comments**
+4. **Reply to Greptile comments** (add PR comment acknowledging fixes)
    ```bash
-   gh api repos/$OWNER/$REPO/pulls/comments/<comment_id>/replies \
-     -f body="Fixed in latest commit."
+   gh pr comment <pr_number> --body "Addressed Greptile feedback in latest commit."
    ```
 
 5. **Continue polling** for human approval

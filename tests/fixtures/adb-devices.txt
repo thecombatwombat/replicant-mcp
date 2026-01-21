@@ -1,0 +1,3 @@
+List of devices attached
+emulator-5554	device
+192.168.1.100:5555	device

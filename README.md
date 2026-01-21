@@ -123,6 +123,22 @@ claude mcp add replicant \
 
 Restart Claude Code to load the MCP server.
 
+### Reducing Permission Prompts (Optional)
+
+By default, Claude Code asks for permission on each tool call. To auto-approve replicant-mcp tools, add this to your `.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "mcp__replicant__*"
+    ]
+  }
+}
+```
+
+This is especially useful for agentic workflows where human intervention is limited.
+
 ---
 
 ## What Can It Do?

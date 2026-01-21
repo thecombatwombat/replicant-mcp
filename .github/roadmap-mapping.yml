@@ -22,6 +22,8 @@ mappings:
 
   - patterns:
       - src/services/icon*
+      - src/services/grid*
+      - src/services/visual-candidates*
       - src/tools/ui*icon*
     roadmapItem: Icon recognition (template matching for common UI icons)
     category: Visual Fallback

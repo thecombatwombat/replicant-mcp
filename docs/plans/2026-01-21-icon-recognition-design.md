@@ -159,6 +159,8 @@ ui {
 ```typescript
 interface FindResult {
   elements: Element[];
+  // Tiers 1 & 2 both return "accessibility" (same tree, different matching strategy)
+  // The tier field differentiates: tier=1 is text match, tier=2 is resourceId pattern match
   source: "accessibility" | "ocr" | "visual" | "grid";
 
   // New fields for icon recognition
@@ -219,9 +221,11 @@ interface FindResult {
 
 ## Token Efficiency
 
+**Token calculation basis:** ~330 tokens per KB for JPEG images (Claude's vision token rate).
+
 **Tier 4 (Visual Candidates):**
 - Crop images: 128x128 max (scaled from bounds)
-- JPEG at 70% quality: ~2-4KB per image
+- JPEG at 70% quality: ~2-4KB per image → ~660-1,320 tokens per image
 - 6 candidates max: **12-24KB total → ~4,000-8,000 tokens**
 - Compare to full 1080p screenshot: ~200KB → ~65,000 tokens
 - **Savings: 85-95% vs full screenshot**

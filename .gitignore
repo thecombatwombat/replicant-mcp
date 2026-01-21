@@ -25,5 +25,6 @@ dist/
 # Coverage
 coverage/
 
-# Claude Code
-.claude/
+# Claude Code (local settings ignored, but commands/ is tracked)
+.claude/*
+!.claude/commands/

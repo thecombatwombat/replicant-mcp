@@ -111,6 +111,6 @@ export class AdbAdapter {
   }
 
   private async adb(args: string[], timeoutMs?: number): Promise<RunResult> {
-    return this.runner.run("adb", args, { timeoutMs });
+    return this.runner.runAdb(args, { timeoutMs });
   }
 }

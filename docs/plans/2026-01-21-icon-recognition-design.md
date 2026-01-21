@@ -151,7 +151,7 @@ ui {
   operation: "find",
   selector: { text: "overflow menu" },
   gridCell?: number,      // For Tier 5 refinement (1-24)
-  gridPosition?: 1|2|3|4|5  // For Tier 5 final refinement
+  gridPosition?: 1 | 2 | 3 | 4 | 5  // For Tier 5 final refinement
 }
 ```
 
@@ -188,7 +188,8 @@ interface FindResult {
 
 | Scenario | Response |
 |----------|----------|
-| Empty accessibility tree | Skip Tiers 1-2 & 4, try OCR (Tier 3) then Grid (Tier 5). Note: `"accessibility_unavailable": true` |
+| Empty accessibility tree (text selector) | Skip Tiers 1-2 & 4, try OCR (Tier 3) then Grid (Tier 5). Note: `"accessibility_unavailable": true` |
+| Empty accessibility tree (non-text selector) | Skip directly to Grid (Tier 5). OCR requires text-based selectors. |
 | Element off-screen | `"error": "element_off_screen", "suggestion": "Scroll to bring element into view"` |
 | Ambiguous query | `"error": "ambiguous_query", "matchCount": N, "suggestion": "Be more specific"` |
 | All tiers exhausted | `"error": "not_found", "suggestion": "Element may not exist on current screen"` |
@@ -257,6 +258,8 @@ async findWithFallbacks(
   // Tier 5: Grid fallback (new)
 }
 ```
+
+**Breaking change note:** The rename from `findWithOcrFallback` → `findWithFallbacks` is internal to `ui-automator.ts`. The public `ui { operation: "find" }` API is unchanged. Since this is a minor version (pre-1.0), no deprecation shim is needed—just update the internal call site in `src/tools/ui.ts`.
 
 ### Why Not a Separate Operation?
 

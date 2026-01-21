@@ -2,3 +2,4 @@ export { ProcessRunner, type RunOptions, type RunResult } from "./process-runner
 export { CacheManager, type CacheStats } from "./cache-manager.js";
 export { DeviceStateManager } from "./device-state.js";
 export { EnvironmentService, type Environment } from "./environment.js";
+export * from "./ocr.js";

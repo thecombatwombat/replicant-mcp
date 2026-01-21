@@ -32,7 +32,57 @@ Parse from `$ARGUMENTS`:
    - Show: branch name, title, files to be committed
    - Proceed automatically (this is a background agent)
 
-## Phase 2: Create PR
+## Phase 2: Roadmap Documentation Check
+
+Before creating the PR, check if changes might complete a roadmap item.
+
+1. **Load roadmap mapping** (if it exists)
+   ```bash
+   MAPPING_FILE=".github/roadmap-mapping.yml"
+   if [ -f "$MAPPING_FILE" ]; then
+     # File exists, proceed with check
+   else
+     # Skip check, continue to PR creation
+   fi
+   ```
+
+2. **Get changed files**
+   ```bash
+   CHANGED_FILES=$(git diff --name-only origin/master)
+   ```
+
+3. **Match changed files against roadmap patterns**
+
+   For each mapping entry in the YAML file, check if any changed files match the patterns using glob matching. Track which roadmap items are potentially affected.
+
+4. **Check if README was updated**
+
+   If any roadmap items matched:
+   - Check if `README.md` is in the changed files
+   - If README changed, check if the diff includes changes to roadmap tables (lines containing `| **` or `| Planned` or `| Future`)
+   - If README has appropriate changes, assume documentation is handled
+
+5. **Prompt if documentation may be needed**
+
+   If roadmap items matched but README wasn't appropriately updated, prompt the user:
+
+   ```
+   This PR touches files related to: "<roadmapItem>" (<category>)
+
+   If this completes the feature:
+     → Move it from "Future Roadmap" to "Current Features" in README.md
+
+   Does this PR complete this roadmap item?
+     1. Yes - I'll update README now (pause for user to edit)
+     2. No - this is partial work, roadmap status unchanged
+     3. Already updated (continue with PR)
+   ```
+
+   - If user selects "Yes": Pause and wait for them to update README, then re-stage changes
+   - If user selects "No" or "Already updated": Continue with PR creation
+   - Also remind: "Don't forget to update the design doc status if applicable"
+
+## Phase 3: Create PR
 
 Execute these steps in sequence:
 
@@ -75,7 +125,7 @@ Execute these steps in sequence:
    REPO=$(gh repo view --json name --jq '.name')
    ```
 
-## Phase 3: Poll for Reviews
+## Phase 4: Poll for Reviews
 
 Poll for review status every 2 minutes, up to 5 cycles (10 minutes total).
 
@@ -144,7 +194,7 @@ When Greptile comments are found:
 
 5. **Continue polling** for human approval
 
-## Phase 4: Merge (On Human Approval)
+## Phase 5: Merge (On Human Approval)
 
 When a human approves the PR:
 
@@ -171,7 +221,7 @@ When a human approves the PR:
    - "PR #<number> merged successfully by approval from `<reviewer>`"
    - Include link to merged PR
 
-## Phase 5: Timeout Handling
+## Phase 6: Timeout Handling
 
 If 5 polling cycles complete without human approval:
 

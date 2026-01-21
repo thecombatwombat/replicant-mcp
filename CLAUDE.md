@@ -45,3 +45,16 @@ ui { operation: "dump" }
 ui { operation: "find", selector: { text: "Login" } }
 ui { operation: "tap", elementIndex: 0 }
 ```
+
+## Current Status
+
+- **MCP server**: Complete and working. Published to npm as `replicant-mcp@1.0.0`.
+- **CI**: Passing (87 tests).
+- **Distribution**: npm + git clone. Claude Desktop and Claude Code instructions in README.
+
+## Future Work
+
+- **Claude Code skill layer**: Removed due to architectural issues (shell scripts depended on built CLI that wasn't available after marketplace install). Revisit with one of these approaches:
+  1. Commit `dist/` to repo (quick but not ideal)
+  2. Rewrite scripts to use direct adb/gradle commands (no CLI dependency)
+  3. Have scripts use globally installed npm package (`npx replicant-mcp`)

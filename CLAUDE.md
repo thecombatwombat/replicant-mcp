@@ -59,6 +59,17 @@ ui { operation: "tap", elementIndex: 0 }
   2. Rewrite scripts to use direct adb/gradle commands (no CLI dependency)
   3. Have scripts use globally installed npm package (`npx replicant-mcp`)
 
+## Workflow Rules
+
+- **No direct pushes to master**: All changes must go through pull requests
+- **Branch naming**: Use prefixes:
+  - `feature/` - new functionality
+  - `fix/` - bug fixes
+  - `docs/` - documentation only
+  - `refactor/` - code restructuring without behavior change
+  - `chore/` - maintenance tasks (deps, CI, tooling)
+- **Branch format**: `<prefix>/<short-description>` (e.g., `feature/visual-fallback`, `fix/gradle-timeout`)
+
 ## Documentation Rules
 
 - **Keep README roadmap in sync**: When planning new features or completing existing ones, update the "Current Features" and "Future Roadmap" tables in README.md:

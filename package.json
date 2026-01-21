@@ -19,7 +19,8 @@
     "smoke-test": "bash scripts/smoke-test.sh",
     "test:device": "tsx scripts/real-device-test.ts",
     "start": "node dist/index.js",
-    "validate": "npm run build && npm run test -- --run"
+    "validate": "npm run build && npm run test -- --run",
+    "install-skill": "bash scripts/install-skill.sh"
   },
   "keywords": [
     "mcp",

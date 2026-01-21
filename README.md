@@ -52,8 +52,9 @@ replicant-mcp wraps all of this into a clean interface that AI can understand an
 | **Visual Fallback** | Screenshot + metadata on accessibility failure | Planned |
 | | `visual-snapshot` operation for explicit visual mode | Planned |
 | | YAML config via `REPLICANT_CONFIG` | Planned |
-| | OCR support (Tesseract) | Future |
-| | Template matching (OpenCV) | Future |
+| | OCR fallback for text search (tesseract.js) | Planned |
+| | Icon recognition (template matching for common UI icons) | Planned |
+| | Semantic image search (LLM-assisted visual understanding) | Future |
 | **Custom Build Commands** | Skill override for project-specific builds | Planned |
 | | Auto-detect gradlew vs gradle | Planned |
 | | Configurable default variant | Planned |

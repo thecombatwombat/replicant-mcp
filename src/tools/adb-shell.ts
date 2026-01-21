@@ -12,7 +12,8 @@ export async function handleAdbShellTool(
   input: AdbShellInput,
   context: ServerContext
 ): Promise<Record<string, unknown>> {
-  const deviceId = context.deviceState.requireCurrentDevice().id;
+  const device = await context.deviceState.ensureDevice(context.adb);
+  const deviceId = device.id;
 
   const result = await context.adb.shell(deviceId, input.command, input.timeout);
 

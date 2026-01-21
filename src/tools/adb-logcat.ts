@@ -17,7 +17,8 @@ export async function handleAdbLogcatTool(
   input: AdbLogcatInput,
   context: ServerContext
 ): Promise<Record<string, unknown>> {
-  const deviceId = context.deviceState.requireCurrentDevice().id;
+  const device = await context.deviceState.ensureDevice(context.adb);
+  const deviceId = device.id;
 
   // Build filter string
   let filter = "";

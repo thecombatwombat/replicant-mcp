@@ -58,3 +58,11 @@ ui { operation: "tap", elementIndex: 0 }
   1. Commit `dist/` to repo (quick but not ideal)
   2. Rewrite scripts to use direct adb/gradle commands (no CLI dependency)
   3. Have scripts use globally installed npm package (`npx replicant-mcp`)
+
+## Documentation Rules
+
+- **Keep README roadmap in sync**: When planning new features or completing existing ones, update the "Current Features" and "Future Roadmap" tables in README.md:
+  - New planned features: Add to Future Roadmap with status "Planned"
+  - Completed features: Move from Future Roadmap to Current Features
+  - Status values: "Planned" (next up), "Future" (later phases), "In Progress" (actively being built)
+- **Design docs**: Store in `docs/plans/` with format `YYYY-MM-DD-<topic>-design.md`

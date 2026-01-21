@@ -25,6 +25,40 @@ replicant-mcp wraps all of this into a clean interface that AI can understand an
 
 ---
 
+## Current Features
+
+| Category | Capabilities |
+|----------|-------------|
+| **Build & Test** | Build APKs/bundles, run unit and instrumented tests, list modules/variants/tasks, fetch detailed build logs |
+| **Emulator** | Create, start, stop, wipe emulators; save/load/delete snapshots |
+| **Device Control** | List connected devices, select active device, query device properties |
+| **App Management** | Install, uninstall, launch, stop apps; clear app data; list installed packages |
+| **Log Analysis** | Filter logcat by package, tag, level, time; configurable line limits |
+| **UI Automation** | Accessibility-tree based element finding, tap, text input, screenshots |
+| **Utilities** | Response caching with progressive disclosure, on-demand documentation |
+
+---
+
+## Future Roadmap
+
+| Feature | Item | Status |
+|---------|------|--------|
+| **Visual Fallback** | Screenshot + metadata on accessibility failure | Planned |
+| | `visual-snapshot` operation for explicit visual mode | Planned |
+| | YAML config via `REPLICANT_CONFIG` | Planned |
+| | OCR support (Tesseract) | Future |
+| | Template matching (OpenCV) | Future |
+| **Custom Build Commands** | Skill override for project-specific builds | Planned |
+| | Auto-detect gradlew vs gradle | Planned |
+| | Configurable default variant | Planned |
+| | Extend skill override to test/lint operations | Future |
+| **Video Capture** | Start/stop recording | Planned |
+| | Duration-based capture | Planned |
+| | Configurable output directory and quality | Planned |
+| | WebM/GIF conversion (ffmpeg) | Future |
+
+---
+
 ## Quick Start
 
 ### Prerequisites

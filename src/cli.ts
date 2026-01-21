@@ -2,6 +2,7 @@
 import { Command } from "commander";
 import { createGradleCommand } from "./cli/gradle.js";
 import { createAdbCommand } from "./cli/adb.js";
+import { createEmulatorCommand } from "./cli/emulator.js";
 
 const program = new Command();
 
@@ -12,5 +13,6 @@ program
 
 program.addCommand(createGradleCommand());
 program.addCommand(createAdbCommand());
+program.addCommand(createEmulatorCommand());
 
 program.parse();

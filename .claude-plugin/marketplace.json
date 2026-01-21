@@ -10,19 +10,12 @@
   "plugins": [
     {
       "name": "replicant-dev",
-      "source": {
-        "source": "github",
-        "repo": "thecombatwombat/replicant-mcp"
-      },
-      "description": "Android development skill - build APKs, run tests, manage emulators, automate UI",
-      "version": "1.0.0",
-      "author": {
-        "name": "Archit Joshi"
-      },
-      "repository": "https://github.com/thecombatwombat/replicant-mcp",
-      "license": "MIT",
-      "keywords": ["android", "adb", "gradle", "emulator", "ui-automation"],
-      "category": "development"
+      "description": "Android development skill - build, test, emulators, UI automation",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/replicant-dev"
+      ]
     }
   ]
 }

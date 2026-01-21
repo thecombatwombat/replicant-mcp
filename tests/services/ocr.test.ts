@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { extractText, terminateOcr } from "../../src/services/ocr.js";
+import { extractText, terminateOcr, searchText } from "../../src/services/ocr.js";
 
 // Mock tesseract.js with v7 API structure (blocks -> paragraphs -> lines -> words)
 vi.mock("tesseract.js", () => ({
@@ -139,6 +139,84 @@ describe("OCR Service", () => {
       await terminateOcr();
 
       expect(mockWorker.terminate).toHaveBeenCalled();
+    });
+  });
+
+  describe("searchText", () => {
+    it("finds text containing search term (case-insensitive)", () => {
+      const ocrResults = [
+        { text: "Chobani", confidence: 0.95, bounds: { x0: 10, y0: 20, x1: 100, y1: 50 } },
+        { text: "High", confidence: 0.90, bounds: { x0: 110, y0: 20, x1: 160, y1: 50 } },
+        { text: "Protein", confidence: 0.88, bounds: { x0: 170, y0: 20, x1: 250, y1: 50 } },
+      ];
+
+      const results = searchText(ocrResults, "chobani");
+
+      expect(results).toHaveLength(1);
+      expect(results[0].text).toBe("Chobani");
+    });
+
+    it("returns elements with center coordinates", () => {
+      const ocrResults = [
+        { text: "Button", confidence: 0.95, bounds: { x0: 100, y0: 200, x1: 200, y1: 250 } },
+      ];
+
+      const results = searchText(ocrResults, "button");
+
+      expect(results[0].center).toEqual({ x: 150, y: 225 });
+    });
+
+    it("returns elements with formatted bounds string", () => {
+      const ocrResults = [
+        { text: "Test", confidence: 0.90, bounds: { x0: 10, y0: 20, x1: 100, y1: 50 } },
+      ];
+
+      const results = searchText(ocrResults, "test");
+
+      expect(results[0].bounds).toBe("[10,20][100,50]");
+    });
+
+    it("finds partial matches (contains)", () => {
+      const ocrResults = [
+        { text: "Chobani High Protein Drinks", confidence: 0.92, bounds: { x0: 10, y0: 20, x1: 300, y1: 50 } },
+      ];
+
+      const results = searchText(ocrResults, "protein");
+
+      expect(results).toHaveLength(1);
+      expect(results[0].text).toBe("Chobani High Protein Drinks");
+    });
+
+    it("returns empty array when no matches", () => {
+      const ocrResults = [
+        { text: "Hello", confidence: 0.95, bounds: { x0: 10, y0: 20, x1: 100, y1: 50 } },
+      ];
+
+      const results = searchText(ocrResults, "goodbye");
+
+      expect(results).toHaveLength(0);
+    });
+
+    it("includes confidence in results", () => {
+      const ocrResults = [
+        { text: "Target", confidence: 0.88, bounds: { x0: 10, y0: 20, x1: 100, y1: 50 } },
+      ];
+
+      const results = searchText(ocrResults, "target");
+
+      expect(results[0].confidence).toBe(0.88);
+    });
+
+    it("assigns sequential indices to results", () => {
+      const ocrResults = [
+        { text: "First Match", confidence: 0.95, bounds: { x0: 10, y0: 20, x1: 100, y1: 50 } },
+        { text: "Second Match", confidence: 0.90, bounds: { x0: 10, y0: 60, x1: 100, y1: 90 } },
+      ];
+
+      const results = searchText(ocrResults, "match");
+
+      expect(results[0].index).toBe(0);
+      expect(results[1].index).toBe(1);
     });
   });
 });

@@ -1,5 +1,5 @@
 import { createWorker, Worker } from "tesseract.js";
-import { OcrResult } from "../types/ocr.js";
+import { OcrResult, OcrElement } from "../types/ocr.js";
 
 let worker: Worker | null = null;
 
@@ -48,4 +48,23 @@ export async function terminateOcr(): Promise<void> {
     await worker.terminate();
     worker = null;
   }
+}
+
+export function searchText(ocrResults: OcrResult[], searchTerm: string): OcrElement[] {
+  const lowerSearch = searchTerm.toLowerCase();
+
+  const matches = ocrResults.filter(
+    (result) => result.text.toLowerCase().includes(lowerSearch)
+  );
+
+  return matches.map((match, index) => ({
+    index,
+    text: match.text,
+    bounds: `[${match.bounds.x0},${match.bounds.y0}][${match.bounds.x1},${match.bounds.y1}]`,
+    center: {
+      x: Math.round((match.bounds.x0 + match.bounds.x1) / 2),
+      y: Math.round((match.bounds.y0 + match.bounds.y1) / 2),
+    },
+    confidence: match.confidence,
+  }));
 }

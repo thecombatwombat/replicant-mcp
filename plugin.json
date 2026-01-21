@@ -1,13 +1,5 @@
 {
   "name": "replicant-dev",
   "version": "1.0.0",
-  "description": "Android development skill for Claude Code - build APKs, run tests, manage emulators, and automate UI interactions",
-  "author": {
-    "name": "Archit Joshi"
-  },
-  "repository": "https://github.com/thecombatwombat/replicant-mcp",
-  "license": "MIT",
-  "skills": {
-    "replicant-dev": "./skills/replicant-dev"
-  }
+  "description": "Android development skill for Claude Code - build APKs, run tests, manage emulators, and automate UI interactions"
 }

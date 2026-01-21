@@ -11,11 +11,7 @@
     {
       "name": "replicant-dev",
       "description": "Android development skill - build, test, emulators, UI automation",
-      "source": "./",
-      "strict": false,
-      "skills": [
-        "./skills/replicant-dev"
-      ]
+      "source": "./"
     }
   ]
 }

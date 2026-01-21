@@ -10,6 +10,12 @@ replicant-mcp is a [Model Context Protocol](https://modelcontextprotocol.io/) se
 
 ---
 
+## Demo
+
+![replicant-mcp demo](demo.gif)
+
+---
+
 ## Why replicant-mcp?
 
 Android development involves juggling a lot: Gradle builds, emulator management, ADB commands, logcat filtering, UI testing. Each has its own CLI, flags, and quirks.

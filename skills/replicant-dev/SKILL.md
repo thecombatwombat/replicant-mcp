@@ -34,73 +34,82 @@ Use this skill when the user asks to:
 /plugin install replicant-dev@replicant-mcp
 ```
 
+After installing, run the setup script to build the CLI:
+```bash
+${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/setup.sh
+```
+
 **Option 2: Manual Installation**
 ```bash
 git clone https://github.com/thecombatwombat/replicant-mcp.git
 cd replicant-mcp
 npm install
+npm run build
 npm run install-skill
 ```
 
 ## Script Location
 
-All scripts are in this skill's directory. Use the full path:
+All scripts are in this skill's directory:
+```
+${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/
+```
 
-```
-${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/<script-name>.sh
-```
+**Important:** Build scripts (build-apk.sh, run-tests.sh, list-modules.sh) must be run from the Android project directory (where `gradlew` is located).
 
 ## Available Scripts
 
 ### Build & Test
 
+Run these from the Android project directory:
+
 | Script | Usage |
 |--------|-------|
-| `build-apk.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/build-apk.sh <project-path> <debug\|release>` |
-| `run-tests.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/run-tests.sh <project-path> [module]` |
-| `list-modules.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/list-modules.sh <project-path>` |
-| `build-details.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/build-details.sh <build-id> [errors\|warnings\|full]` |
+| `build-apk.sh` | `[debug\|release\|bundle]` - Build APK (default: debug) |
+| `run-tests.sh` | `[module]` - Run unit tests |
+| `list-modules.sh` | List Gradle modules |
+| `build-details.sh` | `<build-id> [errors\|warnings\|full]` - Get build details |
 
 ### Emulator
 
 | Script | Usage |
 |--------|-------|
-| `list-emulators.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/list-emulators.sh` |
-| `start-emulator.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/start-emulator.sh <avd-name>` |
-| `stop-emulator.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/stop-emulator.sh <device-id>` |
-| `snapshot.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/snapshot.sh <save\|load\|list\|delete> <device-id> [name]` |
+| `list-emulators.sh` | List available AVDs |
+| `start-emulator.sh` | `<avd-name>` - Start emulator |
+| `stop-emulator.sh` | `<device-id>` - Stop emulator |
+| `snapshot.sh` | `<save\|load\|list\|delete> <device-id> [name]` |
 
 ### Device & App
 
 | Script | Usage |
 |--------|-------|
-| `list-devices.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/list-devices.sh` |
-| `select-device.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/select-device.sh <device-id>` |
-| `install-app.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/install-app.sh <apk-path> [device-id]` |
-| `launch-app.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/launch-app.sh <package> [activity]` |
-| `stop-app.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/stop-app.sh <package>` |
-| `uninstall-app.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/uninstall-app.sh <package>` |
-| `clear-data.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/clear-data.sh <package>` |
+| `list-devices.sh` | List connected devices |
+| `select-device.sh` | `<device-id>` - Set active device |
+| `install-app.sh` | `<apk-path> [device-id]` - Install APK |
+| `launch-app.sh` | `<package> [activity]` - Launch app |
+| `stop-app.sh` | `<package>` - Force stop app |
+| `uninstall-app.sh` | `<package>` - Uninstall app |
+| `clear-data.sh` | `<package>` - Clear app data |
 
 ### Logs & Debug
 
 | Script | Usage |
 |--------|-------|
-| `read-logs.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/read-logs.sh [package] [level] [lines]` |
-| `shell-cmd.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/shell-cmd.sh <command>` |
+| `read-logs.sh` | `[package] [level] [lines]` - Read logcat |
+| `shell-cmd.sh` | `<command>` - Run adb shell command |
 
 ### UI Automation
 
 | Script | Usage |
 |--------|-------|
-| `dump-ui.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/dump-ui.sh` |
-| `find-element.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/find-element.sh <text\|id\|class> <value>` |
-| `tap-element.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/tap-element.sh <element-index>` |
-| `input-text.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/input-text.sh <text> [element-index]` |
-| `screenshot.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/screenshot.sh [output-path]` |
+| `dump-ui.sh` | Dump accessibility tree |
+| `find-element.sh` | `<text\|id\|class> <value>` - Find element |
+| `tap-element.sh` | `<element-index>` - Tap element |
+| `input-text.sh` | `<text> [element-index]` - Input text |
+| `screenshot.sh` | `[output-path]` - Take screenshot |
 
 ### Cache
 
 | Script | Usage |
 |--------|-------|
-| `cache-stats.sh` | `${CLAUDE_PLUGIN_ROOT}/skills/replicant-dev/cache-stats.sh [clear]` |
+| `cache-stats.sh` | `[clear]` - View/clear cache |

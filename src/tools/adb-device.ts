@@ -38,16 +38,19 @@ export async function handleAdbDeviceTool(
     }
 
     case "wait": {
-      const deviceId = input.deviceId || context.deviceState.getCurrentDevice()?.id;
-      if (!deviceId) {
-        throw new Error("No device selected. Call with deviceId or select a device first.");
-      }
+      const device = input.deviceId
+        ? { id: input.deviceId }
+        : await context.deviceState.ensureDevice(context.adb);
+      const deviceId = device.id;
       await context.adb.waitForDevice(deviceId);
       return { status: "device ready", deviceId };
     }
 
     case "properties": {
-      const deviceId = input.deviceId || context.deviceState.requireCurrentDevice().id;
+      const device = input.deviceId
+        ? { id: input.deviceId }
+        : await context.deviceState.ensureDevice(context.adb);
+      const deviceId = device.id;
       const props = await context.adb.getProperties(deviceId);
       return {
         deviceId,

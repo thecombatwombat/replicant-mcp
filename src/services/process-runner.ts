@@ -94,6 +94,24 @@ export class ProcessRunner {
     return this.run(adbPath, args, options);
   }
 
+  async runEmulator(args: string[], options: RunOptions = {}): Promise<RunResult> {
+    if (!this.environment) {
+      return this.run("emulator", args, options);
+    }
+
+    const emulatorPath = await this.environment.getEmulatorPath();
+    return this.run(emulatorPath, args, options);
+  }
+
+  async runAvdManager(args: string[], options: RunOptions = {}): Promise<RunResult> {
+    if (!this.environment) {
+      return this.run("avdmanager", args, options);
+    }
+
+    const avdManagerPath = await this.environment.getAvdManagerPath();
+    return this.run(avdManagerPath, args, options);
+  }
+
   private validateCommand(command: string, args: string[]): void {
     if (BLOCKED_COMMANDS.has(command)) {
       throw new ReplicantError(

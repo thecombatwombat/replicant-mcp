@@ -88,6 +88,33 @@ export class EnvironmentService {
     return env.emulatorPath;
   }
 
+  async getAvdManagerPath(): Promise<string> {
+    const env = await this.detect();
+    if (!env.sdkPath) {
+      throw new ReplicantError(
+        ErrorCode.SDK_NOT_FOUND,
+        "Android SDK not found",
+        "Install Android Studio or set ANDROID_HOME environment variable"
+      );
+    }
+    const avdManagerPath = path.join(env.sdkPath, "cmdline-tools", "latest", "bin", "avdmanager");
+    // Fallback to older location
+    const legacyPath = path.join(env.sdkPath, "tools", "bin", "avdmanager");
+
+    if (fs.existsSync(avdManagerPath)) {
+      return avdManagerPath;
+    }
+    if (fs.existsSync(legacyPath)) {
+      return legacyPath;
+    }
+
+    throw new ReplicantError(
+      ErrorCode.SDK_NOT_FOUND,
+      "avdmanager not found",
+      "Install Android SDK Command-line Tools via Android Studio SDK Manager"
+    );
+  }
+
   private findSdkPath(platform: string): string | null {
     // 1. Check ANDROID_HOME
     if (process.env.ANDROID_HOME) {

@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "replicant-dev",
-      "source": "..",
+      "source": ".",
       "description": "Android development skill - build APKs, run tests, manage emulators, automate UI",
       "version": "1.0.0",
       "author": {

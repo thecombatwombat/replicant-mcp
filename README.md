@@ -142,6 +142,21 @@ By default, Claude Code asks for permission on each tool call. To auto-approve r
 
 This is especially useful for agentic workflows where human intervention is limited.
 
+### PR Automation (Optional)
+
+This project includes a Claude Code skill for automated PR handling. When invoked, it:
+- Creates a branch and PR from your current changes
+- Polls for Greptile and human reviews every 2 minutes (max 5 cycles)
+- Automatically addresses Greptile feedback
+- Merges when a human approves
+
+To use:
+```
+/pr-with-review --branch feature/my-feature --title "My PR" --body "Description" --commit-message "feat: add feature"
+```
+
+Or let Claude invoke it automatically when creating PRs.
+
 ---
 
 ## What Can It Do?

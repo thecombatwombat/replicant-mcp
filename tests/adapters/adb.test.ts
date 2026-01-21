@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { parseDeviceList, parsePackageList } from "../../src/parsers/adb-output.js";
+import { AdbAdapter } from "../../src/adapters/adb.js";
 
 describe("ADB Output Parsing", () => {
   describe("parseDeviceList", () => {
@@ -53,6 +54,38 @@ package:com.google.android.gms
         "com.android.chrome",
         "com.google.android.gms",
       ]);
+    });
+  });
+});
+
+describe("AdbAdapter", () => {
+  let mockRunner: { run: ReturnType<typeof vi.fn> };
+  let adapter: AdbAdapter;
+
+  beforeEach(() => {
+    mockRunner = { run: vi.fn() };
+    adapter = new AdbAdapter(mockRunner as any);
+  });
+
+  describe("pull", () => {
+    it("pulls file from device to local path", async () => {
+      mockRunner.run.mockResolvedValue({ stdout: "1 file pulled", stderr: "", exitCode: 0 });
+
+      await adapter.pull("emulator-5554", "/sdcard/test.png", "/tmp/test.png");
+
+      expect(mockRunner.run).toHaveBeenCalledWith(
+        "adb",
+        ["-s", "emulator-5554", "pull", "/sdcard/test.png", "/tmp/test.png"],
+        expect.anything()
+      );
+    });
+
+    it("throws PULL_FAILED on error", async () => {
+      mockRunner.run.mockResolvedValue({ stdout: "", stderr: "error: device offline", exitCode: 1 });
+
+      await expect(
+        adapter.pull("emulator-5554", "/sdcard/test.png", "/tmp/test.png")
+      ).rejects.toThrow("Failed to pull");
     });
   });
 });

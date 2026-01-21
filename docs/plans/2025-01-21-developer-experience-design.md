@@ -107,7 +107,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 ## Dependencies
 
-New dev dependency: `zod-to-json-schema`
+New dependency: `zod-to-json-schema`
 
 ```bash
 npm install zod-to-json-schema

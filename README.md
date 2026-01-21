@@ -56,6 +56,9 @@ replicant-mcp wraps all of this into a clean interface that AI can understand an
 | | Duration-based capture | Planned |
 | | Configurable output directory and quality | Planned |
 | | WebM/GIF conversion (ffmpeg) | Future |
+| **Developer Experience** | Simplified tool authoring with `defineTool()` helper | Future |
+| | Auto-generate JSON schema from Zod via `zod-to-json-schema` | Future |
+| | Convention-based tool auto-discovery (no manual wiring) | Future |
 
 ---
 

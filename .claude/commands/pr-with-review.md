@@ -58,10 +58,18 @@ Execute these steps in sequence:
 
 5. **Create PR via gh CLI**
    ```bash
-   gh pr create --title "<title>" --body "<body>" --base master
+   # Detect default branch dynamically (don't assume master)
+   DEFAULT_BRANCH=$(gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name')
+   gh pr create --title "<title>" --body "<body>" --base "$DEFAULT_BRANCH"
    ```
    - Capture the PR URL from output
    - Store PR number for polling
+
+6. **Extract owner and repo for API calls**
+   ```bash
+   OWNER=$(gh repo view --json owner --jq '.owner.login')
+   REPO=$(gh repo view --json name --jq '.name')
+   ```
 
 ## Phase 3: Poll for Reviews
 
@@ -81,10 +89,11 @@ For each cycle (1 to 5):
 
 3. **Check for Greptile comments**
    ```bash
-   gh api repos/{owner}/{repo}/pulls/<pr_number>/comments
+   gh api repos/$OWNER/$REPO/pulls/<pr_number>/comments
    ```
-   - Greptile comments typically come from a bot account
-   - Look for comments with actionable feedback (not just informational)
+   - Greptile comments come from user "greptile-apps[bot]"
+   - Actionable comment types (require code changes): logic, syntax, security
+   - Informational comment types (acknowledge but may not need auto-fix): info, notes, advice
 
 4. **Process Greptile feedback** (if found)
    - See "Handling Greptile Feedback" section below
@@ -125,7 +134,7 @@ When Greptile comments are found:
 
 4. **Reply to Greptile comments**
    ```bash
-   gh api repos/{owner}/{repo}/pulls/<pr_number>/comments/<comment_id>/replies \
+   gh api repos/$OWNER/$REPO/pulls/comments/<comment_id>/replies \
      -f body="Fixed in latest commit."
    ```
 
@@ -140,14 +149,21 @@ When a human approves the PR:
    gh pr view <pr_number> --json reviews --jq '.reviews[] | select(.state == "APPROVED") | .author.login'
    ```
 
-2. **Merge the PR**
+2. **Wait for CI checks to pass**
+   ```bash
+   gh pr checks <pr_number> --watch
+   ```
+   - This blocks until all checks complete
+   - If any check fails, report and exit without merging
+
+3. **Merge the PR**
    ```bash
    gh pr merge <pr_number> --squash --delete-branch
    ```
    - Use squash merge to keep history clean
    - Delete the branch after merge
 
-3. **Report success**
+4. **Report success**
    - "PR #<number> merged successfully by approval from @<reviewer>"
    - Include link to merged PR
 
@@ -192,7 +208,7 @@ Handle these error cases:
 
 3. **Merge conflicts**
    - Report: "Merge conflict detected. Manual resolution required."
-   - Provide: `git fetch origin master && git rebase origin/master`
+   - Provide: `git fetch origin $DEFAULT_BRANCH && git rebase origin/$DEFAULT_BRANCH`
    - Exit without merging
 
 4. **Failed CI checks**

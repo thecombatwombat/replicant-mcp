@@ -4,15 +4,35 @@
   "description": "Android MCP server for AI-assisted Android development",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "replicant-mcp": "dist/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "test": "vitest",
     "start": "node dist/index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "android",
+    "adb",
+    "gradle",
+    "emulator",
+    "ui-automation",
+    "ai",
+    "llm"
+  ],
+  "author": "Archit Joshi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anthropics/replicant-mcp.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.3",
     "execa": "^9.6.1",

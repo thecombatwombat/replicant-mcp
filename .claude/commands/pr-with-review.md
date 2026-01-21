@@ -79,8 +79,9 @@ Poll for review status every 2 minutes, up to 5 cycles (10 minutes total).
 
 For each cycle (1 to 5):
 
-1. **Wait 2 minutes** (120 seconds)
-   - On first cycle, report: "Waiting for reviews... (cycle 1/5)"
+1. **Wait before checking** (skip wait on first cycle)
+   - First cycle: Check immediately, report: "Checking for reviews... (cycle 1/5)"
+   - Subsequent cycles: Wait 2 minutes (120 seconds) before checking
 
 2. **Check PR review status**
    ```bash
@@ -163,7 +164,7 @@ When a human approves the PR:
    - Delete the branch after merge
 
 4. **Report success**
-   - "PR #<number> merged successfully by approval from @<reviewer>"
+   - "PR #<number> merged successfully by approval from `<reviewer>`"
    - Include link to merged PR
 
 ## Phase 5: Timeout Handling

@@ -28,3 +28,4 @@ coverage/
 # Claude Code (local settings ignored, but commands/ is tracked)
 .claude/*
 !.claude/commands/
+.beads/

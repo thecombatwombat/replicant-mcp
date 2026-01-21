@@ -188,7 +188,7 @@ interface FindResult {
 
 | Scenario | Response |
 |----------|----------|
-| Empty accessibility tree | Skip to Tier 5, note: `"accessibility_unavailable": true` |
+| Empty accessibility tree | Skip Tiers 1-2 & 4, try OCR (Tier 3) then Grid (Tier 5). Note: `"accessibility_unavailable": true` |
 | Element off-screen | `"error": "element_off_screen", "suggestion": "Scroll to bring element into view"` |
 | Ambiguous query | `"error": "ambiguous_query", "matchCount": N, "suggestion": "Be more specific"` |
 | All tiers exhausted | `"error": "not_found", "suggestion": "Element may not exist on current screen"` |

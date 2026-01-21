@@ -21,6 +21,37 @@ export interface TestResultsData {
   cacheId: string;
 }
 
+export interface UiElement {
+  index: number;
+  type: string;
+  text?: string;
+  hint?: string;
+  focused?: boolean;
+}
+
+export interface UiDumpData {
+  screenName: string;
+  elements: UiElement[];
+}
+
+export interface LogcatData {
+  level: string;
+  count: number;
+  lines: string[];
+  cacheId: string;
+}
+
+export interface DeviceInfo {
+  id: string;
+  name: string;
+  state: string;
+  selected: boolean;
+}
+
+export interface DeviceListData {
+  devices: DeviceInfo[];
+}
+
 export function formatBuildSuccess(data: BuildSuccessData): string {
   const lines = [`✓ Build successful (${data.duration})`];
 
@@ -65,6 +96,48 @@ export function formatTestResults(data: TestResultsData): string {
 
   lines.push("");
   lines.push(`Cache ID: ${data.cacheId}`);
+
+  return lines.join("\n");
+}
+
+export function formatUiDump(data: UiDumpData): string {
+  const lines = [`Screen: ${data.screenName}`];
+
+  data.elements.forEach((el, i) => {
+    const prefix = i === data.elements.length - 1 ? "└─" : "├─";
+    let desc = el.text || el.hint || "";
+    if (el.focused) desc += " (focused)";
+    lines.push(`${prefix} [${el.index}] ${el.type}${desc ? ` "${desc}"` : ""}`);
+  });
+
+  lines.push("");
+  lines.push(`${data.elements.length} interactive elements`);
+
+  return lines.join("\n");
+}
+
+export function formatLogcat(data: LogcatData): string {
+  const lines = [`${data.count} ${data.level}s in recent logs:`, ""];
+
+  data.lines.forEach(line => lines.push(line));
+
+  lines.push("");
+  lines.push(`Cache ID: ${data.cacheId}`);
+
+  return lines.join("\n");
+}
+
+export function formatDeviceList(data: DeviceListData): string {
+  if (data.devices.length === 0) {
+    return "No devices connected";
+  }
+
+  const lines = ["Devices:"];
+
+  data.devices.forEach(device => {
+    const indicator = device.selected ? "→ " : "  ";
+    lines.push(`${indicator}${device.id} (${device.name}) [${device.state}]`);
+  });
 
   return lines.join("\n");
 }

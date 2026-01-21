@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { formatBuildSuccess, formatBuildFailure, formatTestResults } from "../../src/cli/formatter.js";
+import {
+  formatBuildSuccess,
+  formatBuildFailure,
+  formatTestResults,
+  formatUiDump,
+  formatLogcat,
+  formatDeviceList,
+} from "../../src/cli/formatter.js";
 
 describe("CLI Formatter", () => {
   describe("formatBuildSuccess", () => {
@@ -55,6 +62,61 @@ describe("CLI Formatter", () => {
       expect(result).toContain("18s");
       expect(result).toContain("LoginViewModelTest");
       expect(result).toContain("test-d4e5f6");
+    });
+  });
+
+  describe("formatUiDump", () => {
+    it("formats UI tree with interactive elements", () => {
+      const result = formatUiDump({
+        screenName: "MainActivity",
+        elements: [
+          { index: 0, type: "TextView", text: "Welcome back" },
+          { index: 1, type: "EditText", hint: "email input", focused: true },
+          { index: 2, type: "EditText", hint: "password input" },
+          { index: 3, type: "Button", text: "Login" },
+        ],
+      });
+
+      expect(result).toContain("MainActivity");
+      expect(result).toContain("[0] TextView");
+      expect(result).toContain("Welcome back");
+      expect(result).toContain("[3] Button");
+      expect(result).toContain("Login");
+      expect(result).toContain("4 interactive elements");
+    });
+  });
+
+  describe("formatLogcat", () => {
+    it("formats error logs with count", () => {
+      const result = formatLogcat({
+        level: "error",
+        count: 3,
+        lines: [
+          "E/ProfileActivity: NullPointerException at onCreate:47",
+          "E/NetworkClient: Connection timeout after 30s",
+          "E/CrashHandler: Fatal exception in main thread",
+        ],
+        cacheId: "logs-g7h8i9",
+      });
+
+      expect(result).toContain("3 errors");
+      expect(result).toContain("NullPointerException");
+      expect(result).toContain("logs-g7h8i9");
+    });
+  });
+
+  describe("formatDeviceList", () => {
+    it("formats device list with selection indicator", () => {
+      const result = formatDeviceList({
+        devices: [
+          { id: "emulator-5554", name: "Pixel_7_API_34", state: "device", selected: true },
+          { id: "abc123", name: "Physical Device", state: "device", selected: false },
+        ],
+      });
+
+      expect(result).toContain("emulator-5554");
+      expect(result).toContain("→"); // selection indicator
+      expect(result).toContain("abc123");
     });
   });
 });

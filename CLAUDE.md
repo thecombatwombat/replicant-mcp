@@ -76,4 +76,5 @@ ui { operation: "tap", elementIndex: 0 }
   - New planned features: Add to Future Roadmap with status "Planned"
   - Completed features: Move from Future Roadmap to Current Features
   - Status values: "Planned" (next up), "Future" (later phases), "In Progress" (actively being built)
+- **Update roadmap mapping**: When adding new roadmap items, also add an entry to `.github/roadmap-mapping.yml` so the PR workflow can detect when features are completed
 - **Design docs**: Store in `docs/plans/` with format `YYYY-MM-DD-<topic>-design.md`

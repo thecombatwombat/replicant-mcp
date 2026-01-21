@@ -1,227 +1,360 @@
 # replicant-mcp
 
-A Model Context Protocol (MCP) server for AI-assisted Android development. Provides tools for building, testing, and automating Android applications through a standardized interface.
+**Let AI build, test, and debug your Android apps.**
 
-## Features
+[![CI](https://github.com/thecombatwombat/replicant-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/thecombatwombat/replicant-mcp/actions/workflows/ci.yml)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-- **Gradle Integration** - Build, test, and introspect Android projects
-- **Emulator Management** - Create, start, stop emulators with snapshot support
-- **ADB Control** - Device management, app installation, logcat filtering
-- **UI Automation** - Accessibility tree-based UI interaction
-- **Smart Caching** - Progressive disclosure with LRU cache for large outputs
-- **Safety Guards** - Blocked dangerous commands, input validation
+replicant-mcp is a [Model Context Protocol](https://modelcontextprotocol.io/) server that gives AI assistants like Claude the ability to interact with your Android development environment. Build APKs, launch emulators, install apps, navigate UIs, and debug crashes—all through natural conversation.
 
-## Installation
+---
 
+## Why replicant-mcp?
+
+Android development involves juggling a lot: Gradle builds, emulator management, ADB commands, logcat filtering, UI testing. Each has its own CLI, flags, and quirks.
+
+replicant-mcp wraps all of this into a clean interface that AI can understand and use effectively:
+
+| Without replicant-mcp | With replicant-mcp |
+|-----------------------|-------------------|
+| "Run `./gradlew assembleDebug`, then `adb install`, then `adb shell am start`..." | "Build and run the app" |
+| Copy-paste logcat output, lose context | AI reads filtered logs directly |
+| Screenshot → describe UI → guess coordinates | AI sees accessibility tree, taps elements by text |
+| 5,000 tokens of raw Gradle output | 50-token summary + details on demand |
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+You'll need:
+- **Node.js 18+**
+- **Android SDK** with `adb` and `emulator` in your PATH
+- An Android project with `gradlew` (for build tools)
+
+Verify your setup:
 ```bash
-npm install
-npm run build
+node --version  # Should be 18+
+adb --version   # Should show Android Debug Bridge version
+emulator -version  # Should show Android emulator version
 ```
 
-## Usage
+### Installation
 
-### As MCP Server
+```bash
+# Clone the repo
+git clone https://github.com/thecombatwombat/replicant-mcp.git
+cd replicant-mcp
 
-Add to your MCP client configuration:
+# Install dependencies
+npm install
+
+# Build
+npm run build
+
+# Verify everything works
+npm test
+```
+
+### Connect to Claude Desktop
+
+Add this to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
 
 ```json
 {
   "mcpServers": {
     "replicant": {
       "command": "node",
-      "args": ["/path/to/replicant-mcp/dist/index.js"]
+      "args": ["/absolute/path/to/replicant-mcp/dist/index.js"]
     }
   }
 }
 ```
 
-### Standalone
+Restart Claude Desktop. You should see "replicant" in the MCP servers list.
 
-```bash
-npm start
+---
+
+## What Can It Do?
+
+### Build & Test
+
+```
+You: "Build the debug variant of the app"
+
+Claude: I'll build the debug APK.
+        [Calls gradle-build with operation: "assembleDebug"]
+
+        Build successful in 34s
+        APK: app/build/outputs/apk/debug/app-debug.apk (12.4 MB)
+        2 warnings (use gradle-get-details for full output)
 ```
 
-## Tools
+```
+You: "Run the unit tests for the login module"
 
-### Build Tools
+Claude: Running unit tests for :feature:login...
+        [Calls gradle-test with operation: "unitTest", module: ":feature:login"]
 
-#### `gradle-build`
-Build Android projects.
+        47 tests passed, 2 failed, 0 skipped
 
-```json
-{ "operation": "assembleDebug" }
-{ "operation": "bundleRelease" }
-{ "operation": "clean" }
-{ "operation": "custom", "tasks": [":app:assembleDebug", ":lib:jar"] }
+        Failed:
+        - LoginViewModelTest.testInvalidEmail
+        - LoginRepositoryTest.testNetworkError
+
+        Want me to show the failure details?
 ```
 
-#### `gradle-test`
-Run tests with filtering.
+### Emulator Management
 
-```json
-{ "operation": "unitTest", "module": ":app" }
-{ "operation": "instrumentedTest", "variant": "debug" }
-{ "operation": "custom", "tasks": ["testDebugUnitTest"], "filter": "LoginTest" }
+```
+You: "Start up a Pixel 7 emulator"
+
+Claude: I'll start the Pixel_7_API_34 emulator.
+        [Calls emulator-device with operation: "start", avdName: "Pixel_7_API_34"]
+
+        Emulator started: emulator-5554
+        Waiting for boot... ready!
 ```
 
-#### `gradle-list`
-Introspect project structure.
+### Install & Launch Apps
 
-```json
-{ "operation": "modules" }
-{ "operation": "variants", "module": ":app" }
-{ "operation": "tasks" }
+```
+You: "Install the APK we just built and open the app"
+
+Claude: Installing and launching...
+        [Calls adb-app with operation: "install"]
+        [Calls adb-app with operation: "launch"]
+
+        App installed and running on emulator-5554
 ```
 
-#### `gradle-get-details`
-Fetch full output from cached build/test results.
+### Debug with Logcat
 
-```json
-{ "id": "build-abc123-1234567890", "detailType": "errors" }
-{ "id": "test-xyz789-1234567890", "detailType": "logs" }
+```
+You: "The app crashed. What happened?"
+
+Claude: Let me check the error logs.
+        [Calls adb-logcat with level: "error", lines: 50]
+
+        Found the crash:
+
+        java.lang.NullPointerException: Attempt to invoke virtual method
+        'void com.example.User.getName()' on a null object reference
+            at com.example.ProfileActivity.onCreate(ProfileActivity.kt:47)
+
+        Looks like `user` is null when ProfileActivity starts.
+        Want me to look at that file?
 ```
 
-### Device Management
+### UI Automation (No Screenshots Needed!)
 
-#### `emulator-device`
-Manage Android emulators.
+```
+You: "Tap the Login button"
 
-```json
-{ "operation": "list" }
-{ "operation": "create", "name": "Pixel_6_API_33", "systemImage": "system-images;android-33;google_apis;x86_64" }
-{ "operation": "start", "name": "Pixel_6_API_33" }
-{ "operation": "stop", "name": "Pixel_6_API_33" }
-{ "operation": "snapshot-save", "name": "Pixel_6_API_33", "snapshotName": "clean-state" }
-{ "operation": "snapshot-load", "name": "Pixel_6_API_33", "snapshotName": "clean-state" }
+Claude: I'll find and tap the Login button.
+        [Calls ui with operation: "find", selector: { text: "Login" }]
+        [Calls ui with operation: "tap", elementIndex: 0]
+
+        Tapped "Login" at coordinates (540, 1847)
 ```
 
-#### `adb-device`
-Manage connected devices.
+This works by reading the **accessibility tree**—the same data screen readers use. It's faster, cheaper, and more reliable than screenshot-based approaches.
 
-```json
-{ "operation": "list" }
-{ "operation": "select", "deviceId": "emulator-5554" }
-{ "operation": "wait", "timeoutMs": 30000 }
-{ "operation": "get-prop", "property": "ro.build.version.sdk" }
-```
+---
 
-### App Management
+## Tool Reference
 
-#### `adb-app`
-Install, uninstall, and manage apps.
+replicant-mcp provides 12 tools organized into categories:
 
-```json
-{ "operation": "install", "apkPath": "./app/build/outputs/apk/debug/app-debug.apk" }
-{ "operation": "uninstall", "package": "com.example.app" }
-{ "operation": "launch", "package": "com.example.app", "activity": ".MainActivity" }
-{ "operation": "force-stop", "package": "com.example.app" }
-{ "operation": "clear-data", "package": "com.example.app" }
-{ "operation": "list-packages" }
-{ "operation": "permissions", "package": "com.example.app" }
-{ "operation": "grant-permission", "package": "com.example.app", "permission": "android.permission.CAMERA" }
-```
+### Build & Test
+| Tool | Description |
+|------|-------------|
+| `gradle-build` | Build APKs and bundles (`assembleDebug`, `assembleRelease`, `bundle`) |
+| `gradle-test` | Run unit and instrumented tests with filtering |
+| `gradle-list` | List modules, build variants, and tasks |
+| `gradle-get-details` | Fetch full logs/errors from cached build results |
 
-#### `adb-logcat`
-Filter and view device logs.
+### Emulator
+| Tool | Description |
+|------|-------------|
+| `emulator-device` | Create, start, stop emulators; manage snapshots |
 
-```json
-{ "lines": 100 }
-{ "package": "com.example.app", "level": "error", "lines": 50 }
-{ "tag": "MyTag", "since": "10s" }
-```
-
-#### `adb-shell`
-Execute shell commands on device.
-
-```json
-{ "command": "pm list packages" }
-{ "command": "input tap 500 500" }
-```
+### ADB
+| Tool | Description |
+|------|-------------|
+| `adb-device` | List devices, select active device, get properties |
+| `adb-app` | Install, uninstall, launch, stop apps; clear data |
+| `adb-logcat` | Read filtered device logs by package/tag/level |
+| `adb-shell` | Run shell commands (with safety guards) |
 
 ### UI Automation
+| Tool | Description |
+|------|-------------|
+| `ui` | Dump accessibility tree, find elements, tap, input text, screenshot |
 
-#### `ui`
-Interact with app UI via accessibility tree.
+### Utilities
+| Tool | Description |
+|------|-------------|
+| `cache` | Manage cached outputs (stats, clear, config) |
+| `rtfm` | On-demand documentation for tools |
 
-```json
-{ "operation": "dump" }
-{ "operation": "find", "selector": { "text": "Login" } }
-{ "operation": "find", "selector": { "resourceId": "com.example:id/button" } }
-{ "operation": "tap", "elementIndex": 0 }
-{ "operation": "tap", "x": 500, "y": 500 }
-{ "operation": "input", "text": "Hello World" }
-{ "operation": "screenshot", "localPath": "/tmp/screen.png" }
-{ "operation": "accessibility-check" }
-```
+**Want details?** Ask Claude to call `rtfm` with a category like "build", "adb", "emulator", or "ui".
 
-### Utility Tools
+---
 
-#### `cache`
-Manage the response cache.
-
-```json
-{ "operation": "get", "id": "build-abc123-1234567890" }
-{ "operation": "list" }
-{ "operation": "clear", "id": "build-abc123-1234567890" }
-{ "operation": "clear-all" }
-```
-
-#### `rtfm`
-Access on-demand documentation.
-
-```json
-{ "topic": "patterns" }
-{ "topic": "adb" }
-{ "topic": "gradle" }
-{ "topic": "ui" }
-```
-
-## Architecture
-
-```
-src/
-  server.ts          # MCP server setup and tool registration
-  index.ts           # Entry point
-  types/             # TypeScript types and error definitions
-  services/          # Core services (cache, process runner, device state)
-  adapters/          # CLI wrappers (adb, emulator, gradle, ui-automator)
-  parsers/           # Output parsers
-  tools/             # MCP tool implementations
-docs/
-  rtfm/              # Documentation files for rtfm tool
-```
-
-## Key Patterns
+## Design Philosophy
 
 ### Progressive Disclosure
-Tools return summaries with cache IDs. Use `gradle-get-details` or `cache get` for full output.
 
-### Single Device Focus
-Select a device with `adb-device select` and subsequent commands target that device automatically.
+Gradle builds can produce thousands of lines of output. Dumping all of that into an AI context is wasteful and confusing.
+
+Instead, replicant-mcp returns **summaries with cache IDs**:
+
+```json
+{
+  "buildId": "build-a1b2c3-1705789200",
+  "summary": {
+    "success": true,
+    "duration": "34s",
+    "apkSize": "12.4 MB",
+    "warnings": 2
+  }
+}
+```
+
+If the AI needs the full output (e.g., to debug a failure), it can request it:
+
+```json
+{ "tool": "gradle-get-details", "id": "build-a1b2c3-1705789200", "detailType": "errors" }
+```
+
+This typically reduces token usage by **90-99%**.
 
 ### Accessibility-First UI
-Use `ui dump` and `ui find` instead of screenshots for reliable, content-based UI interaction.
+
+Most AI-driven UI automation uses screenshots: capture the screen, send it to a vision model, get coordinates, click.
+
+replicant-mcp takes a different approach: it reads the **accessibility tree**—the same structured data that powers screen readers. This is:
+
+- **Faster** — No image processing
+- **Cheaper** — Text is smaller than images
+- **More reliable** — Elements are identified by text/ID, not pixel coordinates
+- **Better for apps** — Encourages accessible app development
+
+### Single Device Focus
+
+Instead of passing `deviceId` to every command, you select a device once:
+
+```json
+{ "tool": "adb-device", "operation": "select", "deviceId": "emulator-5554" }
+```
+
+All subsequent commands target that device automatically. Simple.
+
+### Safety Guards
+
+The `adb-shell` tool blocks dangerous commands like `rm -rf /`, `reboot`, and `su`. You can run shell commands, but not brick your device.
+
+---
 
 ## Development
 
-```bash
-# Run tests
-npm test
+### Project Structure
 
-# Build
-npm run build
-
-# Run server
-npm start
+```
+src/
+  index.ts           # Entry point
+  server.ts          # MCP server setup
+  tools/             # Tool implementations (one file per tool)
+  adapters/          # CLI wrappers (adb, emulator, gradle)
+  services/          # Core services (cache, device state, process runner)
+  parsers/           # Output parsers
+  types/             # TypeScript types
+docs/rtfm/           # On-demand documentation
+tests/               # Unit and integration tests
+scripts/             # Utility scripts
 ```
 
-## Requirements
+### Running Tests
 
-- Node.js 18+
-- Android SDK with platform-tools (adb)
-- Android SDK emulator (for emulator management)
-- Gradle wrapper in project (for build tools)
+```bash
+# All tests
+npm test
+
+# Unit tests only
+npm run test:unit
+
+# Integration tests (MCP protocol compliance)
+npm run test:integration
+
+# With coverage
+npm run test:coverage
+
+# Full validation (build + all tests)
+npm run validate
+```
+
+### Checking Prerequisites
+
+```bash
+npm run check-prereqs
+```
+
+This verifies your Android SDK setup and reports what's available.
+
+---
+
+## Troubleshooting
+
+### "No device selected"
+
+Run `adb-device` with `operation: "list"` to see available devices, then `operation: "select"` to choose one. If only one device is connected, it's auto-selected.
+
+### "Gradle wrapper not found"
+
+Make sure you're in an Android project directory that contains `gradlew`. The Gradle tools won't work from other locations.
+
+### "Command timed out"
+
+Long-running operations (builds, tests) have a 5-minute default timeout. If your builds are slower, you may need to adjust the timeout in the adapter.
+
+### Emulator won't start
+
+Check that:
+1. You have an AVD created (`avdmanager list avd`)
+2. Virtualization is enabled (KVM on Linux, HAXM on Mac/Windows)
+3. Enough disk space for the emulator
+
+---
+
+## Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run `npm run validate` to ensure tests pass
+5. Commit with a descriptive message
+6. Push and open a PR
+
+---
+
+## Acknowledgments
+
+- Inspired by [xc-mcp](https://github.com/nicklv/xc-mcp) for iOS
+- Built on the [Model Context Protocol](https://modelcontextprotocol.io/)
+- Thanks to the Android team for `adb` and the emulator
+
+---
 
 ## License
 
-MIT
+MIT — do whatever you want with it.
+
+---
+
+**Questions? Issues? Ideas?** [Open an issue](https://github.com/thecombatwombat/replicant-mcp/issues) — we'd love to hear from you.

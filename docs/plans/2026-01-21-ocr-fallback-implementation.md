@@ -1139,7 +1139,7 @@ Create `tests/integration/ocr-fallback.test.ts`:
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { handleUiTool } from "../../src/tools/ui.js";
 
-// This test simulates the Chobani scenario end-to-end with mocked dependencies
+// This test simulates the OCR fallback scenario end-to-end with mocked dependencies
 
 describe("OCR Fallback Integration", () => {
   let mockContext: any;
@@ -1149,7 +1149,7 @@ describe("OCR Fallback Integration", () => {
   });
 
   it("finds Chobani ad via OCR when accessibility tree has no text", async () => {
-    // Simulate Pinterest-like scenario where accessibility tree has elements but no text
+    // Simulate scenario where accessibility tree has elements but no text
     mockContext = {
       deviceState: {
         ensureDevice: vi.fn().mockResolvedValue({ id: "emulator-5554" }),

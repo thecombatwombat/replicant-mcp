@@ -345,7 +345,7 @@ Contributions are welcome! Please:
 
 ## Acknowledgments
 
-- Inspired by [xc-mcp](https://github.com/nicklv/xc-mcp) for iOS
+- Inspired by [xc-mcp](https://github.com/conorluddy/xc-mcp) for iOS
 - Built on the [Model Context Protocol](https://modelcontextprotocol.io/)
 - Thanks to the Android team for `adb` and the emulator
 
@@ -353,7 +353,7 @@ Contributions are welcome! Please:
 
 ## License
 
-MIT — do whatever you want with it.
+[MIT](LICENSE)
 
 ---
 

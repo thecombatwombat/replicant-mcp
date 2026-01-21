@@ -1,0 +1,25 @@
+{
+  "name": "replicant-mcp",
+  "owner": {
+    "name": "Archit Joshi"
+  },
+  "metadata": {
+    "description": "Android development tools for Claude Code",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "replicant-dev",
+      "source": "..",
+      "description": "Android development skill - build APKs, run tests, manage emulators, automate UI",
+      "version": "1.0.0",
+      "author": {
+        "name": "Archit Joshi"
+      },
+      "repository": "https://github.com/thecombatwombat/replicant-mcp",
+      "license": "MIT",
+      "keywords": ["android", "adb", "gradle", "emulator", "ui-automation"],
+      "category": "development"
+    }
+  ]
+}

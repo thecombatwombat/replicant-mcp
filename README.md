@@ -79,6 +79,13 @@ Restart Claude Desktop. You should see "replicant" in the MCP servers list.
 
 If you use [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (Anthropic's CLI), you can install replicant as a skill instead of an MCP server. This provides shell script wrappers optimized for Claude Code's workflow.
 
+**Option 1: Via Plugin Marketplace (Recommended)**
+```bash
+/plugin marketplace add thecombatwombat/replicant-mcp
+/plugin install replicant-dev@replicant-mcp
+```
+
+**Option 2: Manual Installation**
 ```bash
 # From the replicant-mcp directory
 npm run install-skill

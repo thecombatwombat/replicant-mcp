@@ -11,7 +11,13 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "test": "vitest",
-    "start": "node dist/index.js"
+    "test:unit": "vitest --run tests/services tests/adapters tests/tools",
+    "test:integration": "vitest --run tests/integration",
+    "test:coverage": "vitest --run --coverage",
+    "check-prereqs": "bash scripts/check-prerequisites.sh",
+    "smoke-test": "bash scripts/smoke-test.sh",
+    "start": "node dist/index.js",
+    "validate": "npm run build && npm run test -- --run"
   },
   "keywords": [
     "mcp",
@@ -28,7 +34,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/anthropics/replicant-mcp.git"
+    "url": "https://github.com/thecombatwombat/replicant-mcp.git"
   },
   "engines": {
     "node": ">=18.0.0"

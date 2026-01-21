@@ -75,6 +75,25 @@ Add this to your Claude Desktop config (`~/Library/Application Support/Claude/cl
 
 Restart Claude Desktop. You should see "replicant" in the MCP servers list.
 
+### Alternative: Claude Code Skill
+
+If you use [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (Anthropic's CLI), you can install replicant as a skill instead of an MCP server. This provides shell script wrappers optimized for Claude Code's workflow.
+
+```bash
+# From the replicant-mcp directory
+npm run install-skill
+```
+
+After installation, restart Claude Code to load the skill. The skill provides the same Android development capabilities through shell scripts rather than MCP tools.
+
+> **Note:** The Claude Code skill is currently compatible with macOS and Linux only. Windows support is planned for a future release.
+
+**Which should you choose?**
+- **MCP Server** — Use with Claude Desktop or any MCP-compatible client
+- **Claude Code Skill** — Use with Claude Code CLI for a shell-native experience
+
+Both approaches provide the same core functionality.
+
 ---
 
 ## What Can It Do?

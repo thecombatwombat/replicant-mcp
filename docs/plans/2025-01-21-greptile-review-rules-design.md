@@ -48,7 +48,7 @@ File: `greptile.json` (repo root)
 ```json
 {
   "strictness": 2,
-  "commentTypes": ["logic", "syntax", "style", "advice"],
+  "commentTypes": ["info", "logic", "syntax", "style", "notes", "advice", "checks"],
   "triggerOnUpdates": true,
   "ignorePatterns": "dist/**\ncoverage/**\nnode_modules/**\n*.lock",
   "instructions": "Apply review rules based on branch prefix (feature/, fix/, docs/, refactor/, chore/). Unknown prefixes should be flagged as a convention violation.",

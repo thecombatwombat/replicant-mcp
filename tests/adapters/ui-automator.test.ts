@@ -1,0 +1,35 @@
+import { describe, it, expect } from "vitest";
+import { parseUiDump } from "../../src/parsers/ui-dump.js";
+
+describe("UI Dump Parsing", () => {
+  it("parses simple UI hierarchy", () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy rotation="0">
+  <node index="0" text="" resource-id="" class="android.widget.FrameLayout" bounds="[0,0][1080,2400]">
+    <node index="0" text="Hello" resource-id="com.example:id/text" class="android.widget.TextView" bounds="[100,200][300,250]" />
+    <node index="1" text="" resource-id="com.example:id/button" class="android.widget.Button" bounds="[100,300][300,350]">
+      <node index="0" text="Click Me" class="android.widget.TextView" bounds="[120,310][280,340]" />
+    </node>
+  </node>
+</hierarchy>`;
+
+    const tree = parseUiDump(xml);
+    expect(tree).toHaveLength(1);
+    expect(tree[0].className).toBe("android.widget.FrameLayout");
+    expect(tree[0].children).toHaveLength(2);
+    expect(tree[0].children![0].text).toBe("Hello");
+    expect(tree[0].children![0].resourceId).toBe("com.example:id/text");
+  });
+
+  it("extracts bounds as coordinates", () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy>
+  <node bounds="[100,200][300,400]" class="android.widget.Button" />
+</hierarchy>`;
+
+    const tree = parseUiDump(xml);
+    expect(tree[0].bounds).toEqual({ left: 100, top: 200, right: 300, bottom: 400 });
+    expect(tree[0].centerX).toBe(200);
+    expect(tree[0].centerY).toBe(300);
+  });
+});

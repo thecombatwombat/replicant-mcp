@@ -37,7 +37,7 @@ replicant-mcp/
 │   ├── services/         # Shared logic (existing)
 │   └── ...
 ├── skills/
-│   └── android-dev/      # Claude Code skill directory
+│   └── replicant-dev/      # Claude Code skill directory
 │       ├── SKILL.md      # Skill manifest
 │       ├── build-apk.sh
 │       ├── run-tests.sh
@@ -331,11 +331,11 @@ fi
 mkdir -p "$SKILL_DIR"
 
 # Remove old installation, symlink new
-rm -rf "$SKILL_DIR/android-dev"
-ln -s "$SCRIPT_DIR/skills/android-dev" "$SKILL_DIR/android-dev"
+rm -rf "$SKILL_DIR/replicant-dev"
+ln -s "$SCRIPT_DIR/skills/replicant-dev" "$SKILL_DIR/replicant-dev"
 
 echo ""
-echo "✓ Installed to $SKILL_DIR/android-dev"
+echo "✓ Installed to $SKILL_DIR/replicant-dev"
 echo "→ Restart Claude Code to activate"
 ```
 
@@ -396,8 +396,8 @@ npm run install-skill
 |-----------|-------------|----------|
 | `src/cli.ts` | CLI entry point | ~100 lines |
 | `src/cli/*.ts` | Command handlers | ~300 lines |
-| `skills/android-dev/SKILL.md` | Manifest | ~50 lines |
-| `skills/android-dev/*.sh` | 21 shell scripts | ~300 lines |
+| `skills/replicant-dev/SKILL.md` | Manifest | ~50 lines |
+| `skills/replicant-dev/*.sh` | 21 shell scripts | ~300 lines |
 | `scripts/install-skill.sh` | Installer | ~20 lines |
 | `tests/cli/` | CLI tests | ~200 lines |
 | `tests/skills/` | Script validation | ~50 lines |

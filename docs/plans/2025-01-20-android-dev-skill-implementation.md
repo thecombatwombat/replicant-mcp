@@ -4,7 +4,7 @@
 
 **Goal:** Add a Claude Code skill layer that exposes all MCP tools via CLI + shell scripts.
 
-**Architecture:** New CLI entry point (`src/cli.ts`) reuses existing adapters/services. Shell scripts in `skills/android-dev/` call the CLI. Install script symlinks to `~/.claude/skills/`.
+**Architecture:** New CLI entry point (`src/cli.ts`) reuses existing adapters/services. Shell scripts in `skills/replicant-dev/` call the CLI. Install script symlinks to `~/.claude/skills/`.
 
 **Tech Stack:** TypeScript, Commander.js (CLI), Bash (skills)
 
@@ -1350,11 +1350,11 @@ git commit -m "refactor(cli): organize CLI modules with index exports"
 ## Task 11: Create SKILL.md Manifest
 
 **Files:**
-- Create: `skills/android-dev/SKILL.md`
+- Create: `skills/replicant-dev/SKILL.md`
 
 **Step 1: Create skill manifest**
 
-Create `skills/android-dev/SKILL.md`:
+Create `skills/replicant-dev/SKILL.md`:
 ```markdown
 # Android Development Skill
 
@@ -1420,8 +1420,8 @@ npm run install-skill
 **Step 2: Commit**
 
 ```bash
-mkdir -p skills/android-dev
-git add skills/android-dev/SKILL.md
+mkdir -p skills/replicant-dev
+git add skills/replicant-dev/SKILL.md
 git commit -m "docs: add SKILL.md manifest for Claude Code"
 ```
 
@@ -1430,14 +1430,14 @@ git commit -m "docs: add SKILL.md manifest for Claude Code"
 ## Task 12: Create Shell Scripts (Gradle)
 
 **Files:**
-- Create: `skills/android-dev/build-apk.sh`
-- Create: `skills/android-dev/run-tests.sh`
-- Create: `skills/android-dev/list-modules.sh`
-- Create: `skills/android-dev/build-details.sh`
+- Create: `skills/replicant-dev/build-apk.sh`
+- Create: `skills/replicant-dev/run-tests.sh`
+- Create: `skills/replicant-dev/list-modules.sh`
+- Create: `skills/replicant-dev/build-details.sh`
 
 **Step 1: Create gradle skill scripts**
 
-Create `skills/android-dev/build-apk.sh`:
+Create `skills/replicant-dev/build-apk.sh`:
 ```bash
 #!/bin/bash
 # Build an Android APK
@@ -1460,7 +1460,7 @@ case "$VARIANT" in
 esac
 ```
 
-Create `skills/android-dev/run-tests.sh`:
+Create `skills/replicant-dev/run-tests.sh`:
 ```bash
 #!/bin/bash
 # Run unit or instrumented tests
@@ -1477,7 +1477,7 @@ CLI="node ${SCRIPT_DIR}/../../dist/cli.js"
 $CLI gradle test "$@"
 ```
 
-Create `skills/android-dev/list-modules.sh`:
+Create `skills/replicant-dev/list-modules.sh`:
 ```bash
 #!/bin/bash
 # List Gradle modules, variants, or tasks
@@ -1492,7 +1492,7 @@ CLI="node ${SCRIPT_DIR}/../../dist/cli.js"
 $CLI gradle list "$WHAT"
 ```
 
-Create `skills/android-dev/build-details.sh`:
+Create `skills/replicant-dev/build-details.sh`:
 ```bash
 #!/bin/bash
 # Get full output from cached build/test result
@@ -1510,12 +1510,12 @@ $CLI gradle details "$@"
 
 **Step 2: Make scripts executable**
 
-Run: `chmod +x skills/android-dev/*.sh`
+Run: `chmod +x skills/replicant-dev/*.sh`
 
 **Step 3: Commit**
 
 ```bash
-git add skills/android-dev/
+git add skills/replicant-dev/
 git commit -m "feat(skills): add gradle scripts (build, test, list, details)"
 ```
 
@@ -1524,19 +1524,19 @@ git commit -m "feat(skills): add gradle scripts (build, test, list, details)"
 ## Task 13: Create Shell Scripts (ADB)
 
 **Files:**
-- Create: `skills/android-dev/list-devices.sh`
-- Create: `skills/android-dev/select-device.sh`
-- Create: `skills/android-dev/install-app.sh`
-- Create: `skills/android-dev/launch-app.sh`
-- Create: `skills/android-dev/stop-app.sh`
-- Create: `skills/android-dev/uninstall-app.sh`
-- Create: `skills/android-dev/clear-data.sh`
-- Create: `skills/android-dev/read-logs.sh`
-- Create: `skills/android-dev/shell-cmd.sh`
+- Create: `skills/replicant-dev/list-devices.sh`
+- Create: `skills/replicant-dev/select-device.sh`
+- Create: `skills/replicant-dev/install-app.sh`
+- Create: `skills/replicant-dev/launch-app.sh`
+- Create: `skills/replicant-dev/stop-app.sh`
+- Create: `skills/replicant-dev/uninstall-app.sh`
+- Create: `skills/replicant-dev/clear-data.sh`
+- Create: `skills/replicant-dev/read-logs.sh`
+- Create: `skills/replicant-dev/shell-cmd.sh`
 
 **Step 1: Create adb skill scripts**
 
-Create `skills/android-dev/list-devices.sh`:
+Create `skills/replicant-dev/list-devices.sh`:
 ```bash
 #!/bin/bash
 # List connected Android devices
@@ -1549,7 +1549,7 @@ CLI="node ${SCRIPT_DIR}/../../dist/cli.js"
 $CLI adb devices
 ```
 
-Create `skills/android-dev/select-device.sh`:
+Create `skills/replicant-dev/select-device.sh`:
 ```bash
 #!/bin/bash
 # Set active device for subsequent commands
@@ -1568,7 +1568,7 @@ fi
 $CLI adb select "$1"
 ```
 
-Create `skills/android-dev/install-app.sh`:
+Create `skills/replicant-dev/install-app.sh`:
 ```bash
 #!/bin/bash
 # Install APK to active device
@@ -1586,7 +1586,7 @@ fi
 $CLI adb install "$1"
 ```
 
-Create `skills/android-dev/launch-app.sh`:
+Create `skills/replicant-dev/launch-app.sh`:
 ```bash
 #!/bin/bash
 # Launch app on active device
@@ -1605,7 +1605,7 @@ fi
 $CLI adb launch "$1"
 ```
 
-Create `skills/android-dev/stop-app.sh`:
+Create `skills/replicant-dev/stop-app.sh`:
 ```bash
 #!/bin/bash
 # Force stop app on active device
@@ -1623,7 +1623,7 @@ fi
 $CLI adb stop "$1"
 ```
 
-Create `skills/android-dev/uninstall-app.sh`:
+Create `skills/replicant-dev/uninstall-app.sh`:
 ```bash
 #!/bin/bash
 # Uninstall app from active device
@@ -1641,7 +1641,7 @@ fi
 $CLI adb uninstall "$1"
 ```
 
-Create `skills/android-dev/clear-data.sh`:
+Create `skills/replicant-dev/clear-data.sh`:
 ```bash
 #!/bin/bash
 # Clear app data on active device
@@ -1659,7 +1659,7 @@ fi
 $CLI adb clear "$1"
 ```
 
-Create `skills/android-dev/read-logs.sh`:
+Create `skills/replicant-dev/read-logs.sh`:
 ```bash
 #!/bin/bash
 # Read device logs (logcat)
@@ -1676,7 +1676,7 @@ CLI="node ${SCRIPT_DIR}/../../dist/cli.js"
 $CLI adb logcat "$@"
 ```
 
-Create `skills/android-dev/shell-cmd.sh`:
+Create `skills/replicant-dev/shell-cmd.sh`:
 ```bash
 #!/bin/bash
 # Run adb shell command on active device
@@ -1697,12 +1697,12 @@ $CLI adb shell "$1"
 
 **Step 2: Make scripts executable**
 
-Run: `chmod +x skills/android-dev/*.sh`
+Run: `chmod +x skills/replicant-dev/*.sh`
 
 **Step 3: Commit**
 
 ```bash
-git add skills/android-dev/
+git add skills/replicant-dev/
 git commit -m "feat(skills): add adb scripts (devices, install, launch, logs, shell)"
 ```
 
@@ -1711,14 +1711,14 @@ git commit -m "feat(skills): add adb scripts (devices, install, launch, logs, sh
 ## Task 14: Create Shell Scripts (Emulator)
 
 **Files:**
-- Create: `skills/android-dev/list-emulators.sh`
-- Create: `skills/android-dev/start-emulator.sh`
-- Create: `skills/android-dev/stop-emulator.sh`
-- Create: `skills/android-dev/snapshot.sh`
+- Create: `skills/replicant-dev/list-emulators.sh`
+- Create: `skills/replicant-dev/start-emulator.sh`
+- Create: `skills/replicant-dev/stop-emulator.sh`
+- Create: `skills/replicant-dev/snapshot.sh`
 
 **Step 1: Create emulator skill scripts**
 
-Create `skills/android-dev/list-emulators.sh`:
+Create `skills/replicant-dev/list-emulators.sh`:
 ```bash
 #!/bin/bash
 # List available Android emulators (AVDs)
@@ -1731,7 +1731,7 @@ CLI="node ${SCRIPT_DIR}/../../dist/cli.js"
 $CLI emulator list
 ```
 
-Create `skills/android-dev/start-emulator.sh`:
+Create `skills/replicant-dev/start-emulator.sh`:
 ```bash
 #!/bin/bash
 # Start an Android emulator
@@ -1752,7 +1752,7 @@ fi
 $CLI emulator start "$@"
 ```
 
-Create `skills/android-dev/stop-emulator.sh`:
+Create `skills/replicant-dev/stop-emulator.sh`:
 ```bash
 #!/bin/bash
 # Stop a running emulator
@@ -1771,7 +1771,7 @@ fi
 $CLI emulator stop "$1"
 ```
 
-Create `skills/android-dev/snapshot.sh`:
+Create `skills/replicant-dev/snapshot.sh`:
 ```bash
 #!/bin/bash
 # Manage emulator snapshots
@@ -1795,12 +1795,12 @@ $CLI emulator snapshot "$@"
 
 **Step 2: Make scripts executable**
 
-Run: `chmod +x skills/android-dev/*.sh`
+Run: `chmod +x skills/replicant-dev/*.sh`
 
 **Step 3: Commit**
 
 ```bash
-git add skills/android-dev/
+git add skills/replicant-dev/
 git commit -m "feat(skills): add emulator scripts (list, start, stop, snapshot)"
 ```
 
@@ -1809,15 +1809,15 @@ git commit -m "feat(skills): add emulator scripts (list, start, stop, snapshot)"
 ## Task 15: Create Shell Scripts (UI)
 
 **Files:**
-- Create: `skills/android-dev/dump-ui.sh`
-- Create: `skills/android-dev/find-element.sh`
-- Create: `skills/android-dev/tap-element.sh`
-- Create: `skills/android-dev/input-text.sh`
-- Create: `skills/android-dev/screenshot.sh`
+- Create: `skills/replicant-dev/dump-ui.sh`
+- Create: `skills/replicant-dev/find-element.sh`
+- Create: `skills/replicant-dev/tap-element.sh`
+- Create: `skills/replicant-dev/input-text.sh`
+- Create: `skills/replicant-dev/screenshot.sh`
 
 **Step 1: Create UI skill scripts**
 
-Create `skills/android-dev/dump-ui.sh`:
+Create `skills/replicant-dev/dump-ui.sh`:
 ```bash
 #!/bin/bash
 # Dump accessibility tree of current screen
@@ -1830,7 +1830,7 @@ CLI="node ${SCRIPT_DIR}/../../dist/cli.js"
 $CLI ui dump "$@"
 ```
 
-Create `skills/android-dev/find-element.sh`:
+Create `skills/replicant-dev/find-element.sh`:
 ```bash
 #!/bin/bash
 # Find UI elements by selector
@@ -1847,7 +1847,7 @@ CLI="node ${SCRIPT_DIR}/../../dist/cli.js"
 $CLI ui find "$@"
 ```
 
-Create `skills/android-dev/tap-element.sh`:
+Create `skills/replicant-dev/tap-element.sh`:
 ```bash
 #!/bin/bash
 # Tap a UI element
@@ -1863,7 +1863,7 @@ CLI="node ${SCRIPT_DIR}/../../dist/cli.js"
 $CLI ui tap "$@"
 ```
 
-Create `skills/android-dev/input-text.sh`:
+Create `skills/replicant-dev/input-text.sh`:
 ```bash
 #!/bin/bash
 # Input text to focused element
@@ -1882,7 +1882,7 @@ fi
 $CLI ui input "$1"
 ```
 
-Create `skills/android-dev/screenshot.sh`:
+Create `skills/replicant-dev/screenshot.sh`:
 ```bash
 #!/bin/bash
 # Take screenshot of device screen
@@ -1898,12 +1898,12 @@ $CLI ui screenshot "$@"
 
 **Step 2: Make scripts executable**
 
-Run: `chmod +x skills/android-dev/*.sh`
+Run: `chmod +x skills/replicant-dev/*.sh`
 
 **Step 3: Commit**
 
 ```bash
-git add skills/android-dev/
+git add skills/replicant-dev/
 git commit -m "feat(skills): add UI scripts (dump, find, tap, input, screenshot)"
 ```
 
@@ -1912,11 +1912,11 @@ git commit -m "feat(skills): add UI scripts (dump, find, tap, input, screenshot)
 ## Task 16: Create Shell Script (Cache)
 
 **Files:**
-- Create: `skills/android-dev/cache-stats.sh`
+- Create: `skills/replicant-dev/cache-stats.sh`
 
 **Step 1: Create cache skill script**
 
-Create `skills/android-dev/cache-stats.sh`:
+Create `skills/replicant-dev/cache-stats.sh`:
 ```bash
 #!/bin/bash
 # View and manage output cache
@@ -1942,12 +1942,12 @@ esac
 
 **Step 2: Make script executable**
 
-Run: `chmod +x skills/android-dev/cache-stats.sh`
+Run: `chmod +x skills/replicant-dev/cache-stats.sh`
 
 **Step 3: Commit**
 
 ```bash
-git add skills/android-dev/cache-stats.sh
+git add skills/replicant-dev/cache-stats.sh
 git commit -m "feat(skills): add cache-stats script"
 ```
 
@@ -1982,11 +1982,11 @@ fi
 mkdir -p "$SKILL_DIR"
 
 # Remove old installation, symlink new
-rm -rf "$SKILL_DIR/android-dev"
-ln -s "$SCRIPT_DIR/skills/android-dev" "$SKILL_DIR/android-dev"
+rm -rf "$SKILL_DIR/replicant-dev"
+ln -s "$SCRIPT_DIR/skills/replicant-dev" "$SKILL_DIR/replicant-dev"
 
 echo ""
-echo "✓ Installed to $SKILL_DIR/android-dev"
+echo "✓ Installed to $SKILL_DIR/replicant-dev"
 echo "→ Restart Claude Code to activate"
 ```
 
@@ -2024,7 +2024,7 @@ import { readdirSync, statSync, readFileSync } from "fs";
 import { join } from "path";
 import { execSync } from "child_process";
 
-const SKILLS_DIR = join(process.cwd(), "skills/android-dev");
+const SKILLS_DIR = join(process.cwd(), "skills/replicant-dev");
 
 describe("Skill Scripts Validation", () => {
   const scripts = readdirSync(SKILLS_DIR)
@@ -2134,10 +2134,10 @@ Expected: Shows gradle subcommands
 
 **Step 3: Verify skill scripts are valid**
 
-Run: `ls -la skills/android-dev/*.sh | wc -l`
+Run: `ls -la skills/replicant-dev/*.sh | wc -l`
 Expected: 21 or more scripts
 
-Run: `head -3 skills/android-dev/build-apk.sh`
+Run: `head -3 skills/replicant-dev/build-apk.sh`
 Expected: Shows shebang and comment
 
 **Step 4: Create summary commit**
@@ -2165,8 +2165,8 @@ git commit -m "feat: complete Android Dev skill implementation
 | 3-4 | Formatters | src/cli/formatter.ts, tests |
 | 5-9 | CLI commands | src/cli/{gradle,adb,emulator,ui,cache}.ts |
 | 10 | CLI index | src/cli/index.ts |
-| 11 | SKILL.md | skills/android-dev/SKILL.md |
-| 12-16 | Shell scripts | skills/android-dev/*.sh (21 scripts) |
+| 11 | SKILL.md | skills/replicant-dev/SKILL.md |
+| 12-16 | Shell scripts | skills/replicant-dev/*.sh (21 scripts) |
 | 17 | Install script | scripts/install-skill.sh |
 | 18 | Validation tests | tests/skills/validation.test.ts |
 | 19 | Documentation | README.md |

@@ -166,7 +166,11 @@ export class UiAutomatorAdapter {
 
         return result;
       } finally {
-        // Clean up screenshot file (optional - file system cleanup)
+        // Clean up local screenshot file
+        if (screenshotResult.path) {
+          const fs = await import("fs/promises");
+          await fs.unlink(screenshotResult.path).catch(() => {});
+        }
       }
     }
 

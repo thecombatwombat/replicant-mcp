@@ -57,6 +57,8 @@ export function searchText(ocrResults: OcrResult[], searchTerm: string): OcrElem
     (result) => result.text.toLowerCase().includes(lowerSearch)
   );
 
+  // Index represents position in filtered matches (0, 1, 2...) for use with elementIndex tap
+  // This is intentional - users tap by match index, not original OCR result position
   return matches.map((match, index) => ({
     index,
     text: match.text,

@@ -69,7 +69,7 @@ export async function handleAdbAppTool(
 
 export const adbAppToolDefinition = {
   name: "adb-app",
-  description: "Manage applications. Operations: install, uninstall, launch, stop, clear-data, list.",
+  description: "Manage applications. Auto-selects device if only one connected. Operations: install, uninstall, launch, stop, clear-data, list.",
   inputSchema: {
     type: "object",
     properties: {

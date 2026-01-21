@@ -27,7 +27,7 @@ export async function handleAdbShellTool(
 
 export const adbShellToolDefinition = {
   name: "adb-shell",
-  description: "Execute shell commands with safety guards. Dangerous commands are blocked.",
+  description: "Execute shell commands with safety guards. Auto-selects device if only one connected. Dangerous commands are blocked.",
   inputSchema: {
     type: "object",
     properties: {

@@ -128,7 +128,7 @@ export async function handleUiTool(
 
 export const uiToolDefinition = {
   name: "ui",
-  description: "Interact with app UI via accessibility tree. Operations: dump, find, tap, input, screenshot, accessibility-check.",
+  description: "Interact with app UI via accessibility tree. Auto-selects device if only one connected. Operations: dump, find, tap, input, screenshot, accessibility-check.",
   inputSchema: {
     type: "object",
     properties: {
@@ -150,7 +150,8 @@ export const uiToolDefinition = {
       y: { type: "number", description: "Y coordinate (for tap)" },
       elementIndex: { type: "number", description: "Element index from last find (for tap)" },
       text: { type: "string", description: "Text to input" },
-      localPath: { type: "string", description: "Local path for screenshot" },
+      localPath: { type: "string", description: "Local path for screenshot (default: /tmp/replicant-screenshot-{timestamp}.png)" },
+      inline: { type: "boolean", description: "Return base64 instead of file path (token-heavy, use sparingly)" },
     },
     required: ["operation"],
   },

@@ -69,7 +69,7 @@ export async function handleAdbLogcatTool(
 
 export const adbLogcatToolDefinition = {
   name: "adb-logcat",
-  description: "Read device logs. Returns summary with logId for full output.",
+  description: "Read device logs. Auto-selects device if only one connected. Returns summary with logId for full output.",
   inputSchema: {
     type: "object",
     properties: {

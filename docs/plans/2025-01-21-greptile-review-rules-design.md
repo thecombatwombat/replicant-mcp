@@ -51,6 +51,15 @@ Branch-specific code review rules for Greptile, enforcing different review expec
 - **Examples**: Include working examples for complex tools like ui automation
 - **Sync check**: README roadmap must stay in sync with actual capabilities
 
+### Design Documents (docs/plans/*-design.md)
+- **Technical critique**: Analyze the design for flaws, edge cases, and missing error handling
+- **Feasibility**: Flag unrealistic constraints (time budgets, token limits, API assumptions)
+- **Integration**: How does this design interact with existing tools? What breaks?
+- **Alternatives**: Are there simpler approaches that weren't considered?
+- **Android specifics**: Will this work across device manufacturers, API levels, and screen sizes?
+- **Testing gaps**: What's hard to test? What manual verification is needed?
+- **DO NOT just summarize the design. Provide critical technical feedback.**
+
 ### refactor/* (code restructuring)
 - **No behavior change**: FLAG AS ERROR if tool responses or error codes change
 - **Test compatibility**: Ensure existing tests still pass without modification
@@ -74,7 +83,7 @@ File: `greptile.json` (repo root)
   "commentTypes": ["info", "logic", "syntax", "style", "notes", "advice", "checks"],
   "triggerOnUpdates": true,
   "ignorePatterns": "dist/**\ncoverage/**\nnode_modules/**\n*.lock",
-  "instructions": "Apply review rules based on branch prefix. Focus on Android development security, MCP protocol compliance, and progressive disclosure patterns.",
+  "instructions": "Apply review rules based on branch prefix. Focus on Android development security, MCP protocol compliance, and progressive disclosure patterns. For design documents (docs/plans/*-design.md), provide critical technical review - do NOT just summarize or rubber-stamp.",
   "customContext": {
     "rules": [
       "ANDROID MCP SERVER SPECIFIC CHECKS:",
@@ -121,6 +130,15 @@ File: `greptile.json` (repo root)
       "- Code changes: FLAG AS ERROR if any .ts/.json files are modified",
       "- Examples: Include working examples for complex tools like ui automation",
       "- Sync check: README roadmap must stay in sync with actual capabilities",
+      "",
+      "DESIGN DOCUMENTS (docs/plans/*-design.md):",
+      "- Technical critique: Analyze the design for flaws, edge cases, and missing error handling",
+      "- Feasibility: Flag unrealistic constraints (time budgets, token limits, API assumptions)",
+      "- Integration: How does this design interact with existing tools? What breaks?",
+      "- Alternatives: Are there simpler approaches that weren't considered?",
+      "- Android specifics: Will this work across device manufacturers, API levels, and screen sizes?",
+      "- Testing gaps: What's hard to test? What manual verification is needed?",
+      "- DO NOT just summarize the design. Provide critical technical feedback.",
       "",
       "REFACTOR BRANCHES (refactor/*):",
       "- No behavior change: FLAG AS ERROR if tool responses or error codes change",

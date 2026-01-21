@@ -1,3 +1,8 @@
+---
+name: replicant-dev
+description: Android development automation - build APKs, run tests, manage emulators, automate UI
+---
+
 # Android Development Skill
 
 Automate Android development tasks: build APKs, run tests, manage emulators,
@@ -21,11 +26,18 @@ Use this skill when the user asks to:
 - Android SDK with `adb` and `emulator` in PATH
 - An Android project with `gradlew` (for build operations)
 
-## Setup
+## Installation
 
-Run once after cloning:
+**Option 1: Via Plugin Marketplace (Recommended)**
 ```bash
-cd /path/to/replicant-mcp
+/plugin marketplace add thecombatwombat/replicant-mcp
+/plugin install replicant-dev@replicant-mcp
+```
+
+**Option 2: Manual Installation**
+```bash
+git clone https://github.com/thecombatwombat/replicant-mcp.git
+cd replicant-mcp
 npm install
 npm run install-skill
 ```

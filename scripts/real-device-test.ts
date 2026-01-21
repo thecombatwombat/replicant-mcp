@@ -33,6 +33,7 @@ async function runTests() {
 
   let passed = 0;
   let failed = 0;
+  let deviceId: string | null = null;
 
   // Helper
   async function test(name: string, fn: () => Promise<void>) {
@@ -58,21 +59,25 @@ async function runTests() {
     if (!data.devices || !Array.isArray(data.devices)) {
       throw new Error("Expected devices array");
     }
-    console.log(`\n   Found ${data.devices.length} device(s)`);
-    if (data.devices.length > 0) {
-      console.log(`   First device: ${data.devices[0].id} (${data.devices[0].state})`);
+    if (data.devices.length === 0) {
+      throw new Error("No devices found. Start an emulator or connect a device.");
     }
+    // Capture the first device for subsequent tests
+    deviceId = data.devices[0].id;
+    console.log(`\n   Found ${data.devices.length} device(s)`);
+    console.log(`   Using: ${deviceId} (${data.devices[0].state || "unknown"})`);
   });
 
   // Test 2: adb-device select
   await test("adb-device select", async () => {
+    if (!deviceId) throw new Error("No device discovered from list");
     const result = await client.callTool({
       name: "adb-device",
-      arguments: { operation: "select", deviceId: "emulator-5554" },
+      arguments: { operation: "select", deviceId },
     });
     const data = JSON.parse(result.content[0].text as string);
-    if (!data.selected || data.selected.id !== "emulator-5554") {
-      throw new Error(`Expected selected.id=emulator-5554, got ${JSON.stringify(data.selected)}`);
+    if (!data.selected || data.selected.id !== deviceId) {
+      throw new Error(`Expected selected.id=${deviceId}, got ${JSON.stringify(data.selected)}`);
     }
     console.log(`\n   Selected: ${data.selected.id}`);
   });

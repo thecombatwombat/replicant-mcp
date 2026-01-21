@@ -12,7 +12,7 @@ const program = new Command();
 
 program
   .name("replicant")
-  .description("Android development CLI for Claude Code skills")
+  .description("Android development CLI")
   .version("1.0.0");
 
 program.addCommand(createGradleCommand());

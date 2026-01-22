@@ -17,7 +17,7 @@ describe("OCR Fallback Integration", () => {
         ensureDevice: vi.fn().mockResolvedValue({ id: "emulator-5554" }),
       },
       ui: {
-        findWithOcrFallback: vi.fn().mockResolvedValue({
+        findWithFallbacks: vi.fn().mockResolvedValue({
           elements: [
             {
               index: 0,
@@ -64,7 +64,7 @@ describe("OCR Fallback Integration", () => {
         ensureDevice: vi.fn().mockResolvedValue({ id: "emulator-5554" }),
       },
       ui: {
-        findWithOcrFallback: vi.fn().mockResolvedValue({
+        findWithFallbacks: vi.fn().mockResolvedValue({
           elements: [
             {
               text: "Login",
@@ -102,7 +102,7 @@ describe("OCR Fallback Integration", () => {
         ensureDevice: vi.fn().mockResolvedValue({ id: "emulator-5554" }),
       },
       ui: {
-        findWithOcrFallback: vi.fn().mockResolvedValue({
+        findWithFallbacks: vi.fn().mockResolvedValue({
           elements: [
             {
               index: 0,
@@ -145,7 +145,7 @@ describe("OCR Fallback Integration", () => {
         ensureDevice: vi.fn().mockResolvedValue({ id: "emulator-5554" }),
       },
       ui: {
-        findWithOcrFallback: vi.fn().mockResolvedValue({
+        findWithFallbacks: vi.fn().mockResolvedValue({
           elements: [],
           source: "ocr",
         }),

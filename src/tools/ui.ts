@@ -19,6 +19,8 @@ export const uiInputSchema = z.object({
   localPath: z.string().optional(),
   inline: z.boolean().optional(),
   debug: z.boolean().optional(),
+  gridCell: z.number().min(1).max(24).optional(),
+  gridPosition: z.number().min(1).max(5).optional(),
 });
 
 export type UiInput = z.infer<typeof uiInputSchema>;
@@ -97,12 +99,14 @@ export async function handleUiTool(
 
       const debug = input.debug ?? false;
 
-      // Use findWithOcrFallback for text-based selectors
+      // Use findWithFallbacks for text-based selectors
       if (input.selector.text || input.selector.textContains) {
-        const result = await context.ui.findWithOcrFallback(deviceId, input.selector, {
+        const result = await context.ui.findWithFallbacks(deviceId, input.selector, {
           debug,
           includeVisualFallback: config.autoFallbackScreenshot,
           includeBase64: config.includeBase64,
+          gridCell: input.gridCell,
+          gridPosition: input.gridPosition as 1 | 2 | 3 | 4 | 5 | undefined,
         });
         lastFindResults = result.elements;
 
@@ -140,12 +144,27 @@ export async function handleUiTool(
           deviceId,
         };
 
+        // Always include tier and confidence when available
+        if (result.tier !== undefined) response.tier = result.tier;
+        if (result.confidence) response.confidence = result.confidence;
+
         if (debug) {
           response.source = result.source;
           if (result.fallbackReason) {
             response.fallbackReason = result.fallbackReason;
           }
         }
+
+        // Include Tier 4 visual candidates if present
+        if (result.candidates) {
+          response.candidates = result.candidates;
+          if (result.truncated) response.truncated = result.truncated;
+          if (result.totalCandidates) response.totalCandidates = result.totalCandidates;
+        }
+
+        // Include Tier 5 grid fields if present
+        if (result.gridImage) response.gridImage = result.gridImage;
+        if (result.gridPositions) response.gridPositions = result.gridPositions;
 
         // Include visual fallback if present (when count is 0 and autoFallbackScreenshot is enabled)
         if (result.visualFallback) {
@@ -270,6 +289,8 @@ export const uiToolDefinition = {
       localPath: { type: "string", description: "Local path for screenshot (default: /tmp/replicant-screenshot-{timestamp}.png)" },
       inline: { type: "boolean", description: "Return base64 instead of file path (token-heavy, use sparingly)" },
       debug: { type: "boolean", description: "Include source (accessibility/ocr) and confidence in response" },
+      gridCell: { type: "number", minimum: 1, maximum: 24, description: "Grid cell number (1-24) for Tier 5 refinement" },
+      gridPosition: { type: "number", minimum: 1, maximum: 5, description: "Position within cell (1=TL, 2=TR, 3=Center, 4=BL, 5=BR)" },
     },
     required: ["operation"],
   },

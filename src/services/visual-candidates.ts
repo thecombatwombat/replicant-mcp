@@ -1,4 +1,5 @@
-import { AccessibilityNode } from "../parsers/ui-dump.js";
+import sharp from "sharp";
+import { AccessibilityNode, Bounds } from "../parsers/ui-dump.js";
 
 export const MIN_ICON_SIZE = 16;
 export const MAX_ICON_SIZE = 200;
@@ -54,4 +55,37 @@ export function filterIconCandidates(nodes: AccessibilityNode[]): AccessibilityN
  */
 export function formatBounds(node: AccessibilityNode): string {
   return `[${node.bounds.left},${node.bounds.top}][${node.bounds.right},${node.bounds.bottom}]`;
+}
+
+const MAX_CROP_SIZE = 128;
+const JPEG_QUALITY = 70;
+
+/**
+ * Crop a region from an image and return as base64 JPEG.
+ * Scales down to max 128x128 if larger.
+ */
+export async function cropCandidateImage(
+  imagePath: string,
+  bounds: Bounds
+): Promise<string> {
+  const width = bounds.right - bounds.left;
+  const height = bounds.bottom - bounds.top;
+
+  let pipeline = sharp(imagePath).extract({
+    left: bounds.left,
+    top: bounds.top,
+    width,
+    height,
+  });
+
+  // Scale down if larger than max size
+  if (width > MAX_CROP_SIZE || height > MAX_CROP_SIZE) {
+    pipeline = pipeline.resize(MAX_CROP_SIZE, MAX_CROP_SIZE, {
+      fit: "inside",
+      withoutEnlargement: true,
+    });
+  }
+
+  const buffer = await pipeline.jpeg({ quality: JPEG_QUALITY }).toBuffer();
+  return buffer.toString("base64");
 }

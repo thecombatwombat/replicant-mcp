@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
+import * as fs from "fs/promises";
 import {
+  cropCandidateImage,
   filterIconCandidates,
   isIconSized,
   MIN_ICON_SIZE,
@@ -106,6 +108,62 @@ describe("visual-candidates", () => {
     it("has correct size bounds", () => {
       expect(MIN_ICON_SIZE).toBe(16);
       expect(MAX_ICON_SIZE).toBe(200);
+    });
+  });
+
+  describe("cropCandidateImage", () => {
+    it("crops and encodes image region as base64 JPEG", async () => {
+      // Create a simple test image (100x100 red square)
+      const sharp = (await import("sharp")).default;
+      const testImagePath = "/tmp/test-crop-input.png";
+      await sharp({
+        create: { width: 100, height: 100, channels: 3, background: { r: 255, g: 0, b: 0 } },
+      })
+        .png()
+        .toFile(testImagePath);
+
+      const base64 = await cropCandidateImage(testImagePath, {
+        left: 10,
+        top: 10,
+        right: 60,
+        bottom: 60,
+      });
+
+      // Should return valid base64
+      expect(base64).toMatch(/^[A-Za-z0-9+/=]+$/);
+
+      // Decode and verify dimensions
+      const buffer = Buffer.from(base64, "base64");
+      const metadata = await sharp(buffer).metadata();
+      expect(metadata.width).toBe(50);
+      expect(metadata.height).toBe(50);
+      expect(metadata.format).toBe("jpeg");
+
+      await fs.unlink(testImagePath);
+    });
+
+    it("scales down large regions to max 128x128", async () => {
+      const sharp = (await import("sharp")).default;
+      const testImagePath = "/tmp/test-crop-large.png";
+      await sharp({
+        create: { width: 500, height: 500, channels: 3, background: { r: 0, g: 255, b: 0 } },
+      })
+        .png()
+        .toFile(testImagePath);
+
+      const base64 = await cropCandidateImage(testImagePath, {
+        left: 0,
+        top: 0,
+        right: 300,
+        bottom: 300,
+      });
+
+      const buffer = Buffer.from(base64, "base64");
+      const metadata = await sharp(buffer).metadata();
+      expect(metadata.width).toBeLessThanOrEqual(128);
+      expect(metadata.height).toBeLessThanOrEqual(128);
+
+      await fs.unlink(testImagePath);
     });
   });
 });

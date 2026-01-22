@@ -50,7 +50,7 @@ replicant-mcp wraps all of this into a clean interface that AI can understand an
 
 | Feature | Item | Status |
 |---------|------|--------|
-| **Visual Fallback** | Icon recognition (template matching for common UI icons) | Planned |
+| **Visual Fallback** | Icon recognition (pattern + visual + grid fallback) | ✅ |
 | | Semantic image search (LLM-assisted visual understanding) | Future |
 | **Custom Build Commands** | Skill override for project-specific builds | Planned |
 | | Auto-detect gradlew vs gradle | Planned |

@@ -294,8 +294,9 @@ export class UiAutomatorAdapter {
           };
 
           if (options.includeBase64) {
-            const base64Result = await this.adb.shell(deviceId, `base64 ${screenshotResult.path}`);
-            result.visualFallback!.screenshotBase64 = base64Result.stdout.trim();
+            const fs = await import("fs/promises");
+            const buffer = await fs.readFile(screenshotResult.path!);
+            result.visualFallback!.screenshotBase64 = buffer.toString("base64");
           }
 
           // Don't clean up screenshot since we're returning the path

@@ -16,8 +16,21 @@ export interface GridPosition {
   y: number;
 }
 
+// Import types needed for elements union
+import { AccessibilityNode } from "../parsers/ui-dump.js";
+import { OcrElement } from "./ocr.js";
+
+// Element type for grid cell results
+export interface GridElement {
+  index: number;
+  bounds: string;
+  center: { x: number; y: number };
+}
+
+export type FindElement = AccessibilityNode | OcrElement | GridElement;
+
 export interface FindWithFallbacksResult {
-  elements: unknown[]; // AccessibilityNode | OcrElement | VisualCandidate
+  elements: FindElement[];
   source: FindSource;
   tier?: FindTier;
   confidence?: ConfidenceLevel;

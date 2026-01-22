@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ServerContext } from "../server.js";
 import { CACHE_TTLS, OcrElement, UiConfig } from "../types/index.js";
 import { AccessibilityNode } from "../parsers/ui-dump.js";
+import { FindElement, GridElement } from "../types/icon-recognition.js";
 
 export const uiInputSchema = z.object({
   operation: z.enum(["dump", "find", "tap", "input", "screenshot", "accessibility-check", "visual-snapshot"]),
@@ -23,16 +24,28 @@ export const uiInputSchema = z.object({
 export type UiInput = z.infer<typeof uiInputSchema>;
 
 // Store last find results for elementIndex reference
-// Updated to support both accessibility and OCR elements
-let lastFindResults: (AccessibilityNode | OcrElement)[] = [];
+// Updated to support accessibility, OCR, and grid elements
+let lastFindResults: FindElement[] = [];
 
-// Helper to get center coordinates from either element type
-function getElementCenter(element: AccessibilityNode | OcrElement): { x: number; y: number } {
-  if ("centerX" in element) {
-    // AccessibilityNode
+// Type guards for different element types
+function isAccessibilityNode(el: FindElement): el is AccessibilityNode {
+  return "centerX" in el && "className" in el;
+}
+
+function isOcrElement(el: FindElement): el is OcrElement {
+  return "confidence" in el && "center" in el;
+}
+
+function isGridElement(el: FindElement): el is GridElement {
+  return "center" in el && "bounds" in el && !("confidence" in el) && !("centerX" in el);
+}
+
+// Helper to get center coordinates from any element type
+function getElementCenter(element: FindElement): { x: number; y: number } {
+  if (isAccessibilityNode(element)) {
     return { x: element.centerX, y: element.centerY };
   } else {
-    // OcrElement
+    // OcrElement or GridElement - both have center property
     return element.center;
   }
 }
@@ -95,8 +108,7 @@ export async function handleUiTool(
 
         const response: Record<string, unknown> = {
           elements: result.elements.map((el, index) => {
-            if ("centerX" in el) {
-              // AccessibilityNode
+            if (isAccessibilityNode(el)) {
               return {
                 index,
                 text: el.text,
@@ -107,14 +119,20 @@ export async function handleUiTool(
                 bounds: el.bounds,
                 clickable: el.clickable,
               };
-            } else {
-              // OcrElement
+            } else if (isOcrElement(el)) {
               return {
                 index,
                 text: el.text,
                 center: el.center,
                 bounds: el.bounds,
                 confidence: debug ? el.confidence : undefined,
+              };
+            } else {
+              // GridElement
+              return {
+                index,
+                center: el.center,
+                bounds: el.bounds,
               };
             }
           }),

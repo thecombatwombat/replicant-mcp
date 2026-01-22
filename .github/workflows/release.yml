@@ -22,7 +22,6 @@ jobs:
           fi
           echo "VERSION=$TAG" >> $GITHUB_ENV
 
-          # Checkout first to read package.json
       - uses: actions/checkout@v4
 
       - name: Verify package.json version matches tag

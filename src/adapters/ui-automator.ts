@@ -372,8 +372,8 @@ export class UiAutomatorAdapter {
             : undefined,
         };
       } finally {
-        // Clean up local screenshot file only if not returning visual fallback
-        if (screenshotResult.path && !options.includeVisualFallback) {
+        // Always clean up screenshot - Tier 3/4/5 all embed base64 data in response
+        if (screenshotResult.path) {
           const fs = await import("fs/promises");
           await fs.unlink(screenshotResult.path).catch(() => {});
         }

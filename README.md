@@ -40,7 +40,7 @@ replicant-mcp wraps all of this into a clean interface that AI can understand an
 | **Device Control** | List connected devices, select active device, query device properties |
 | **App Management** | Install, uninstall, launch, stop apps; clear app data; list installed packages |
 | **Log Analysis** | Filter logcat by package, tag, level, time; configurable line limits |
-| **UI Automation** | Accessibility-tree based element finding with OCR fallback, tap, text input, screenshots, visual fallback with screenshot + metadata when accessibility fails |
+| **UI Automation** | Accessibility-first element finding with multi-tier fallback (accessibility → OCR → visual), spatial proximity search (`nearestTo`), grid-based precision tapping, tap, text input, screenshots |
 | **Configuration** | YAML config via `REPLICANT_CONFIG` for UI behavior customization |
 | **Utilities** | Response caching with progressive disclosure, on-demand documentation |
 
@@ -235,7 +235,7 @@ Claude: Let me check the error logs.
         Want me to look at that file?
 ```
 
-### UI Automation (No Screenshots Needed!)
+### UI Automation (Smart Element Finding)
 
 ```
 You: "Tap the Login button"
@@ -247,7 +247,26 @@ Claude: I'll find and tap the Login button.
         Tapped "Login" at coordinates (540, 1847)
 ```
 
-This works by reading the **accessibility tree**—the same data screen readers use. It's faster, cheaper, and more reliable than screenshot-based approaches.
+**Spatial proximity search** — find elements near other elements:
+```
+You: "Tap the edit icon next to John's name"
+
+Claude: [Calls ui with operation: "find", selector: { textContains: "edit", nearestTo: "John" }]
+        Found edit button nearest to "John" at (892, 340)
+```
+
+**Multi-tier fallback** — when accessibility data isn't available:
+1. **Accessibility tree** — fast, reliable, text-based
+2. **OCR fallback** — Tesseract extracts text from screenshot
+3. **Visual fallback** — returns screenshot + metadata for AI vision
+
+**Grid-based precision** — tap icons without text labels:
+```
+Claude: [Calls ui with operation: "tap", gridCell: 5, gridPosition: 3]
+        // Taps center of cell 5 in a 24-cell grid overlay
+```
+
+This approach is faster, cheaper, and more reliable than pure screenshot-based automation.
 
 ---
 
@@ -279,7 +298,7 @@ replicant-mcp provides 12 tools organized into categories:
 ### UI Automation
 | Tool | Description |
 |------|-------------|
-| `ui` | Dump accessibility tree, find elements, tap, input text, screenshot |
+| `ui` | Element finding with fallback chain, spatial search (`nearestTo`), tap (coordinates or grid), input text, screenshot, accessibility-check, visual-snapshot |
 
 ### Utilities
 | Tool | Description |
@@ -343,6 +362,32 @@ All subsequent commands target that device automatically. Simple.
 ### Safety Guards
 
 The `adb-shell` tool blocks dangerous commands like `rm -rf /`, `reboot`, and `su`. You can run shell commands, but not brick your device.
+
+---
+
+## Configuration
+
+replicant-mcp can be configured via a YAML file. Set the `REPLICANT_CONFIG` environment variable to the path:
+
+```bash
+export REPLICANT_CONFIG=/path/to/config.yaml
+```
+
+**Example config.yaml:**
+```yaml
+ui:
+  # Always use visual mode (skip accessibility) for these packages
+  visualModePackages:
+    - com.example.legacy.app
+
+  # Auto-include screenshot when find returns no results (default: true)
+  autoFallbackScreenshot: true
+
+  # Include base64-encoded screenshot in responses (default: false)
+  includeBase64: false
+```
+
+Most users won't need a config file—the defaults work well for typical Android apps.
 
 ---
 

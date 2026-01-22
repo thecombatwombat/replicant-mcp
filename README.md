@@ -161,6 +161,14 @@ To use:
 
 Or let Claude invoke it automatically when creating PRs.
 
+### Output Directory
+
+replicant-mcp stores screenshots in `.replicant/screenshots/` within your current working directory. Add this to your `.gitignore`:
+
+```gitignore
+.replicant/
+```
+
 ---
 
 ## What Can It Do?

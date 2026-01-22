@@ -1,3 +1,5 @@
+import * as path from "path";
+import * as fs from "fs";
 import { AdbAdapter } from "./adb.js";
 import { parseUiDump, findElements, flattenTree, AccessibilityNode } from "../parsers/ui-dump.js";
 import { ReplicantError, ErrorCode, OcrElement, VisualSnapshot } from "../types/index.js";
@@ -44,6 +46,16 @@ export type FindWithOcrResult = FindWithFallbacksResult;
 
 // Re-export FindOptions from icon-recognition types for backward compatibility
 export type FindOptions = IconFindOptions;
+
+/**
+ * Get default screenshot path in project-relative .replicant/screenshots directory.
+ * Creates the directory if it doesn't exist.
+ */
+function getDefaultScreenshotPath(): string {
+  const dir = path.join(process.cwd(), ".replicant", "screenshots");
+  fs.mkdirSync(dir, { recursive: true });
+  return path.join(dir, `screenshot-${Date.now()}.png`);
+}
 
 export class UiAutomatorAdapter {
   constructor(private adb: AdbAdapter = new AdbAdapter()) {}
@@ -113,7 +125,7 @@ export class UiAutomatorAdapter {
         };
       } else {
         // File mode (default): pull to local
-        const localPath = options.localPath || `/tmp/replicant-screenshot-${Date.now()}.png`;
+        const localPath = options.localPath || getDefaultScreenshotPath();
         await this.adb.pull(deviceId, remotePath, localPath);
         return { mode: "file", path: localPath };
       }

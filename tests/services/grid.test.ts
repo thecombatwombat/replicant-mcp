@@ -1,8 +1,10 @@
 // tests/services/grid.test.ts
 import { describe, it, expect } from "vitest";
+import * as fs from "fs/promises";
 import {
   calculateGridCellBounds,
   calculatePositionCoordinates,
+  createGridOverlay,
   GRID_COLS,
   GRID_ROWS,
 } from "../../src/services/grid.js";
@@ -62,6 +64,33 @@ describe("grid", () => {
       expect(GRID_COLS).toBe(4);
       expect(GRID_ROWS).toBe(6);
       expect(GRID_COLS * GRID_ROWS).toBe(24);
+    });
+  });
+
+  describe("createGridOverlay", () => {
+    it("creates image with numbered grid overlay", async () => {
+      const sharp = (await import("sharp")).default;
+      const testImagePath = "/tmp/test-grid-input.png";
+
+      // Create a test image
+      await sharp({
+        create: { width: 1080, height: 1920, channels: 3, background: { r: 100, g: 100, b: 100 } },
+      })
+        .png()
+        .toFile(testImagePath);
+
+      const base64 = await createGridOverlay(testImagePath);
+
+      // Should return valid base64
+      expect(base64).toMatch(/^[A-Za-z0-9+/=]+$/);
+
+      // Verify it's a valid image
+      const buffer = Buffer.from(base64, "base64");
+      const metadata = await sharp(buffer).metadata();
+      expect(metadata.width).toBe(1080);
+      expect(metadata.height).toBe(1920);
+
+      await fs.unlink(testImagePath);
     });
   });
 });

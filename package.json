@@ -18,7 +18,7 @@
     "check-prereqs": "bash scripts/check-prerequisites.sh",
     "smoke-test": "bash scripts/smoke-test.sh",
     "test:device": "tsx scripts/real-device-test.ts",
-    "start": "node dist/index.js",
+    "start": "npm run build && node dist/index.js",
     "validate": "npm run build && npm run test -- --run",
     "prepublishOnly": "npm run build && npm test -- --run"
   },

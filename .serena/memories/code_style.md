@@ -1,37 +1,50 @@
 # Code Style and Conventions
 
-## TypeScript
-- **Strict mode enabled** (`"strict": true` in tsconfig)
-- **ES Modules**: Use `.js` extension in imports (e.g., `import { foo } from "./bar.js"`)
+## TypeScript Configuration
+- **Strict mode**: `"strict": true`
 - **Target**: ES2022
-- **Module resolution**: NodeNext
+- **Module**: NodeNext (ES Modules)
+- **Imports**: Use `.js` extension (`import { foo } from "./bar.js"`)
 
 ## Naming Conventions
-- **Files**: kebab-case (`ui-dump.ts`, `cache-manager.ts`)
-- **Functions**: camelCase (`handleUiTool`, `getElementCenter`)
-- **Types/Interfaces**: PascalCase (`AccessibilityNode`, `UiInput`)
-- **Constants**: UPPER_SNAKE_CASE for config values (`CACHE_TTLS`)
-- **Schemas**: camelCase with `Schema` suffix (`uiInputSchema`)
+| Type | Convention | Example |
+|------|------------|---------|
+| Files | kebab-case | `cache-manager.ts`, `ui-dump.ts` |
+| Functions | camelCase | `handleUiTool`, `getElementCenter` |
+| Types/Interfaces | PascalCase | `AccessibilityNode`, `UiInput` |
+| Constants (config) | UPPER_SNAKE_CASE | `CACHE_TTLS`, `DEFAULT_CONFIG` |
+| Zod schemas | camelCase + Schema | `uiInputSchema` |
 
-## Code Patterns
+## Tool Implementation Pattern
 
-### Zod Schemas
-Use Zod for input validation with inferred types:
+Each tool in `src/tools/` exports:
 ```typescript
-export const uiInputSchema = z.object({
-  operation: z.enum(["dump", "find", "tap"]),
-  text: z.string().optional(),
+// 1. Zod schema for input validation
+export const exampleInputSchema = z.object({
+  operation: z.enum(["list", "get"]),
+  id: z.string().optional(),
 });
-export type UiInput = z.infer<typeof uiInputSchema>;
+
+// 2. Inferred TypeScript type
+export type ExampleInput = z.infer<typeof exampleInputSchema>;
+
+// 3. MCP tool definition
+export const exampleToolDefinition = {
+  name: "example-tool",
+  description: "Tool description",
+  inputSchema: zodToJsonSchema(exampleInputSchema),
+};
+
+// 4. Handler function
+export async function handleExampleTool(
+  input: ExampleInput,
+  context: ServerContext
+): Promise<ToolResult> {
+  // Implementation
+}
 ```
 
-### Tool Definitions
-Each tool in `src/tools/` exports:
-- `*InputSchema` - Zod schema
-- `*ToolDefinition` - MCP tool definition object
-- `handle*Tool` - Handler function
-
-### Type Guards
+## Type Guards
 Use type guard functions for union types:
 ```typescript
 function isAccessibilityNode(el: FindElement): el is AccessibilityNode {
@@ -39,16 +52,18 @@ function isAccessibilityNode(el: FindElement): el is AccessibilityNode {
 }
 ```
 
-### Imports
-- Group imports: external deps first, then internal
-- Use named exports, not default exports
-- Re-export from index files for clean imports
+## Import Organization
+1. External dependencies first
+2. Internal modules second
+3. Use named exports (not default)
+4. Re-export from index.ts files
 
-## Documentation
-- JSDoc comments for public APIs (optional but encouraged)
-- Inline comments for complex logic
-- Design docs in `docs/plans/` with format `YYYY-MM-DD-<topic>-design.md`
+## Error Handling
+- Use custom error types from `src/types/errors.ts`
+- Return structured error responses from tools
+- Include actionable hints in error messages
 
-## Git Commits
-- Use conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`
-- Keep commits atomic and focused
+## Comments
+- JSDoc for public APIs (optional but encouraged)
+- Inline comments for non-obvious logic
+- Design docs in `docs/plans/YYYY-MM-DD-<topic>-design.md`

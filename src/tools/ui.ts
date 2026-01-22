@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
-import { CACHE_TTLS, OcrElement } from "../types/index.js";
+import { CACHE_TTLS, OcrElement, UiConfig } from "../types/index.js";
 import { AccessibilityNode } from "../parsers/ui-dump.js";
 
 export const uiInputSchema = z.object({
-  operation: z.enum(["dump", "find", "tap", "input", "screenshot", "accessibility-check"]),
+  operation: z.enum(["dump", "find", "tap", "input", "screenshot", "accessibility-check", "visual-snapshot"]),
   selector: z.object({
     resourceId: z.string().optional(),
     text: z.string().optional(),
@@ -39,10 +39,18 @@ function getElementCenter(element: AccessibilityNode | OcrElement): { x: number;
 
 export async function handleUiTool(
   input: UiInput,
-  context: ServerContext
+  context: ServerContext,
+  uiConfig?: UiConfig
 ): Promise<Record<string, unknown>> {
   const device = await context.deviceState.ensureDevice(context.adb);
   const deviceId = device.id;
+
+  // Get config - use provided or defaults
+  const config = uiConfig ?? {
+    visualModePackages: [],
+    autoFallbackScreenshot: true,
+    includeBase64: false,
+  };
 
   switch (input.operation) {
     case "dump": {
@@ -78,7 +86,11 @@ export async function handleUiTool(
 
       // Use findWithOcrFallback for text-based selectors
       if (input.selector.text || input.selector.textContains) {
-        const result = await context.ui.findWithOcrFallback(deviceId, input.selector, { debug });
+        const result = await context.ui.findWithOcrFallback(deviceId, input.selector, {
+          debug,
+          includeVisualFallback: config.autoFallbackScreenshot,
+          includeBase64: config.includeBase64,
+        });
         lastFindResults = result.elements;
 
         const response: Record<string, unknown> = {
@@ -117,6 +129,11 @@ export async function handleUiTool(
           }
         }
 
+        // Include visual fallback if present (when count is 0 and autoFallbackScreenshot is enabled)
+        if (result.visualFallback) {
+          response.visualFallback = result.visualFallback;
+        }
+
         return response;
       }
 
@@ -124,7 +141,7 @@ export async function handleUiTool(
       const elements = await context.ui.find(deviceId, input.selector);
       lastFindResults = elements;
 
-      return {
+      const response: Record<string, unknown> = {
         elements: elements.map((el, index) => ({
           index,
           text: el.text,
@@ -138,6 +155,19 @@ export async function handleUiTool(
         count: elements.length,
         deviceId,
       };
+
+      // Include visual fallback for non-text selectors when no results and config allows
+      if (elements.length === 0 && config.autoFallbackScreenshot) {
+        const snapshot = await context.ui.visualSnapshot(deviceId, {
+          includeBase64: config.includeBase64,
+        });
+        response.visualFallback = {
+          ...snapshot,
+          hint: "No elements matched selector. Use screenshot to identify tap coordinates.",
+        };
+      }
+
+      return response;
     }
 
     case "tap": {
@@ -183,6 +213,13 @@ export async function handleUiTool(
       return { ...result, deviceId };
     }
 
+    case "visual-snapshot": {
+      const snapshot = await context.ui.visualSnapshot(deviceId, {
+        includeBase64: input.inline ?? config.includeBase64,
+      });
+      return { ...snapshot, deviceId };
+    }
+
     default:
       throw new Error(`Unknown operation: ${input.operation}`);
   }
@@ -190,13 +227,13 @@ export async function handleUiTool(
 
 export const uiToolDefinition = {
   name: "ui",
-  description: "Interact with app UI via accessibility tree. Auto-selects device if only one connected. Operations: dump, find, tap, input, screenshot, accessibility-check.",
+  description: "Interact with app UI via accessibility tree. Auto-selects device if only one connected. Operations: dump, find, tap, input, screenshot, accessibility-check, visual-snapshot.",
   inputSchema: {
     type: "object",
     properties: {
       operation: {
         type: "string",
-        enum: ["dump", "find", "tap", "input", "screenshot", "accessibility-check"],
+        enum: ["dump", "find", "tap", "input", "screenshot", "accessibility-check", "visual-snapshot"],
       },
       selector: {
         type: "object",

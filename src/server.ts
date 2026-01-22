@@ -4,7 +4,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { CacheManager, DeviceStateManager, ProcessRunner, EnvironmentService } from "./services/index.js";
+import { CacheManager, DeviceStateManager, ProcessRunner, EnvironmentService, ConfigManager } from "./services/index.js";
 import { AdbAdapter, EmulatorAdapter, GradleAdapter, UiAutomatorAdapter } from "./adapters/index.js";
 import { ReplicantError } from "./types/index.js";
 import {
@@ -39,6 +39,7 @@ export interface ServerContext {
   deviceState: DeviceStateManager;
   processRunner: ProcessRunner;
   environment: EnvironmentService;
+  config: ConfigManager;
   adb: AdbAdapter;
   emulator: EmulatorAdapter;
   gradle: GradleAdapter;
@@ -55,6 +56,7 @@ export function createServerContext(): ServerContext {
     deviceState: new DeviceStateManager(),
     processRunner,
     environment,
+    config: new ConfigManager(),
     adb,
     emulator: new EmulatorAdapter(processRunner),
     gradle: new GradleAdapter(processRunner),
@@ -135,7 +137,7 @@ export async function createServer(context: ServerContext): Promise<Server> {
           result = await handleGradleGetDetailsTool(args as Parameters<typeof handleGradleGetDetailsTool>[0], context);
           break;
         case "ui":
-          result = await handleUiTool(args as Parameters<typeof handleUiTool>[0], context);
+          result = await handleUiTool(args as Parameters<typeof handleUiTool>[0], context, context.config.getUiConfig());
           break;
         default:
           throw new Error(`Unknown tool: ${name}`);
@@ -160,6 +162,10 @@ export async function createServer(context: ServerContext): Promise<Server> {
 
 export async function runServer(): Promise<void> {
   const context = createServerContext();
+
+  // Load configuration from REPLICANT_CONFIG if set
+  await context.config.load();
+
   const server = await createServer(context);
   const transport = new StdioServerTransport();
   await server.connect(transport);

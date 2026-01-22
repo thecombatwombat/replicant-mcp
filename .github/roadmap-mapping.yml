@@ -17,8 +17,11 @@ mappings:
   - patterns:
       - src/services/visual*
       - src/tools/ui*visual*
+      - src/services/config*
+      - src/types/config*
     roadmapItem: Screenshot + metadata on accessibility failure
     category: Visual Fallback
+    status: completed  # Implemented in feature/visual-fallback
 
   - patterns:
       - src/services/icon*

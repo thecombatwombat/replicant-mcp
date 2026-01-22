@@ -38,7 +38,7 @@ describe("UI Tool - OCR Fallback", () => {
       expect(mockContext.ui.findWithOcrFallback).toHaveBeenCalledWith(
         "emulator-5554",
         { text: "Login" },
-        { debug: false }
+        { debug: false, includeVisualFallback: true, includeBase64: false }
       );
       expect(result.count).toBe(1);
     });

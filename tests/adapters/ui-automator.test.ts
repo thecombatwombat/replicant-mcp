@@ -9,7 +9,14 @@ vi.mock("../../src/services/ocr.js", () => ({
   terminateOcr: vi.fn(),
 }));
 
+// Mock fs/promises for base64 reading
+vi.mock("fs/promises", () => ({
+  readFile: vi.fn(),
+  unlink: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { extractText, searchText } from "../../src/services/ocr.js";
+import * as fs from "fs/promises";
 
 describe("UI Dump Parsing", () => {
   it("parses simple UI hierarchy", () => {
@@ -225,6 +232,145 @@ describe("UiAutomatorAdapter", () => {
 
       expect(result.elements).toHaveLength(0);
       expect(result.source).toBe("ocr");
+    });
+  });
+
+  describe("getScreenMetadata", () => {
+    it("parses screen size and density from wm commands", async () => {
+      mockAdb.shell
+        .mockResolvedValueOnce({ stdout: "Physical size: 1080x2400\n", stderr: "", exitCode: 0 })
+        .mockResolvedValueOnce({ stdout: "Physical density: 440\n", stderr: "", exitCode: 0 });
+
+      const result = await adapter.getScreenMetadata("emulator-5554");
+
+      expect(result.width).toBe(1080);
+      expect(result.height).toBe(2400);
+      expect(result.density).toBe(2.75); // 440/160
+    });
+
+    it("uses defaults when parsing fails", async () => {
+      mockAdb.shell
+        .mockResolvedValueOnce({ stdout: "Unknown format", stderr: "", exitCode: 0 })
+        .mockResolvedValueOnce({ stdout: "Unknown format", stderr: "", exitCode: 0 });
+
+      const result = await adapter.getScreenMetadata("emulator-5554");
+
+      expect(result.width).toBe(1080);
+      expect(result.height).toBe(1920);
+      expect(result.density).toBe(2.75);
+    });
+  });
+
+  describe("getCurrentApp", () => {
+    it("parses current app from dumpsys activity", async () => {
+      mockAdb.shell.mockResolvedValueOnce({
+        stdout: "  mResumedActivity: ActivityRecord{abc123 u0 com.example.app/.MainActivity t456}",
+        stderr: "",
+        exitCode: 0,
+      });
+
+      const result = await adapter.getCurrentApp("emulator-5554");
+
+      expect(result.packageName).toBe("com.example.app");
+      expect(result.activityName).toBe(".MainActivity");
+    });
+
+    it("falls back to window manager when activity not found", async () => {
+      mockAdb.shell
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // empty dumpsys activity
+        .mockResolvedValueOnce({
+          stdout: "  mCurrentFocus=Window{abc com.test.app/.TestActivity}",
+          stderr: "",
+          exitCode: 0,
+        });
+
+      const result = await adapter.getCurrentApp("emulator-5554");
+
+      expect(result.packageName).toBe("com.test.app");
+      expect(result.activityName).toBe(".TestActivity");
+    });
+
+    it("returns unknown when both methods fail", async () => {
+      mockAdb.shell
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 })
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 });
+
+      const result = await adapter.getCurrentApp("emulator-5554");
+
+      expect(result.packageName).toBe("unknown");
+      expect(result.activityName).toBe("unknown");
+    });
+  });
+
+  describe("visualSnapshot", () => {
+    it("returns screenshot path, screen metadata, and app info", async () => {
+      // Since visualSnapshot runs screenshot, getScreenMetadata, getCurrentApp in parallel,
+      // we need to use mockImplementation to handle any order
+      mockAdb.shell.mockImplementation(async (deviceId: string, cmd: string) => {
+        if (cmd.includes("screencap")) {
+          return { stdout: "", stderr: "", exitCode: 0 };
+        }
+        if (cmd.includes("rm")) {
+          return { stdout: "", stderr: "", exitCode: 0 };
+        }
+        if (cmd.includes("wm size")) {
+          return { stdout: "Physical size: 1080x2400\n", stderr: "", exitCode: 0 };
+        }
+        if (cmd.includes("wm density")) {
+          return { stdout: "Physical density: 440\n", stderr: "", exitCode: 0 };
+        }
+        if (cmd.includes("dumpsys activity")) {
+          return {
+            stdout: "  mResumedActivity: ActivityRecord{abc com.example/.Main t1}",
+            stderr: "",
+            exitCode: 0,
+          };
+        }
+        return { stdout: "", stderr: "", exitCode: 0 };
+      });
+
+      mockAdb.pull.mockResolvedValue(undefined);
+
+      const result = await adapter.visualSnapshot("emulator-5554");
+
+      expect(result.screenshotPath).toMatch(/^\/tmp\/replicant-screenshot-\d+\.png$/);
+      expect(result.screen).toEqual({ width: 1080, height: 2400, density: 2.75 });
+      expect(result.app.packageName).toBe("com.example");
+      expect(result.app.activityName).toBe(".Main");
+    });
+
+    it("includes base64 when requested", async () => {
+      mockAdb.shell.mockImplementation(async (deviceId: string, cmd: string) => {
+        if (cmd.includes("screencap")) {
+          return { stdout: "", stderr: "", exitCode: 0 };
+        }
+        if (cmd.includes("rm")) {
+          return { stdout: "", stderr: "", exitCode: 0 };
+        }
+        if (cmd.includes("wm size")) {
+          return { stdout: "Physical size: 1080x2400\n", stderr: "", exitCode: 0 };
+        }
+        if (cmd.includes("wm density")) {
+          return { stdout: "Physical density: 440\n", stderr: "", exitCode: 0 };
+        }
+        if (cmd.includes("dumpsys activity")) {
+          return {
+            stdout: "  mResumedActivity: ActivityRecord{abc com.example/.Main t1}",
+            stderr: "",
+            exitCode: 0,
+          };
+        }
+        return { stdout: "", stderr: "", exitCode: 0 };
+      });
+
+      mockAdb.pull.mockResolvedValue(undefined);
+
+      // Mock fs.readFile for base64 encoding
+      vi.mocked(fs.readFile).mockResolvedValue(Buffer.from("base64data"));
+
+      const result = await adapter.visualSnapshot("emulator-5554", { includeBase64: true });
+
+      expect(result.screenshotBase64).toBe("YmFzZTY0ZGF0YQ=="); // "base64data" encoded
     });
   });
 });

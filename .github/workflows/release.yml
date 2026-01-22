@@ -13,16 +13,32 @@ jobs:
       id-token: write  # For npm provenance via OIDC
 
     steps:
-      - name: Validate tag format
+      - name: Validate tag format and version match
         run: |
           TAG=${GITHUB_REF#refs/tags/v}
           if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid tag format: $TAG (expected: X.Y.Z)"
+            echo "❌ Invalid tag format: $TAG (expected: X.Y.Z)"
             exit 1
           fi
           echo "VERSION=$TAG" >> $GITHUB_ENV
 
       - uses: actions/checkout@v4
+
+      - name: Verify package.json version matches tag
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [[ "$PKG_VERSION" != "${{ env.VERSION }}" ]]; then
+            echo "❌ Version mismatch!"
+            echo "   Tag version:         ${{ env.VERSION }}"
+            echo "   package.json version: $PKG_VERSION"
+            echo ""
+            echo "Fix: Update package.json before tagging:"
+            echo "  npm version ${{ env.VERSION }} --no-git-tag-version"
+            echo "  git add package.json"
+            echo "  git commit -m 'chore: bump version to ${{ env.VERSION }}'"
+            exit 1
+          fi
+          echo "✅ Version match: $PKG_VERSION"
 
       - uses: actions/setup-node@v4
         with:
@@ -37,9 +53,6 @@ jobs:
       - run: npm run lint --if-present
       - run: npm run build
       - run: npm test -- --run
-
-      - name: Update package.json version
-        run: npm version ${{ env.VERSION }} --no-git-tag-version
 
       - name: Publish to npm
         run: npm publish --provenance --access public

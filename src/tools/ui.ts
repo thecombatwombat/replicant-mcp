@@ -422,7 +422,7 @@ export const uiToolDefinition = {
       y: { type: "number", description: "Y coordinate (for tap)" },
       elementIndex: { type: "number", description: "Element index from last find (for tap)" },
       text: { type: "string", description: "Text to input" },
-      localPath: { type: "string", description: "Local path for screenshot (default: /tmp/replicant-screenshot-{timestamp}.png)" },
+      localPath: { type: "string", description: "Local path for screenshot (default: .replicant/screenshots/screenshot-{timestamp}.png)" },
       inline: { type: "boolean", description: "Return base64 instead of file path (token-heavy, use sparingly)" },
       debug: { type: "boolean", description: "Include source (accessibility/ocr) and confidence in response" },
       gridCell: { type: "number", minimum: 1, maximum: 24, description: "Grid cell number (1-24) for Tier 5 refinement" },

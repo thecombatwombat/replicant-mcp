@@ -4,3 +4,6 @@ export { DeviceStateManager } from "./device-state.js";
 export { EnvironmentService, type Environment } from "./environment.js";
 export { ConfigManager, loadConfig } from "./config.js";
 export * from "./ocr.js";
+export * from "./icon-patterns.js";
+export * from "./grid.js";
+export * from "./visual-candidates.js";

@@ -2,6 +2,19 @@ import { AdbAdapter } from "./adb.js";
 import { parseUiDump, findElements, flattenTree, AccessibilityNode } from "../parsers/ui-dump.js";
 import { ReplicantError, ErrorCode, OcrElement, VisualSnapshot } from "../types/index.js";
 import { extractText, searchText } from "../services/ocr.js";
+import { matchIconPattern, matchesResourceId } from "../services/icon-patterns.js";
+import { filterIconCandidates, formatBounds, cropCandidateImage } from "../services/visual-candidates.js";
+import {
+  calculateGridCellBounds,
+  calculatePositionCoordinates,
+  createGridOverlay,
+  POSITION_LABELS,
+} from "../services/grid.js";
+import {
+  FindWithFallbacksResult,
+  FindOptions as IconFindOptions,
+  VisualCandidate,
+} from "../types/icon-recognition.js";
 
 export interface ScreenMetadata {
   width: number;
@@ -26,20 +39,11 @@ export interface ScreenshotResult {
   sizeBytes?: number;
 }
 
-export interface FindWithOcrResult {
-  elements: (AccessibilityNode | OcrElement)[];
-  source: "accessibility" | "ocr";
-  fallbackReason?: string;
-  visualFallback?: VisualSnapshot;
-}
+// Backward compatibility alias - use FindWithFallbacksResult for new code
+export type FindWithOcrResult = FindWithFallbacksResult;
 
-export interface FindOptions {
-  debug?: boolean;
-  /** Include visual fallback (screenshot + metadata) when no results found */
-  includeVisualFallback?: boolean;
-  /** Include base64 screenshot in visual fallback response */
-  includeBase64?: boolean;
-}
+// Re-export FindOptions from icon-recognition types for backward compatibility
+export type FindOptions = IconFindOptions;
 
 export class UiAutomatorAdapter {
   constructor(private adb: AdbAdapter = new AdbAdapter()) {}
@@ -229,7 +233,7 @@ export class UiAutomatorAdapter {
     return snapshot;
   }
 
-  async findWithOcrFallback(
+  async findWithFallbacks(
     deviceId: string,
     selector: {
       resourceId?: string;
@@ -238,18 +242,66 @@ export class UiAutomatorAdapter {
       className?: string;
     },
     options: FindOptions = {}
-  ): Promise<FindWithOcrResult> {
-    // First try accessibility tree
+  ): Promise<FindWithFallbacksResult> {
+    // Handle Tier 5 grid refinement FIRST (when gridCell and gridPosition are provided)
+    if (options.gridCell !== undefined && options.gridPosition !== undefined) {
+      const screen = await this.getScreenMetadata(deviceId);
+      const cellBounds = calculateGridCellBounds(options.gridCell, screen.width, screen.height);
+      const coords = calculatePositionCoordinates(options.gridPosition, cellBounds);
+
+      return {
+        elements: [
+          {
+            index: 0,
+            bounds: `[${cellBounds.x0},${cellBounds.y0}][${cellBounds.x1},${cellBounds.y1}]`,
+            center: coords,
+          },
+        ],
+        source: "grid",
+        tier: 5,
+        confidence: "low",
+      };
+    }
+
+    // Tier 1: Accessibility text match
     const accessibilityResults = await this.find(deviceId, selector);
 
     if (accessibilityResults.length > 0) {
       return {
         elements: accessibilityResults,
         source: "accessibility",
+        tier: 1,
+        confidence: "high",
       };
     }
 
-    // Fall back to OCR if we have a text-based selector
+    // Tier 2: ResourceId pattern match (for text-based queries)
+    if (selector.text || selector.textContains) {
+      const query = selector.text || selector.textContains!;
+      const patterns = matchIconPattern(query);
+
+      if (patterns) {
+        const tree = await this.dump(deviceId);
+        const flat = flattenTree(tree);
+        const patternMatches = flat.filter(
+          (node) => node.resourceId && matchesResourceId(node.resourceId, patterns)
+        );
+
+        if (patternMatches.length > 0) {
+          return {
+            elements: patternMatches,
+            source: "accessibility",
+            tier: 2,
+            confidence: "high",
+            fallbackReason: options.debug
+              ? "no text match, found via resourceId pattern"
+              : undefined,
+          };
+        }
+      }
+    }
+
+    // Tier 3: OCR (existing logic)
     if (selector.text || selector.textContains) {
       const searchTerm = selector.text || selector.textContains!;
 
@@ -262,69 +314,73 @@ export class UiAutomatorAdapter {
         const matches = searchText(ocrResults, searchTerm);
 
         if (matches.length > 0) {
-          const result: FindWithOcrResult = {
+          return {
             elements: matches,
             source: "ocr",
+            tier: 3,
+            confidence: "high",
+            fallbackReason: options.debug
+              ? "no accessibility or pattern match, found via OCR"
+              : undefined,
           };
-
-          if (options.debug) {
-            result.fallbackReason = "accessibility tree had no matching text";
-          }
-
-          return result;
         }
 
-        // OCR also found nothing - include visual fallback if requested
-        if (options.includeVisualFallback) {
-          const [screen, app] = await Promise.all([
-            this.getScreenMetadata(deviceId),
-            this.getCurrentApp(deviceId),
-          ]);
+        // Tier 4: Visual candidates (unlabeled clickables)
+        const tree = await this.dump(deviceId);
+        const flat = flattenTree(tree);
+        const iconCandidates = filterIconCandidates(flat);
 
-          const result: FindWithOcrResult = {
+        if (iconCandidates.length > 0) {
+          const candidates: VisualCandidate[] = await Promise.all(
+            iconCandidates.map(async (node, index) => ({
+              index,
+              bounds: formatBounds(node),
+              center: { x: node.centerX, y: node.centerY },
+              image: await cropCandidateImage(screenshotResult.path!, node.bounds),
+            }))
+          );
+
+          const allUnlabeled = flat.filter((n) => n.clickable && !n.text && !n.contentDesc);
+
+          return {
             elements: [],
-            source: "ocr",
-            fallbackReason: options.debug ? "no matches in accessibility tree or OCR" : undefined,
-            visualFallback: {
-              screenshotPath: screenshotResult.path!,
-              screen,
-              app,
-              hint: `No elements matched selector. Use screenshot to identify tap coordinates.`,
-            },
+            source: "visual",
+            tier: 4,
+            confidence: "medium",
+            candidates,
+            truncated: iconCandidates.length < allUnlabeled.length,
+            totalCandidates: allUnlabeled.length,
+            fallbackReason: options.debug
+              ? "no text/pattern/OCR match, showing visual candidates"
+              : undefined,
           };
-
-          if (options.includeBase64) {
-            const fs = await import("fs/promises");
-            const buffer = await fs.readFile(screenshotResult.path!);
-            result.visualFallback!.screenshotBase64 = buffer.toString("base64");
-          }
-
-          // Don't clean up screenshot since we're returning the path
-          return result;
         }
 
-        // No visual fallback requested
-        const result: FindWithOcrResult = {
+        // Tier 5: Grid fallback (empty or unusable accessibility tree)
+        const screen = await this.getScreenMetadata(deviceId);
+        const gridImage = await createGridOverlay(screenshotResult.path!);
+
+        return {
           elements: [],
-          source: "ocr",
+          source: "grid",
+          tier: 5,
+          confidence: "low",
+          gridImage,
+          gridPositions: POSITION_LABELS,
+          fallbackReason: options.debug
+            ? "no usable elements, showing grid for coordinate selection"
+            : undefined,
         };
-
-        if (options.debug) {
-          result.fallbackReason = "no matches in accessibility tree or OCR";
-        }
-
-        return result;
       } finally {
-        // Clean up local screenshot file only if not returning visual fallback
-        if (screenshotResult.path && !options.includeVisualFallback) {
+        // Always clean up screenshot - Tier 3/4/5 all embed base64 data in response
+        if (screenshotResult.path) {
           const fs = await import("fs/promises");
           await fs.unlink(screenshotResult.path).catch(() => {});
         }
       }
     }
 
-    // No text selector, can't use OCR
-    // Still include visual fallback if requested
+    // No text selector - return empty with visual fallback if requested
     if (options.includeVisualFallback) {
       const snapshot = await this.visualSnapshot(deviceId, {
         includeBase64: options.includeBase64,
@@ -333,6 +389,8 @@ export class UiAutomatorAdapter {
       return {
         elements: [],
         source: "accessibility",
+        tier: 1,
+        confidence: "high",
         visualFallback: {
           ...snapshot,
           hint: "No elements matched selector. Use screenshot to identify tap coordinates.",
@@ -343,6 +401,22 @@ export class UiAutomatorAdapter {
     return {
       elements: [],
       source: "accessibility",
+      tier: 1,
+      confidence: "high",
     };
+  }
+
+  // Backward compatible alias
+  async findWithOcrFallback(
+    deviceId: string,
+    selector: {
+      resourceId?: string;
+      text?: string;
+      textContains?: string;
+      className?: string;
+    },
+    options: FindOptions = {}
+  ): Promise<FindWithFallbacksResult> {
+    return this.findWithFallbacks(deviceId, selector, options);
   }
 }

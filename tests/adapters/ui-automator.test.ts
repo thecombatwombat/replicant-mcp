@@ -15,7 +15,31 @@ vi.mock("fs/promises", () => ({
   unlink: vi.fn().mockResolvedValue(undefined),
 }));
 
+// Mock icon-patterns service
+vi.mock("../../src/services/icon-patterns.js", () => ({
+  matchIconPattern: vi.fn(),
+  matchesResourceId: vi.fn(),
+}));
+
+// Mock visual-candidates service
+vi.mock("../../src/services/visual-candidates.js", () => ({
+  filterIconCandidates: vi.fn(),
+  formatBounds: vi.fn(),
+  cropCandidateImage: vi.fn(),
+}));
+
+// Mock grid service
+vi.mock("../../src/services/grid.js", () => ({
+  calculateGridCellBounds: vi.fn(),
+  calculatePositionCoordinates: vi.fn(),
+  createGridOverlay: vi.fn(),
+  POSITION_LABELS: ["Top-left", "Top-right", "Center", "Bottom-left", "Bottom-right"],
+}));
+
 import { extractText, searchText } from "../../src/services/ocr.js";
+import { matchIconPattern, matchesResourceId } from "../../src/services/icon-patterns.js";
+import { filterIconCandidates, formatBounds, cropCandidateImage } from "../../src/services/visual-candidates.js";
+import { calculateGridCellBounds, calculatePositionCoordinates, createGridOverlay } from "../../src/services/grid.js";
 import * as fs from "fs/promises";
 
 describe("UI Dump Parsing", () => {
@@ -196,6 +220,9 @@ describe("UiAutomatorAdapter", () => {
 
       mockAdb.pull.mockResolvedValue(undefined);
 
+      // No pattern match
+      vi.mocked(matchIconPattern).mockReturnValue(null);
+
       vi.mocked(extractText).mockResolvedValue([
         { text: "Test", confidence: 0.85, bounds: { x0: 0, y0: 0, x1: 50, y1: 25 } },
       ]);
@@ -206,32 +233,60 @@ describe("UiAutomatorAdapter", () => {
       const result = await adapter.findWithOcrFallback("emulator-5554", { text: "test" }, { debug: true });
 
       expect(result.source).toBe("ocr");
-      expect(result.fallbackReason).toBe("accessibility tree had no matching text");
+      // Updated message with new findWithFallbacks
+      expect(result.fallbackReason).toBe("no accessibility or pattern match, found via OCR");
     });
 
     it("returns empty results when both accessibility and OCR find nothing", async () => {
-      mockAdb.shell
-        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // uiautomator dump
-        .mockResolvedValueOnce({
-          stdout: `<?xml version="1.0"?><hierarchy><node text="" bounds="[0,0][100,100]" class="View" /></hierarchy>`,
-          stderr: "",
-          exitCode: 0,
-        }) // cat dump
-        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // rm dump
-        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // screencap
-        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // rm screenshot
+      // Use mockImplementation to handle any order of calls
+      mockAdb.shell.mockImplementation(async (deviceId: string, cmd: string) => {
+        if (cmd.includes("uiautomator dump")) {
+          return { stdout: "", stderr: "", exitCode: 0 };
+        }
+        if (cmd.includes("cat /sdcard/ui-dump.xml")) {
+          return {
+            stdout: `<?xml version="1.0"?><hierarchy><node text="" bounds="[0,0][100,100]" class="View" /></hierarchy>`,
+            stderr: "",
+            exitCode: 0,
+          };
+        }
+        if (cmd.includes("rm")) {
+          return { stdout: "", stderr: "", exitCode: 0 };
+        }
+        if (cmd.includes("screencap")) {
+          return { stdout: "", stderr: "", exitCode: 0 };
+        }
+        if (cmd.includes("wm size")) {
+          return { stdout: "Physical size: 1080x2400\n", stderr: "", exitCode: 0 };
+        }
+        if (cmd.includes("wm density")) {
+          return { stdout: "Physical density: 440\n", stderr: "", exitCode: 0 };
+        }
+        return { stdout: "", stderr: "", exitCode: 0 };
+      });
 
       mockAdb.pull.mockResolvedValue(undefined);
+
+      // No pattern match
+      vi.mocked(matchIconPattern).mockReturnValue(null);
 
       vi.mocked(extractText).mockResolvedValue([
         { text: "Something Else", confidence: 0.90, bounds: { x0: 0, y0: 0, x1: 100, y1: 50 } },
       ]);
       vi.mocked(searchText).mockReturnValue([]);
 
+      // No visual candidates
+      vi.mocked(filterIconCandidates).mockReturnValue([]);
+
+      // Mock grid overlay
+      vi.mocked(createGridOverlay).mockResolvedValue("base64GridImage");
+
       const result = await adapter.findWithOcrFallback("emulator-5554", { text: "NotFound" });
 
       expect(result.elements).toHaveLength(0);
-      expect(result.source).toBe("ocr");
+      // With the new tiers, when OCR fails and no candidates, it falls to grid (Tier 5)
+      expect(result.source).toBe("grid");
+      expect(result.tier).toBe(5);
     });
   });
 
@@ -371,6 +426,267 @@ describe("UiAutomatorAdapter", () => {
       const result = await adapter.visualSnapshot("emulator-5554", { includeBase64: true });
 
       expect(result.screenshotBase64).toBe("YmFzZTY0ZGF0YQ=="); // "base64data" encoded
+    });
+  });
+
+  describe("findWithFallbacks", () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    describe("Tier 2: ResourceId pattern matching", () => {
+      it("finds overflow menu by resourceId pattern when text match fails", async () => {
+        // Mock UI dump - first for find() (returns no match), then for Tier 2 dump
+        const overflowXml = `<?xml version="1.0"?>
+<hierarchy>
+  <node text="" resource-id="com.example:id/overflow_menu" class="android.widget.ImageButton" bounds="[1000,50][1048,98]" clickable="true" content-desc="" />
+</hierarchy>`;
+
+        mockAdb.shell
+          .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // uiautomator dump for find()
+          .mockResolvedValueOnce({
+            stdout: `<?xml version="1.0"?><hierarchy><node text="" bounds="[0,0][100,100]" class="View" resource-id="" /></hierarchy>`,
+            stderr: "",
+            exitCode: 0,
+          }) // cat dump for find() - no text match
+          .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // rm dump
+          .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // uiautomator dump for Tier 2
+          .mockResolvedValueOnce({ stdout: overflowXml, stderr: "", exitCode: 0 }) // cat dump for Tier 2
+          .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // rm dump
+
+        // Mock pattern matching
+        vi.mocked(matchIconPattern).mockReturnValue(["overflow", "more", "options"]);
+        vi.mocked(matchesResourceId).mockImplementation((resourceId: string, patterns: string[]) => {
+          return resourceId.toLowerCase().includes("overflow");
+        });
+
+        const result = await adapter.findWithFallbacks("emulator-5554", { text: "overflow menu" });
+
+        expect(result.elements.length).toBe(1);
+        expect(result.source).toBe("accessibility");
+        expect(result.tier).toBe(2);
+        expect(result.confidence).toBe("high");
+        expect(matchIconPattern).toHaveBeenCalledWith("overflow menu");
+      });
+
+      it("skips Tier 2 when no pattern match found", async () => {
+        // Use mockImplementation to handle any order of calls
+        mockAdb.shell.mockImplementation(async (deviceId: string, cmd: string) => {
+          if (cmd.includes("uiautomator dump")) {
+            return { stdout: "", stderr: "", exitCode: 0 };
+          }
+          if (cmd.includes("cat /sdcard/ui-dump.xml")) {
+            return {
+              stdout: `<?xml version="1.0"?><hierarchy><node text="" bounds="[0,0][100,100]" class="View" resource-id="" /></hierarchy>`,
+              stderr: "",
+              exitCode: 0,
+            };
+          }
+          if (cmd.includes("rm")) {
+            return { stdout: "", stderr: "", exitCode: 0 };
+          }
+          if (cmd.includes("screencap")) {
+            return { stdout: "", stderr: "", exitCode: 0 };
+          }
+          if (cmd.includes("wm size")) {
+            return { stdout: "Physical size: 1080x2400\n", stderr: "", exitCode: 0 };
+          }
+          if (cmd.includes("wm density")) {
+            return { stdout: "Physical density: 440\n", stderr: "", exitCode: 0 };
+          }
+          return { stdout: "", stderr: "", exitCode: 0 };
+        });
+
+        mockAdb.pull.mockResolvedValue(undefined);
+
+        // No pattern match
+        vi.mocked(matchIconPattern).mockReturnValue(null);
+        vi.mocked(extractText).mockResolvedValue([]);
+        vi.mocked(searchText).mockReturnValue([]);
+        vi.mocked(filterIconCandidates).mockReturnValue([]);
+        vi.mocked(createGridOverlay).mockResolvedValue("base64GridImage");
+
+        const result = await adapter.findWithFallbacks("emulator-5554", { text: "random text" });
+
+        expect(matchIconPattern).toHaveBeenCalledWith("random text");
+        // Should skip to Tier 3 OCR, not Tier 2
+        expect(matchesResourceId).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("Tier 4: Visual candidates", () => {
+      it("returns visual candidates when accessibility and OCR fail", async () => {
+        const mockClickableNode = {
+          index: 0,
+          text: "",
+          resourceId: "",
+          className: "android.widget.ImageButton",
+          contentDesc: "",
+          bounds: { left: 100, top: 100, right: 148, bottom: 148 },
+          centerX: 124,
+          centerY: 124,
+          clickable: true,
+          focusable: false,
+        };
+
+        // Mock UI dump
+        mockAdb.shell
+          .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // uiautomator dump for find()
+          .mockResolvedValueOnce({
+            stdout: `<?xml version="1.0"?><hierarchy><node text="" bounds="[100,100][148,148]" class="android.widget.ImageButton" resource-id="" clickable="true" content-desc="" /></hierarchy>`,
+            stderr: "",
+            exitCode: 0,
+          }) // cat dump
+          .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // rm dump
+          .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // screencap
+          .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // rm screenshot (later)
+          .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // uiautomator dump for Tier 4
+          .mockResolvedValueOnce({
+            stdout: `<?xml version="1.0"?><hierarchy><node text="" bounds="[100,100][148,148]" class="android.widget.ImageButton" resource-id="" clickable="true" content-desc="" /></hierarchy>`,
+            stderr: "",
+            exitCode: 0,
+          }) // cat dump
+          .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // rm dump
+
+        mockAdb.pull.mockResolvedValue(undefined);
+
+        // No pattern match
+        vi.mocked(matchIconPattern).mockReturnValue(null);
+        // No OCR match
+        vi.mocked(extractText).mockResolvedValue([]);
+        vi.mocked(searchText).mockReturnValue([]);
+        // Mock visual candidates
+        vi.mocked(filterIconCandidates).mockReturnValue([mockClickableNode]);
+        vi.mocked(formatBounds).mockReturnValue("[100,100][148,148]");
+        vi.mocked(cropCandidateImage).mockResolvedValue("base64ImageData");
+
+        const result = await adapter.findWithFallbacks("emulator-5554", { text: "some icon" });
+
+        expect(result.elements).toHaveLength(0);
+        expect(result.source).toBe("visual");
+        expect(result.tier).toBe(4);
+        expect(result.confidence).toBe("medium");
+        expect(result.candidates).toBeDefined();
+        expect(result.candidates!.length).toBe(1);
+        expect(result.candidates![0].image).toBe("base64ImageData");
+      });
+    });
+
+    describe("Tier 5: Grid fallback", () => {
+      it("returns grid overlay when no visual candidates exist", async () => {
+        // Use mockImplementation to handle any order of calls
+        mockAdb.shell.mockImplementation(async (deviceId: string, cmd: string) => {
+          if (cmd.includes("uiautomator dump")) {
+            return { stdout: "", stderr: "", exitCode: 0 };
+          }
+          if (cmd.includes("cat /sdcard/ui-dump.xml")) {
+            return {
+              stdout: `<?xml version="1.0"?><hierarchy><node text="" bounds="[0,0][100,100]" class="View" resource-id="" clickable="false" /></hierarchy>`,
+              stderr: "",
+              exitCode: 0,
+            };
+          }
+          if (cmd.includes("rm")) {
+            return { stdout: "", stderr: "", exitCode: 0 };
+          }
+          if (cmd.includes("screencap")) {
+            return { stdout: "", stderr: "", exitCode: 0 };
+          }
+          if (cmd.includes("wm size")) {
+            return { stdout: "Physical size: 1080x2400\n", stderr: "", exitCode: 0 };
+          }
+          if (cmd.includes("wm density")) {
+            return { stdout: "Physical density: 440\n", stderr: "", exitCode: 0 };
+          }
+          return { stdout: "", stderr: "", exitCode: 0 };
+        });
+
+        mockAdb.pull.mockResolvedValue(undefined);
+
+        // No pattern match
+        vi.mocked(matchIconPattern).mockReturnValue(null);
+        // No OCR match
+        vi.mocked(extractText).mockResolvedValue([]);
+        vi.mocked(searchText).mockReturnValue([]);
+        // No visual candidates
+        vi.mocked(filterIconCandidates).mockReturnValue([]);
+        // Mock grid overlay
+        vi.mocked(createGridOverlay).mockResolvedValue("base64GridImage");
+
+        const result = await adapter.findWithFallbacks("emulator-5554", { text: "invisible element" });
+
+        expect(result.elements).toHaveLength(0);
+        expect(result.source).toBe("grid");
+        expect(result.tier).toBe(5);
+        expect(result.confidence).toBe("low");
+        expect(result.gridImage).toBe("base64GridImage");
+        expect(result.gridPositions).toEqual(["Top-left", "Top-right", "Center", "Bottom-left", "Bottom-right"]);
+      });
+
+      it("handles grid refinement when gridCell and gridPosition provided", async () => {
+        // Mock screen metadata
+        mockAdb.shell
+          .mockResolvedValueOnce({ stdout: "Physical size: 1080x2400\n", stderr: "", exitCode: 0 })
+          .mockResolvedValueOnce({ stdout: "Physical density: 440\n", stderr: "", exitCode: 0 });
+
+        // Mock grid calculations
+        vi.mocked(calculateGridCellBounds).mockReturnValue({ x0: 0, y0: 0, x1: 270, y1: 400 });
+        vi.mocked(calculatePositionCoordinates).mockReturnValue({ x: 135, y: 200 });
+
+        const result = await adapter.findWithFallbacks(
+          "emulator-5554",
+          { text: "any" },
+          { gridCell: 1, gridPosition: 3 }
+        );
+
+        expect(result.elements.length).toBe(1);
+        expect(result.source).toBe("grid");
+        expect(result.tier).toBe(5);
+        expect(result.confidence).toBe("low");
+        expect((result.elements[0] as any).center).toEqual({ x: 135, y: 200 });
+        expect(calculateGridCellBounds).toHaveBeenCalledWith(1, 1080, 2400);
+        expect(calculatePositionCoordinates).toHaveBeenCalledWith(3, { x0: 0, y0: 0, x1: 270, y1: 400 });
+      });
+    });
+
+    describe("Tier 1: Accessibility text match (backward compatibility)", () => {
+      it("returns accessibility results with tier info", async () => {
+        mockAdb.shell
+          .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // uiautomator dump
+          .mockResolvedValueOnce({
+            stdout: `<?xml version="1.0"?><hierarchy><node text="Login" bounds="[100,200][300,250]" class="android.widget.Button" clickable="true" /></hierarchy>`,
+            stderr: "",
+            exitCode: 0,
+          }) // cat dump
+          .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // rm dump
+
+        const result = await adapter.findWithFallbacks("emulator-5554", { text: "Login" });
+
+        expect(result.elements).toHaveLength(1);
+        expect(result.source).toBe("accessibility");
+        expect(result.tier).toBe(1);
+        expect(result.confidence).toBe("high");
+      });
+    });
+
+    describe("Backward compatibility", () => {
+      it("findWithOcrFallback still works as alias", async () => {
+        mockAdb.shell
+          .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // uiautomator dump
+          .mockResolvedValueOnce({
+            stdout: `<?xml version="1.0"?><hierarchy><node text="Submit" bounds="[100,200][300,250]" class="android.widget.Button" clickable="true" /></hierarchy>`,
+            stderr: "",
+            exitCode: 0,
+          }) // cat dump
+          .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // rm dump
+
+        const result = await adapter.findWithOcrFallback("emulator-5554", { text: "Submit" });
+
+        expect(result.elements).toHaveLength(1);
+        expect(result.source).toBe("accessibility");
+        // Should have new tier info even when using old method name
+        expect(result.tier).toBe(1);
+      });
     });
   });
 });

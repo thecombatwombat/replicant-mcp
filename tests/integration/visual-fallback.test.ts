@@ -15,7 +15,7 @@ describe("Visual Fallback", () => {
         ensureDevice: vi.fn().mockResolvedValue({ id: "emulator-5554" }),
       },
       ui: {
-        findWithOcrFallback: vi.fn(),
+        findWithFallbacks: vi.fn(),
         find: vi.fn(),
         visualSnapshot: vi.fn(),
         tap: vi.fn(),
@@ -68,7 +68,7 @@ describe("Visual Fallback", () => {
 
   describe("find with visual fallback", () => {
     it("includes visualFallback when no results found and autoFallbackScreenshot=true", async () => {
-      mockContext.ui.findWithOcrFallback.mockResolvedValue({
+      mockContext.ui.findWithFallbacks.mockResolvedValue({
         elements: [],
         source: "ocr",
         visualFallback: {
@@ -92,7 +92,7 @@ describe("Visual Fallback", () => {
     });
 
     it("does not include visualFallback when autoFallbackScreenshot=false", async () => {
-      mockContext.ui.findWithOcrFallback.mockResolvedValue({
+      mockContext.ui.findWithFallbacks.mockResolvedValue({
         elements: [],
         source: "ocr",
       });
@@ -108,7 +108,7 @@ describe("Visual Fallback", () => {
     });
 
     it("does not include visualFallback when results are found", async () => {
-      mockContext.ui.findWithOcrFallback.mockResolvedValue({
+      mockContext.ui.findWithFallbacks.mockResolvedValue({
         elements: [
           { text: "Login", centerX: 200, centerY: 300, bounds: {}, clickable: true },
         ],

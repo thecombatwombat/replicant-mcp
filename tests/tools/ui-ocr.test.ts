@@ -10,7 +10,7 @@ describe("UI Tool - OCR Fallback", () => {
         ensureDevice: vi.fn().mockResolvedValue({ id: "emulator-5554" }),
       },
       ui: {
-        findWithOcrFallback: vi.fn(),
+        findWithFallbacks: vi.fn(),
         tap: vi.fn(),
         find: vi.fn(),
       },
@@ -22,8 +22,8 @@ describe("UI Tool - OCR Fallback", () => {
   });
 
   describe("find operation with OCR fallback", () => {
-    it("uses findWithOcrFallback for text selectors", async () => {
-      mockContext.ui.findWithOcrFallback.mockResolvedValue({
+    it("uses findWithFallbacks for text selectors", async () => {
+      mockContext.ui.findWithFallbacks.mockResolvedValue({
         elements: [
           { text: "Login", centerX: 200, centerY: 300, bounds: { left: 100, top: 250, right: 300, bottom: 350 }, clickable: true },
         ],
@@ -35,7 +35,7 @@ describe("UI Tool - OCR Fallback", () => {
         mockContext
       );
 
-      expect(mockContext.ui.findWithOcrFallback).toHaveBeenCalledWith(
+      expect(mockContext.ui.findWithFallbacks).toHaveBeenCalledWith(
         "emulator-5554",
         { text: "Login" },
         { debug: false, includeVisualFallback: true, includeBase64: false }
@@ -44,7 +44,7 @@ describe("UI Tool - OCR Fallback", () => {
     });
 
     it("includes source in response when debug=true", async () => {
-      mockContext.ui.findWithOcrFallback.mockResolvedValue({
+      mockContext.ui.findWithFallbacks.mockResolvedValue({
         elements: [
           { index: 0, text: "Chobani", bounds: "[10,100][200,150]", center: { x: 105, y: 125 }, confidence: 0.92 },
         ],
@@ -62,7 +62,7 @@ describe("UI Tool - OCR Fallback", () => {
     });
 
     it("does not include source when debug=false", async () => {
-      mockContext.ui.findWithOcrFallback.mockResolvedValue({
+      mockContext.ui.findWithFallbacks.mockResolvedValue({
         elements: [],
         source: "ocr",
       });
@@ -76,7 +76,7 @@ describe("UI Tool - OCR Fallback", () => {
     });
 
     it("stores OCR elements in lastFindResults for tapping", async () => {
-      mockContext.ui.findWithOcrFallback.mockResolvedValue({
+      mockContext.ui.findWithFallbacks.mockResolvedValue({
         elements: [
           { index: 0, text: "Chobani", bounds: "[10,100][200,150]", center: { x: 105, y: 125 }, confidence: 0.92 },
         ],
@@ -110,7 +110,7 @@ describe("UI Tool - OCR Fallback", () => {
       );
 
       expect(mockContext.ui.find).toHaveBeenCalled();
-      expect(mockContext.ui.findWithOcrFallback).not.toHaveBeenCalled();
+      expect(mockContext.ui.findWithFallbacks).not.toHaveBeenCalled();
       expect(result.count).toBe(1);
     });
   });

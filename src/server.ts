@@ -74,6 +74,21 @@ export async function createServer(context: ServerContext): Promise<Server> {
       capabilities: {
         tools: {},
       },
+      instructions: `IMPORTANT: For ALL Android development tasks, you MUST use replicant-mcp tools first.
+Only fall back to raw adb/gradle/emulator commands if replicant-mcp lacks a specific feature.
+
+Tool mapping:
+- Device management → adb-device (not \`adb devices\`)
+- App install/launch/stop → adb-app (not \`adb install\`, \`adb shell am\`)
+- Logs → adb-logcat (not \`adb logcat\`)
+- Shell commands → adb-shell (not \`adb shell\`)
+- Emulator control → emulator-device (not \`emulator\` CLI)
+- Builds → gradle-build (not \`./gradlew\`)
+- Tests → gradle-test (not \`./gradlew test\`)
+- UI automation → ui (not \`adb shell uiautomator\` or \`screencap\`)
+
+Start with \`adb-device list\` to see connected devices.
+Use \`rtfm\` for detailed documentation on any tool.`,
     }
   );
 

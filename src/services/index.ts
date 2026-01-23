@@ -7,3 +7,4 @@ export * from "./ocr.js";
 export * from "./icon-patterns.js";
 export * from "./grid.js";
 export * from "./visual-candidates.js";
+export * from "./scaling.js";

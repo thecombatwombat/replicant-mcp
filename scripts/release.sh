@@ -1,15 +1,22 @@
 #!/bin/bash
 set -e
 
-# Usage: ./scripts/release.sh [patch|minor|major]
+# Usage: ./scripts/release.sh [patch|minor|major] [--dry-run]
 # Default: patch
 
-VERSION_TYPE=${1:-patch}
+DRY_RUN=false
+VERSION_TYPE="patch"
 
-if [[ ! "$VERSION_TYPE" =~ ^(patch|minor|major)$ ]]; then
-  echo "Usage: $0 [patch|minor|major]"
-  exit 1
-fi
+for arg in "$@"; do
+  case $arg in
+    --dry-run) DRY_RUN=true ;;
+    patch|minor|major) VERSION_TYPE=$arg ;;
+    *)
+      echo "Usage: $0 [patch|minor|major] [--dry-run]"
+      exit 1
+      ;;
+  esac
+done
 
 # Pre-flight checks
 echo "🔍 Pre-flight checks..."
@@ -67,6 +74,13 @@ if git rev-parse "v$NEW_VERSION" &>/dev/null; then
 fi
 
 echo "✅ Pre-flight checks passed"
+
+if [[ "$DRY_RUN" == "true" ]]; then
+  echo ""
+  echo "🏃 Dry run - would release v$NEW_VERSION"
+  echo "   Run without --dry-run to execute"
+  exit 0
+fi
 
 echo "📋 Running tests..."
 npm test -- --run

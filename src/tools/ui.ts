@@ -24,6 +24,7 @@ export const uiInputSchema = z.object({
   gridPosition: z.number().min(1).max(5).optional(),
   maxDimension: z.number().optional(),
   raw: z.boolean().optional(),
+  compact: z.boolean().optional(),
 });
 
 export type UiInput = z.infer<typeof uiInputSchema>;
@@ -138,7 +139,21 @@ export async function handleUiTool(
       const dumpId = context.cache.generateId("ui-dump");
       context.cache.set(dumpId, { tree, deviceId }, "ui-dump", CACHE_TTLS.UI_TREE);
 
-      // Create a simplified view
+      if (input.compact) {
+        // Compact mode: flat list of interactive elements only
+        const flat = flattenTree(tree);
+        const interactive = flat.filter((n) => n.clickable || n.focusable);
+        const elements = interactive.map((n) => ({
+          text: n.text || n.contentDesc || undefined,
+          type: n.className.split(".").pop(),
+          x: n.centerX,
+          y: n.centerY,
+          resourceId: n.resourceId ? n.resourceId.split("/").pop() : undefined,
+        }));
+        return { dumpId, elements, count: elements.length, deviceId };
+      }
+
+      // Full mode: hierarchical tree with all details
       const simplifyNode = (node: AccessibilityNode, depth = 0): Record<string, unknown> => ({
         className: node.className.split(".").pop(),
         text: node.text || undefined,
@@ -439,6 +454,10 @@ export const uiToolDefinition = {
       raw: {
         type: "boolean",
         description: "Skip scaling, return full device resolution. Warning: may exceed API limits.",
+      },
+      compact: {
+        type: "boolean",
+        description: "For dump: return flat list of interactive elements with {text, type, x, y, resourceId} instead of full tree.",
       },
     },
     required: ["operation"],

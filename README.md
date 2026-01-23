@@ -63,6 +63,9 @@ replicant-mcp wraps all of this into a clean interface that AI can understand an
 | **Developer Experience** | Simplified tool authoring with `defineTool()` helper | Future |
 | | Auto-generate JSON schema from Zod via `zod-to-json-schema` | Future |
 | | Convention-based tool auto-discovery (no manual wiring) | Future |
+| **Screenshot Scaling** | Auto-resize screenshots to prevent API context limits | Planned |
+| | Transparent coordinate conversion (image ↔ device space) | Planned |
+| | Raw mode for external context management | Planned |
 
 ---
 

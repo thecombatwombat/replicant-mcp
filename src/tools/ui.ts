@@ -125,6 +125,7 @@ export async function handleUiTool(
     visualModePackages: [],
     autoFallbackScreenshot: true,
     includeBase64: false,
+    maxImageDimension: 1000,
   };
 
   switch (input.operation) {

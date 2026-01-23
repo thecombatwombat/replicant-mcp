@@ -10,6 +10,8 @@ export interface UiConfig {
   autoFallbackScreenshot: boolean;
   /** Include base64-encoded screenshot in response (default: false) */
   includeBase64: boolean;
+  /** Maximum dimension (width or height) for screenshots in pixels (default: 1000) */
+  maxImageDimension: number;
 }
 
 export interface ReplicantConfig {
@@ -21,6 +23,7 @@ export const DEFAULT_CONFIG: ReplicantConfig = {
     visualModePackages: [],
     autoFallbackScreenshot: true,
     includeBase64: false,
+    maxImageDimension: 1000,
   },
 };
 

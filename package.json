@@ -20,7 +20,10 @@
     "test:device": "tsx scripts/real-device-test.ts",
     "start": "npm run build && node dist/index.js",
     "validate": "npm run build && npm run test -- --run",
-    "prepublishOnly": "npm run build && npm test -- --run"
+    "prepublishOnly": "npm run build && npm test -- --run",
+    "release": "bash scripts/release.sh",
+    "release:minor": "bash scripts/release.sh minor",
+    "release:major": "bash scripts/release.sh major"
   },
   "keywords": [
     "mcp",

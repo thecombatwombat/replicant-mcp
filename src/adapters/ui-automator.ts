@@ -158,6 +158,58 @@ export class UiAutomatorAdapter {
     await this.adb.shell(deviceId, `input text "${escaped}"`);
   }
 
+  async scroll(
+    deviceId: string,
+    direction: "up" | "down" | "left" | "right",
+    amount: number = 0.5
+  ): Promise<void> {
+    const screen = await this.getScreenMetadata(deviceId);
+    const { width, height } = screen;
+
+    // Calculate scroll distance based on amount (0-1 representing screen percentage)
+    const scrollDistance = Math.round(
+      (direction === "up" || direction === "down" ? height : width) * amount * 0.8
+    );
+
+    // Center point of the screen
+    const centerX = Math.round(width / 2);
+    const centerY = Math.round(height / 2);
+
+    // Calculate start and end points based on direction
+    // Note: "scroll down" means content moves up, so we swipe up (finger moves from bottom to top)
+    let startX: number, startY: number, endX: number, endY: number;
+    switch (direction) {
+      case "down": // Scroll down = swipe up = finger moves up
+        startX = centerX;
+        startY = centerY + scrollDistance / 2;
+        endX = centerX;
+        endY = centerY - scrollDistance / 2;
+        break;
+      case "up": // Scroll up = swipe down = finger moves down
+        startX = centerX;
+        startY = centerY - scrollDistance / 2;
+        endX = centerX;
+        endY = centerY + scrollDistance / 2;
+        break;
+      case "right": // Scroll right = swipe left = finger moves left
+        startX = centerX + scrollDistance / 2;
+        startY = centerY;
+        endX = centerX - scrollDistance / 2;
+        endY = centerY;
+        break;
+      case "left": // Scroll left = swipe right = finger moves right
+        startX = centerX - scrollDistance / 2;
+        startY = centerY;
+        endX = centerX + scrollDistance / 2;
+        endY = centerY;
+        break;
+    }
+
+    // Duration in ms - longer for larger scrolls, minimum 100ms
+    const duration = Math.max(100, Math.round(scrollDistance / 2));
+    await this.adb.shell(deviceId, `input swipe ${startX} ${startY} ${endX} ${endY} ${duration}`);
+  }
+
   async screenshot(deviceId: string, options: ScreenshotOptions = {}): Promise<ScreenshotResult> {
     const remotePath = "/sdcard/replicant-screenshot.png";
     const maxDimension = options.maxDimension ?? 1000;

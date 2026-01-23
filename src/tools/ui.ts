@@ -5,7 +5,7 @@ import { AccessibilityNode, flattenTree } from "../parsers/ui-dump.js";
 import { FindElement, GridElement } from "../types/icon-recognition.js";
 
 export const uiInputSchema = z.object({
-  operation: z.enum(["dump", "find", "tap", "input", "screenshot", "accessibility-check", "visual-snapshot"]),
+  operation: z.enum(["dump", "find", "tap", "input", "scroll", "screenshot", "accessibility-check", "visual-snapshot"]),
   selector: z.object({
     resourceId: z.string().optional(),
     text: z.string().optional(),
@@ -25,6 +25,8 @@ export const uiInputSchema = z.object({
   maxDimension: z.number().optional(),
   raw: z.boolean().optional(),
   compact: z.boolean().optional(),
+  direction: z.enum(["up", "down", "left", "right"]).optional(),
+  amount: z.number().min(0).max(1).optional(),
 });
 
 export type UiInput = z.infer<typeof uiInputSchema>;
@@ -390,6 +392,15 @@ export async function handleUiTool(
       return { input: input.text, deviceId };
     }
 
+    case "scroll": {
+      if (!input.direction) {
+        throw new Error("direction is required for scroll operation");
+      }
+      const amount = input.amount ?? 0.5; // Default to half-screen scroll
+      await context.ui.scroll(deviceId, input.direction, amount);
+      return { scrolled: { direction: input.direction, amount }, deviceId };
+    }
+
     case "screenshot": {
       const result = await context.ui.screenshot(deviceId, {
         localPath: input.localPath,
@@ -419,13 +430,13 @@ export async function handleUiTool(
 
 export const uiToolDefinition = {
   name: "ui",
-  description: "Interact with app UI via accessibility tree. Auto-selects device if only one connected. Operations: dump, find, tap, input, screenshot, accessibility-check, visual-snapshot.",
+  description: "Interact with app UI via accessibility tree. Auto-selects device if only one connected. Operations: dump, find, tap, input, scroll, screenshot, accessibility-check, visual-snapshot.",
   inputSchema: {
     type: "object",
     properties: {
       operation: {
         type: "string",
-        enum: ["dump", "find", "tap", "input", "screenshot", "accessibility-check", "visual-snapshot"],
+        enum: ["dump", "find", "tap", "input", "scroll", "screenshot", "accessibility-check", "visual-snapshot"],
       },
       selector: {
         type: "object",
@@ -458,6 +469,17 @@ export const uiToolDefinition = {
       compact: {
         type: "boolean",
         description: "For dump: return flat list of interactive elements with {text, type, x, y, resourceId} instead of full tree.",
+      },
+      direction: {
+        type: "string",
+        enum: ["up", "down", "left", "right"],
+        description: "Scroll direction (for scroll operation)",
+      },
+      amount: {
+        type: "number",
+        minimum: 0,
+        maximum: 1,
+        description: "Scroll amount as fraction of screen (0-1, default: 0.5)",
       },
     },
     required: ["operation"],

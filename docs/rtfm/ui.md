@@ -55,3 +55,53 @@ Interact with app UI via accessibility tree with intelligent fallback.
 { "operation": "tap", "gridCell": 12, "gridPosition": 3 }
 // Taps center of cell 12 in the 24-cell grid overlay
 ```
+
+## Screenshot Scaling
+
+Screenshots are automatically scaled to fit within 1000px (longest side) by default.
+This prevents API context limits and reduces token usage.
+
+**All coordinates are in image space.** Tap coordinates are automatically converted
+to device coordinates. You don't need to do any math.
+
+### Scaling Modes
+
+| Mode | Parameter | Behavior |
+|------|-----------|----------|
+| Default | (none) | Scale to 1000px max |
+| Custom | `maxDimension: 1500` | Scale to specified size |
+| Raw | `raw: true` | No scaling (may exceed API limits) |
+
+### When to Use Raw Mode
+
+- Non-Anthropic models with different limits
+- External context management (compaction, agent respawning)
+- Debugging coordinate issues
+
+### Response Format
+
+Screenshot responses now include scaling metadata:
+
+```json
+{
+  "mode": "file",
+  "path": ".replicant/screenshots/screenshot-1234.png",
+  "device": { "width": 1080, "height": 2400 },
+  "image": { "width": 450, "height": 1000 },
+  "scaleFactor": 2.4
+}
+```
+
+## Context Management
+
+**Prefer accessibility tree (`dump`, `find`) because:**
+- No context cost (text, not images)
+- Coordinates are precise
+- Faster execution
+
+**Use screenshots when:**
+- Accessibility tree is empty/unhelpful
+- You need to see visual layout
+- Icons have no text labels
+
+**Ask yourself:** Do I need to SEE the screen, or just INTERACT with it?

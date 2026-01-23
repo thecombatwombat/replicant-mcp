@@ -287,7 +287,7 @@ Update the UI line in instructions:
 
 ### Task 11: Write tests
 
-**File:** `src/__tests__/scaling.test.ts` (new file)
+**File:** `tests/adapters/scaling.test.ts` (new file)
 
 Test cases:
 1. `calculateScaleFactor` returns correct values for various device sizes
@@ -312,7 +312,7 @@ Test cases:
 | `src/tools/ui.ts` | New params, pass through to adapter |
 | `docs/rtfm/ui.md` | Scaling and context management docs |
 | `src/server.ts` | Update instructions |
-| `src/__tests__/scaling.test.ts` | New test file |
+| `tests/adapters/scaling.test.ts` | New test file |
 
 ## Verification
 

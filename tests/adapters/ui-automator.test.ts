@@ -487,6 +487,101 @@ describe("UiAutomatorAdapter", () => {
     });
   });
 
+  describe("dump with scaling", () => {
+    it("converts bounds to image space when scaling state exists", async () => {
+      // First take a screenshot to set scaling state
+      vi.mocked(sharp).mockImplementation(() => ({
+        metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
+        resize: vi.fn().mockReturnThis(),
+        toFile: vi.fn().mockResolvedValue(undefined),
+      } as any));
+
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      mockAdb.pull.mockResolvedValue(undefined);
+
+      await adapter.screenshot("emulator-5554", { maxDimension: 1000 });
+
+      // Now dump should return converted bounds
+      mockAdb.shell
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // uiautomator dump
+        .mockResolvedValueOnce({
+          stdout: `<?xml version="1.0"?>
+<hierarchy>
+  <node text="Button" bounds="[240,480][480,720]" class="android.widget.Button" clickable="true" />
+</hierarchy>`,
+          stderr: "",
+          exitCode: 0,
+        }) // cat dump
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // rm dump
+
+      const tree = await adapter.dump("emulator-5554");
+
+      // With scaleFactor 2.4: [240,480][480,720] -> [100,200][200,300]
+      expect(tree[0].bounds).toEqual({ left: 100, top: 200, right: 200, bottom: 300 });
+      expect(tree[0].centerX).toBe(150);
+      expect(tree[0].centerY).toBe(250);
+    });
+
+    it("returns original bounds when no scaling state exists", async () => {
+      mockAdb.shell
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // uiautomator dump
+        .mockResolvedValueOnce({
+          stdout: `<?xml version="1.0"?>
+<hierarchy>
+  <node text="Button" bounds="[240,480][480,720]" class="android.widget.Button" clickable="true" />
+</hierarchy>`,
+          stderr: "",
+          exitCode: 0,
+        }) // cat dump
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // rm dump
+
+      const tree = await adapter.dump("emulator-5554");
+
+      // No scaling state, bounds should be unchanged
+      expect(tree[0].bounds).toEqual({ left: 240, top: 480, right: 480, bottom: 720 });
+      expect(tree[0].centerX).toBe(360);
+      expect(tree[0].centerY).toBe(600);
+    });
+
+    it("converts nested children bounds recursively", async () => {
+      // First take a screenshot to set scaling state
+      vi.mocked(sharp).mockImplementation(() => ({
+        metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
+        resize: vi.fn().mockReturnThis(),
+        toFile: vi.fn().mockResolvedValue(undefined),
+      } as any));
+
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      mockAdb.pull.mockResolvedValue(undefined);
+
+      await adapter.screenshot("emulator-5554", { maxDimension: 1000 });
+
+      // Now dump should return converted bounds for nested nodes
+      mockAdb.shell
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // uiautomator dump
+        .mockResolvedValueOnce({
+          stdout: `<?xml version="1.0"?>
+<hierarchy>
+  <node text="" bounds="[0,0][1080,2400]" class="android.widget.FrameLayout">
+    <node text="Child" bounds="[240,480][480,720]" class="android.widget.TextView" />
+  </node>
+</hierarchy>`,
+          stderr: "",
+          exitCode: 0,
+        }) // cat dump
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // rm dump
+
+      const tree = await adapter.dump("emulator-5554");
+
+      // Parent should be scaled: [0,0][1080,2400] -> [0,0][450,1000]
+      expect(tree[0].bounds).toEqual({ left: 0, top: 0, right: 450, bottom: 1000 });
+      // Child should be scaled: [240,480][480,720] -> [100,200][200,300]
+      expect(tree[0].children![0].bounds).toEqual({ left: 100, top: 200, right: 200, bottom: 300 });
+      expect(tree[0].children![0].centerX).toBe(150);
+      expect(tree[0].children![0].centerY).toBe(250);
+    });
+  });
+
   describe("findWithFallbacks", () => {
     beforeEach(() => {
       vi.clearAllMocks();

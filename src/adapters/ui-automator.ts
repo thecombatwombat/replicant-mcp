@@ -18,7 +18,7 @@ import {
   FindOptions as IconFindOptions,
   VisualCandidate,
 } from "../types/icon-recognition.js";
-import { calculateScaleFactor } from "../services/scaling.js";
+import { calculateScaleFactor, toImageSpace, boundsToImageSpace } from "../services/scaling.js";
 
 export interface ScreenMetadata {
   width: number;
@@ -87,6 +87,28 @@ export class UiAutomatorAdapter {
     return this.scalingState;
   }
 
+  /**
+   * Transforms accessibility tree nodes from device space to image space.
+   * This ensures bounds/coordinates match the scaled screenshot when scaling is active.
+   */
+  private transformTreeToImageSpace(nodes: AccessibilityNode[]): AccessibilityNode[] {
+    if (!this.scalingState || this.scalingState.scaleFactor === 1.0) {
+      return nodes;
+    }
+    const sf = this.scalingState.scaleFactor;
+    return nodes.map((node) => {
+      const newBounds = boundsToImageSpace(node.bounds, sf);
+      const center = toImageSpace(node.centerX, node.centerY, sf);
+      return {
+        ...node,
+        bounds: newBounds,
+        centerX: center.x,
+        centerY: center.y,
+        children: node.children ? this.transformTreeToImageSpace(node.children) : [],
+      };
+    });
+  }
+
   async dump(deviceId: string): Promise<AccessibilityNode[]> {
     // Dump UI hierarchy to device
     await this.adb.shell(deviceId, "uiautomator dump /sdcard/ui-dump.xml");
@@ -97,7 +119,8 @@ export class UiAutomatorAdapter {
     // Clean up
     await this.adb.shell(deviceId, "rm /sdcard/ui-dump.xml");
 
-    return parseUiDump(result.stdout);
+    const tree = parseUiDump(result.stdout);
+    return this.transformTreeToImageSpace(tree);
   }
 
   async find(

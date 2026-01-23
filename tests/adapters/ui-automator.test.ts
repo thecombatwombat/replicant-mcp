@@ -798,8 +798,8 @@ describe("UiAutomatorAdapter", () => {
         expect(result.gridPositions).toEqual(["Top-left", "Top-right", "Center", "Bottom-left", "Bottom-right"]);
       });
 
-      it("handles grid refinement when gridCell and gridPosition provided", async () => {
-        // Mock screen metadata
+      it("handles grid refinement when gridCell and gridPosition provided (no scaling)", async () => {
+        // Mock screen metadata - used when no scaling state exists
         mockAdb.shell
           .mockResolvedValueOnce({ stdout: "Physical size: 1080x2400\n", stderr: "", exitCode: 0 })
           .mockResolvedValueOnce({ stdout: "Physical density: 440\n", stderr: "", exitCode: 0 });
@@ -819,8 +819,46 @@ describe("UiAutomatorAdapter", () => {
         expect(result.tier).toBe(5);
         expect(result.confidence).toBe("low");
         expect((result.elements[0] as any).center).toEqual({ x: 135, y: 200 });
+        // Without scaling, uses device dimensions
         expect(calculateGridCellBounds).toHaveBeenCalledWith(1, 1080, 2400);
         expect(calculatePositionCoordinates).toHaveBeenCalledWith(3, { x0: 0, y0: 0, x1: 270, y1: 400 });
+      });
+
+      it("uses image dimensions for grid refinement when scaling is active", async () => {
+        // First take a screenshot to set scaling state
+        vi.mocked(sharp).mockImplementation(() => ({
+          metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
+          resize: vi.fn().mockReturnThis(),
+          toFile: vi.fn().mockResolvedValue(undefined),
+        } as any));
+
+        mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+        mockAdb.pull.mockResolvedValue(undefined);
+
+        // Take screenshot to establish scaling state (scaleFactor 2.4, image 450x1000)
+        await adapter.screenshot("emulator-5554", { maxDimension: 1000 });
+
+        // Clear mocks for the findWithFallbacks call
+        vi.mocked(calculateGridCellBounds).mockClear();
+        vi.mocked(calculatePositionCoordinates).mockClear();
+
+        // Mock grid calculations for image-space dimensions
+        vi.mocked(calculateGridCellBounds).mockReturnValue({ x0: 0, y0: 0, x1: 112, y1: 167 });
+        vi.mocked(calculatePositionCoordinates).mockReturnValue({ x: 56, y: 83 });
+
+        const result = await adapter.findWithFallbacks(
+          "emulator-5554",
+          { text: "any" },
+          { gridCell: 1, gridPosition: 3 }
+        );
+
+        expect(result.elements.length).toBe(1);
+        expect(result.source).toBe("grid");
+        expect(result.tier).toBe(5);
+        // With scaling active, should use IMAGE dimensions (450x1000), not device (1080x2400)
+        expect(calculateGridCellBounds).toHaveBeenCalledWith(1, 450, 1000);
+        // Coordinates should be in image space
+        expect((result.elements[0] as any).center).toEqual({ x: 56, y: 83 });
       });
     });
 

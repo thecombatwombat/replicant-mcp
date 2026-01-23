@@ -443,8 +443,17 @@ export class UiAutomatorAdapter {
   ): Promise<FindWithFallbacksResult> {
     // Handle Tier 5 grid refinement FIRST (when gridCell and gridPosition are provided)
     if (options.gridCell !== undefined && options.gridPosition !== undefined) {
-      const screen = await this.getScreenMetadata(deviceId);
-      const cellBounds = calculateGridCellBounds(options.gridCell, screen.width, screen.height);
+      // Use image dimensions if scaling is active, otherwise device dimensions
+      let width: number, height: number;
+      if (this.scalingState && this.scalingState.scaleFactor !== 1.0) {
+        width = this.scalingState.imageWidth;
+        height = this.scalingState.imageHeight;
+      } else {
+        const screen = await this.getScreenMetadata(deviceId);
+        width = screen.width;
+        height = screen.height;
+      }
+      const cellBounds = calculateGridCellBounds(options.gridCell, width, height);
       const coords = calculatePositionCoordinates(options.gridPosition, cellBounds);
 
       return {
@@ -555,7 +564,6 @@ export class UiAutomatorAdapter {
         }
 
         // Tier 5: Grid fallback (empty or unusable accessibility tree)
-        const screen = await this.getScreenMetadata(deviceId);
         const gridImage = await createGridOverlay(screenshotResult.path!);
 
         return {

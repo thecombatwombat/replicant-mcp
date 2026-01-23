@@ -378,7 +378,7 @@ export async function handleUiTool(
     case "screenshot": {
       const result = await context.ui.screenshot(deviceId, {
         localPath: input.localPath,
-        inline: input.inline,
+        inline: input.inline ?? true,
         maxDimension: input.maxDimension ?? config.maxImageDimension,
         raw: input.raw,
       });
@@ -428,7 +428,7 @@ export const uiToolDefinition = {
       elementIndex: { type: "number", description: "Element index from last find (for tap)" },
       text: { type: "string", description: "Text to input" },
       localPath: { type: "string", description: "Local path for screenshot (default: .replicant/screenshots/screenshot-{timestamp}.png)" },
-      inline: { type: "boolean", description: "Return base64 instead of file path (token-heavy, use sparingly)" },
+      inline: { type: "boolean", description: "Return base64 image data (default: true). Set to false to save to file instead." },
       debug: { type: "boolean", description: "Include source (accessibility/ocr) and confidence in response" },
       gridCell: { type: "number", minimum: 1, maximum: 24, description: "Grid cell number (1-24) for Tier 5 refinement" },
       gridPosition: { type: "number", minimum: 1, maximum: 5, description: "Position within cell (1=TL, 2=TR, 3=Center, 4=BL, 5=BR)" },

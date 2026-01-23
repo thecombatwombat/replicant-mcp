@@ -48,6 +48,18 @@ export type FindWithOcrResult = FindWithFallbacksResult;
 export type FindOptions = IconFindOptions;
 
 /**
+ * Tracks the current scaling state between device and image coordinates.
+ * Updated on every screenshot operation.
+ */
+export interface ScalingState {
+  scaleFactor: number;
+  deviceWidth: number;
+  deviceHeight: number;
+  imageWidth: number;
+  imageHeight: number;
+}
+
+/**
  * Get default screenshot path in project-relative .replicant/screenshots directory.
  * Creates the directory if it doesn't exist.
  */
@@ -58,7 +70,14 @@ function getDefaultScreenshotPath(): string {
 }
 
 export class UiAutomatorAdapter {
+  private scalingState: ScalingState | null = null;
+
   constructor(private adb: AdbAdapter = new AdbAdapter()) {}
+
+  // Getter for tests
+  getScalingState(): ScalingState | null {
+    return this.scalingState;
+  }
 
   async dump(deviceId: string): Promise<AccessibilityNode[]> {
     // Dump UI hierarchy to device

@@ -64,8 +64,10 @@ ui { operation: "tap", elementIndex: 0 }
 This project uses beads for issue-driven development.
 
 **Before brainstorming/planning:**
-- Run `bd ready` and `bd list --status=in_progress`
-- Present context as a clean dashboard (not raw CLI output):
+- Show a brief status line: "Gathering project context..."
+- Gather context silently (git log, bd ready, bd list) - don't display raw command output
+- Present ONLY the clean dashboard table below - no intermediate results
+- If context gathering fails, mention it briefly and continue
 
 ```markdown
 ## 📋 Project Context

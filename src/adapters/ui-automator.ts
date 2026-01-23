@@ -175,6 +175,8 @@ export class UiAutomatorAdapter {
     try {
       if (options.inline) {
         // Inline mode: return base64 (no scaling support for inline mode)
+        // Clear scaling state since inline mode doesn't support coordinate conversion
+        this.scalingState = null;
         const base64Result = await this.adb.shell(deviceId, `base64 ${remotePath}`);
         const sizeResult = await this.adb.shell(deviceId, `stat -c%s ${remotePath}`);
         return {

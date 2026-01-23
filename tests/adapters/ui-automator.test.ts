@@ -138,6 +138,28 @@ describe("UiAutomatorAdapter", () => {
       expect(result.sizeBytes).toBe(12345);
     });
 
+    it("clears scaling state when inline mode requested", async () => {
+      // First take a scaled screenshot to set scalingState
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      mockAdb.pull.mockResolvedValue(undefined);
+      await adapter.screenshot("emulator-5554", { localPath: "/tmp/test.png" });
+
+      // Verify scaling state was set
+      expect((adapter as unknown as { scalingState: unknown }).scalingState).not.toBeNull();
+
+      // Now take inline screenshot
+      mockAdb.shell
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // screencap
+        .mockResolvedValueOnce({ stdout: "iVBORw0KGgo=", stderr: "", exitCode: 0 }) // base64
+        .mockResolvedValueOnce({ stdout: "12345", stderr: "", exitCode: 0 }) // stat
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // rm
+
+      await adapter.screenshot("emulator-5554", { inline: true });
+
+      // Verify scaling state is cleared
+      expect((adapter as unknown as { scalingState: unknown }).scalingState).toBeNull();
+    });
+
     it("throws SCREENSHOT_FAILED when capture fails", async () => {
       mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "error", exitCode: 1 });
 

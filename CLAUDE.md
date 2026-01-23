@@ -48,9 +48,38 @@ ui { operation: "tap", elementIndex: 0 }
 
 ## Current Status
 
-- **MCP server**: Complete and working. Published to npm as `replicant-mcp@1.0.0`.
-- **CI**: Passing (87 tests).
+- **MCP server**: Complete and working. Published to npm as `replicant-mcp`.
+- **CI**: Passing (237 tests).
 - **Distribution**: npm + git clone. Claude Desktop and Claude Code instructions in README.
+
+## Releasing
+
+**Always use the release script** - never manually bump versions, tag, or publish.
+
+```bash
+# Preview what would happen (safe, no side effects)
+./scripts/release.sh --dry-run
+./scripts/release.sh minor --dry-run
+
+# Execute release
+npm run release          # patch: 1.2.1 → 1.2.2
+npm run release:minor    # minor: 1.2.1 → 1.3.0
+npm run release:major    # major: 1.2.1 → 2.0.0
+```
+
+**Version type guidance:**
+- `patch` - Bug fixes, small improvements, doc updates
+- `minor` - New features, new tool parameters, backward-compatible changes
+- `major` - Breaking changes to tool schemas or behavior
+
+**The script handles everything:**
+1. Pre-flight checks (branch, clean state, synced, version available)
+2. Tests
+3. Version bump + commit + tag
+4. Push to origin
+5. Publish to npm
+
+**If release fails mid-way:** The script runs checks before any destructive actions. If it fails after committing (rare), you may need to manually clean up the tag/commit.
 
 ## Future Work
 

@@ -59,6 +59,43 @@ ui { operation: "tap", elementIndex: 0 }
   2. Rewrite scripts to use direct adb/gradle commands (no CLI dependency)
   3. Have scripts use globally installed npm package (`npx replicant-mcp`)
 
+## Issue Tracking (Beads)
+
+This project uses beads for issue-driven development.
+
+**Before brainstorming/planning:**
+- Run `bd ready` and `bd list --status=in_progress`
+- Present context as a clean dashboard (not raw CLI output):
+
+```markdown
+## 📋 Project Context
+
+| | |
+|---|---|
+| **Project** | replicant-mcp (Android MCP server) |
+| **Status** | [version], [test count] passing |
+| **Recent** | [2-3 recent changes from git log] |
+
+**Ready Issues:**
+| Pri | ID | Title |
+|-----|-----|-------|
+| P1 | `xxx` | ... |
+| P2 | `yyy` | ... |
+
+**What would you like to brainstorm?**
+```
+
+**After design is complete:**
+- Create beads issues for implementation tasks: `bd create --title="..." --type=task`
+- Set dependencies if needed: `bd dep add <child> <parent>`
+- Reference issue IDs in design docs and commits
+
+**Before ending session (Landing the Plane):**
+1. File remaining work as issues
+2. Update issue statuses (`bd close`, `bd update --status=...`)
+3. Push everything: `git pull --rebase && bd sync && git push`
+4. Verify: `git status` shows "up to date with origin"
+
 ## Workflow Rules
 
 - **No direct pushes to master**: All changes must go through pull requests

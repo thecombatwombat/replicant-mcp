@@ -842,4 +842,38 @@ describe("UiAutomatorAdapter", () => {
       });
     });
   });
+
+  describe("tap with scaling", () => {
+    it("converts image coordinates to device coordinates", async () => {
+      // Set up scaling state via screenshot
+      vi.mocked(sharp).mockImplementation(() => ({
+        metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
+        resize: vi.fn().mockReturnThis(),
+        toFile: vi.fn().mockResolvedValue(undefined),
+      } as any));
+
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      mockAdb.pull.mockResolvedValue(undefined);
+
+      await adapter.screenshot("emulator-5554", { maxDimension: 1000 });
+
+      // Clear mock to check tap call
+      mockAdb.shell.mockClear();
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
+      // Tap at image coordinates (200, 500)
+      await adapter.tap("emulator-5554", 200, 500);
+
+      // Should convert to device coordinates (480, 1200) with scaleFactor 2.4
+      expect(mockAdb.shell).toHaveBeenCalledWith("emulator-5554", "input tap 480 1200");
+    });
+
+    it("does not convert when no scaling state", async () => {
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
+      await adapter.tap("emulator-5554", 200, 500);
+
+      expect(mockAdb.shell).toHaveBeenCalledWith("emulator-5554", "input tap 200 500");
+    });
+  });
 });

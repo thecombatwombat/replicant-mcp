@@ -18,7 +18,7 @@ import {
   FindOptions as IconFindOptions,
   VisualCandidate,
 } from "../types/icon-recognition.js";
-import { calculateScaleFactor, toImageSpace, boundsToImageSpace } from "../services/scaling.js";
+import { calculateScaleFactor, toImageSpace, toDeviceSpace, boundsToImageSpace } from "../services/scaling.js";
 
 export interface ScreenMetadata {
   width: number;
@@ -137,7 +137,15 @@ export class UiAutomatorAdapter {
   }
 
   async tap(deviceId: string, x: number, y: number): Promise<void> {
-    await this.adb.shell(deviceId, `input tap ${x} ${y}`);
+    // Convert from image space to device space if scaling is active
+    let tapX = x;
+    let tapY = y;
+    if (this.scalingState && this.scalingState.scaleFactor !== 1.0) {
+      const converted = toDeviceSpace(x, y, this.scalingState.scaleFactor);
+      tapX = converted.x;
+      tapY = converted.y;
+    }
+    await this.adb.shell(deviceId, `input tap ${tapX} ${tapY}`);
   }
 
   async tapElement(deviceId: string, element: AccessibilityNode): Promise<void> {

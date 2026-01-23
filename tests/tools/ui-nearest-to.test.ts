@@ -178,8 +178,8 @@ describe("UI Tool - nearestTo", () => {
         mockContext
       );
 
-      expect(mockContext.ui.tap).toHaveBeenCalledWith("emulator-5554", 200, 200);
-      expect(tapResult.tapped).toEqual({ x: 200, y: 200 });
+      expect(mockContext.ui.tap).toHaveBeenCalledWith("emulator-5554", 200, 200, undefined);
+      expect(tapResult.tapped).toEqual({ x: 200, y: 200, deviceSpace: false });
     });
   });
 });

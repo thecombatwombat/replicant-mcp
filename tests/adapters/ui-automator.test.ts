@@ -935,5 +935,27 @@ describe("UiAutomatorAdapter", () => {
 
       expect(mockAdb.shell).toHaveBeenCalledWith("emulator-5554", "input tap 200 500");
     });
+
+    it("skips coordinate conversion when deviceSpace=true", async () => {
+      // First, establish scaling state via screenshot
+      mockAdb.shell.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // screencap
+      mockAdb.pull.mockResolvedValueOnce(undefined);
+      mockAdb.shell.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // rm
+
+      await adapter.screenshot("emulator-5554", { maxDimension: 500 });
+
+      // Scaling state is now: scaleFactor ~2.4 (1080/500 landscape or portrait)
+      expect(adapter.getScalingState()?.scaleFactor).toBeGreaterThan(1);
+
+      // Clear mock to check tap call
+      mockAdb.shell.mockClear();
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
+      // Tap with deviceSpace=true should pass coordinates directly
+      await adapter.tap("emulator-5554", 480, 1200, true);
+
+      // Should NOT convert - use exact coordinates provided
+      expect(mockAdb.shell).toHaveBeenCalledWith("emulator-5554", "input tap 480 1200");
+    });
   });
 });

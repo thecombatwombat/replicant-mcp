@@ -54,8 +54,8 @@ describe("OCR Fallback Integration", () => {
       mockContext
     );
 
-    expect(mockContext.ui.tap).toHaveBeenCalledWith("emulator-5554", 272, 980);
-    expect(tapResult.tapped).toEqual({ x: 272, y: 980 });
+    expect(mockContext.ui.tap).toHaveBeenCalledWith("emulator-5554", 272, 980, undefined);
+    expect(tapResult.tapped).toEqual({ x: 272, y: 980, deviceSpace: false });
   });
 
   it("prefers accessibility results over OCR when available", async () => {

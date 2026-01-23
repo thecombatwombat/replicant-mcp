@@ -136,11 +136,12 @@ export class UiAutomatorAdapter {
     return findElements(tree, selector);
   }
 
-  async tap(deviceId: string, x: number, y: number): Promise<void> {
+  async tap(deviceId: string, x: number, y: number, deviceSpace?: boolean): Promise<void> {
     // Convert from image space to device space if scaling is active
+    // Skip conversion if deviceSpace=true (coordinates are already in device space)
     let tapX = x;
     let tapY = y;
-    if (this.scalingState && this.scalingState.scaleFactor !== 1.0) {
+    if (!deviceSpace && this.scalingState && this.scalingState.scaleFactor !== 1.0) {
       const converted = toDeviceSpace(x, y, this.scalingState.scaleFactor);
       tapX = converted.x;
       tapY = converted.y;

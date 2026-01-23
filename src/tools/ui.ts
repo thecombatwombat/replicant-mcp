@@ -22,6 +22,7 @@ export const uiInputSchema = z.object({
   debug: z.boolean().optional(),
   gridCell: z.number().min(1).max(24).optional(),
   gridPosition: z.number().min(1).max(5).optional(),
+  deviceSpace: z.boolean().optional(),
   maxDimension: z.number().optional(),
   raw: z.boolean().optional(),
   compact: z.boolean().optional(),
@@ -380,8 +381,8 @@ export async function handleUiTool(
         throw new Error("Either x/y coordinates or elementIndex is required for tap");
       }
 
-      await context.ui.tap(deviceId, x, y);
-      return { tapped: { x, y }, deviceId };
+      await context.ui.tap(deviceId, x, y, input.deviceSpace);
+      return { tapped: { x, y, deviceSpace: input.deviceSpace ?? false }, deviceId };
     }
 
     case "input": {
@@ -458,6 +459,10 @@ export const uiToolDefinition = {
       debug: { type: "boolean", description: "Include source (accessibility/ocr) and confidence in response" },
       gridCell: { type: "number", minimum: 1, maximum: 24, description: "Grid cell number (1-24) for Tier 5 refinement" },
       gridPosition: { type: "number", minimum: 1, maximum: 5, description: "Position within cell (1=TL, 2=TR, 3=Center, 4=BL, 5=BR)" },
+      deviceSpace: {
+        type: "boolean",
+        description: "For tap: treat x/y as device coordinates (skip image→device scaling). Use when coordinates come from adb shell input tap testing.",
+      },
       maxDimension: {
         type: "number",
         description: "Max image dimension in pixels (default: 1000). Higher = better quality, more tokens.",

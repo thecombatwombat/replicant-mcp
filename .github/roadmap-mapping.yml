@@ -52,3 +52,14 @@ mappings:
       - src/tools/index*
     roadmapItem: Simplified tool authoring with defineTool() helper
     category: Developer Experience
+
+  # Screenshot Scaling
+  - patterns:
+      - src/adapters/ui-automator*scaling*
+      - src/adapters/ui-automator*resize*
+      - src/services/scaling*
+      - src/tools/ui*maxDimension*
+      - src/tools/ui*raw*
+      - docs/plans/*screenshot-scaling*
+    roadmapItem: Auto-resize screenshots to prevent API context limits
+    category: Screenshot Scaling

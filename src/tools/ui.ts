@@ -22,6 +22,8 @@ export const uiInputSchema = z.object({
   debug: z.boolean().optional(),
   gridCell: z.number().min(1).max(24).optional(),
   gridPosition: z.number().min(1).max(5).optional(),
+  maxDimension: z.number().optional(),
+  raw: z.boolean().optional(),
 });
 
 export type UiInput = z.infer<typeof uiInputSchema>;
@@ -377,6 +379,8 @@ export async function handleUiTool(
       const result = await context.ui.screenshot(deviceId, {
         localPath: input.localPath,
         inline: input.inline,
+        maxDimension: input.maxDimension ?? config.maxImageDimension,
+        raw: input.raw,
       });
       return { ...result, deviceId };
     }
@@ -428,6 +432,14 @@ export const uiToolDefinition = {
       debug: { type: "boolean", description: "Include source (accessibility/ocr) and confidence in response" },
       gridCell: { type: "number", minimum: 1, maximum: 24, description: "Grid cell number (1-24) for Tier 5 refinement" },
       gridPosition: { type: "number", minimum: 1, maximum: 5, description: "Position within cell (1=TL, 2=TR, 3=Center, 4=BL, 5=BR)" },
+      maxDimension: {
+        type: "number",
+        description: "Max image dimension in pixels (default: 1000). Higher = better quality, more tokens.",
+      },
+      raw: {
+        type: "boolean",
+        description: "Skip scaling, return full device resolution. Warning: may exceed API limits.",
+      },
     },
     required: ["operation"],
   },

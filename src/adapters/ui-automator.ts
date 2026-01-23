@@ -1,5 +1,6 @@
 import * as path from "path";
 import * as fs from "fs";
+import sharp from "sharp";
 import { AdbAdapter } from "./adb.js";
 import { parseUiDump, findElements, flattenTree, AccessibilityNode } from "../parsers/ui-dump.js";
 import { ReplicantError, ErrorCode, OcrElement, VisualSnapshot } from "../types/index.js";
@@ -17,6 +18,7 @@ import {
   FindOptions as IconFindOptions,
   VisualCandidate,
 } from "../types/icon-recognition.js";
+import { calculateScaleFactor } from "../services/scaling.js";
 
 export interface ScreenMetadata {
   width: number;
@@ -32,6 +34,8 @@ export interface CurrentApp {
 export interface ScreenshotOptions {
   localPath?: string;
   inline?: boolean;
+  maxDimension?: number;
+  raw?: boolean;
 }
 
 export interface ScreenshotResult {
@@ -39,6 +43,10 @@ export interface ScreenshotResult {
   path?: string;
   base64?: string;
   sizeBytes?: number;
+  device?: { width: number; height: number };
+  image?: { width: number; height: number };
+  scaleFactor?: number;
+  warning?: string;
 }
 
 // Backward compatibility alias - use FindWithFallbacksResult for new code
@@ -121,6 +129,7 @@ export class UiAutomatorAdapter {
 
   async screenshot(deviceId: string, options: ScreenshotOptions = {}): Promise<ScreenshotResult> {
     const remotePath = "/sdcard/replicant-screenshot.png";
+    const maxDimension = options.maxDimension ?? 1000;
 
     // Capture screenshot on device
     const captureResult = await this.adb.shell(deviceId, `screencap -p ${remotePath}`);
@@ -134,7 +143,7 @@ export class UiAutomatorAdapter {
 
     try {
       if (options.inline) {
-        // Inline mode: return base64
+        // Inline mode: return base64 (no scaling support for inline mode)
         const base64Result = await this.adb.shell(deviceId, `base64 ${remotePath}`);
         const sizeResult = await this.adb.shell(deviceId, `stat -c%s ${remotePath}`);
         return {
@@ -143,10 +152,83 @@ export class UiAutomatorAdapter {
           sizeBytes: parseInt(sizeResult.stdout.trim(), 10),
         };
       } else {
-        // File mode (default): pull to local
+        // File mode: pull to local, then optionally scale
         const localPath = options.localPath || getDefaultScreenshotPath();
         await this.adb.pull(deviceId, remotePath, localPath);
-        return { mode: "file", path: localPath };
+
+        // Get image dimensions
+        const metadata = await sharp(localPath).metadata();
+        const deviceWidth = metadata.width!;
+        const deviceHeight = metadata.height!;
+
+        // Handle raw mode
+        if (options.raw) {
+          this.scalingState = {
+            scaleFactor: 1.0,
+            deviceWidth,
+            deviceHeight,
+            imageWidth: deviceWidth,
+            imageHeight: deviceHeight,
+          };
+          return {
+            mode: "file",
+            path: localPath,
+            device: { width: deviceWidth, height: deviceHeight },
+            image: { width: deviceWidth, height: deviceHeight },
+            scaleFactor: 1.0,
+            warning: "Raw mode: no scaling applied. May exceed API limits with multiple images.",
+          };
+        }
+
+        // Calculate scale factor
+        const scaleFactor = calculateScaleFactor(deviceWidth, deviceHeight, maxDimension);
+
+        if (scaleFactor === 1.0) {
+          // No scaling needed
+          this.scalingState = {
+            scaleFactor: 1.0,
+            deviceWidth,
+            deviceHeight,
+            imageWidth: deviceWidth,
+            imageHeight: deviceHeight,
+          };
+          return {
+            mode: "file",
+            path: localPath,
+            device: { width: deviceWidth, height: deviceHeight },
+            image: { width: deviceWidth, height: deviceHeight },
+            scaleFactor: 1.0,
+          };
+        }
+
+        // Scale the image
+        const imageWidth = Math.round(deviceWidth / scaleFactor);
+        const imageHeight = Math.round(deviceHeight / scaleFactor);
+
+        await sharp(localPath)
+          .resize(imageWidth, imageHeight)
+          .toFile(localPath + ".tmp");
+
+        // Replace original with scaled version
+        const fsPromises = await import("fs/promises");
+        await fsPromises.rename(localPath + ".tmp", localPath);
+
+        // Update scaling state
+        this.scalingState = {
+          scaleFactor,
+          deviceWidth,
+          deviceHeight,
+          imageWidth,
+          imageHeight,
+        };
+
+        return {
+          mode: "file",
+          path: localPath,
+          device: { width: deviceWidth, height: deviceHeight },
+          image: { width: imageWidth, height: imageHeight },
+          scaleFactor,
+        };
       }
     } finally {
       // Always clean up remote file

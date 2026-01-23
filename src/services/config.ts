@@ -47,6 +47,7 @@ function mergeUiConfig(defaults: UiConfig, overrides?: Partial<UiConfig>): UiCon
     visualModePackages: overrides.visualModePackages ?? defaults.visualModePackages,
     autoFallbackScreenshot: overrides.autoFallbackScreenshot ?? defaults.autoFallbackScreenshot,
     includeBase64: overrides.includeBase64 ?? defaults.includeBase64,
+    maxImageDimension: overrides.maxImageDimension ?? defaults.maxImageDimension,
   };
 }
 

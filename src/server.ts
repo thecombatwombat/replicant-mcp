@@ -85,7 +85,7 @@ Tool mapping:
 - Emulator control → emulator-device (not \`emulator\` CLI)
 - Builds → gradle-build (not \`./gradlew\`)
 - Tests → gradle-test (not \`./gradlew test\`)
-- UI automation → ui (not \`adb shell uiautomator\` or \`screencap\`)
+- UI automation → ui (accessibility-first, screenshots auto-scaled to 1000px)
 
 Start with \`adb-device list\` to see connected devices.
 Use \`rtfm\` for detailed documentation on any tool.`,

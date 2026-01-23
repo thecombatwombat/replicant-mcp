@@ -9,10 +9,11 @@ vi.mock("../../src/services/ocr.js", () => ({
   terminateOcr: vi.fn(),
 }));
 
-// Mock fs/promises for base64 reading
+// Mock fs/promises for base64 reading and file operations
 vi.mock("fs/promises", () => ({
   readFile: vi.fn(),
   unlink: vi.fn().mockResolvedValue(undefined),
+  rename: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock icon-patterns service
@@ -35,6 +36,16 @@ vi.mock("../../src/services/grid.js", () => ({
   createGridOverlay: vi.fn(),
   POSITION_LABELS: ["Top-left", "Top-right", "Center", "Bottom-left", "Bottom-right"],
 }));
+
+// Mock sharp
+vi.mock("sharp", () => ({
+  default: vi.fn(() => ({
+    metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
+    resize: vi.fn().mockReturnThis(),
+    toFile: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
+import sharp from "sharp";
 
 import { extractText, searchText } from "../../src/services/ocr.js";
 import { matchIconPattern, matchesResourceId } from "../../src/services/icon-patterns.js";
@@ -144,6 +155,53 @@ describe("UiAutomatorAdapter", () => {
       // Last shell call should be rm
       const rmCall = mockAdb.shell.mock.calls.find(call => call[1].includes("rm"));
       expect(rmCall).toBeDefined();
+    });
+
+    it("scales screenshot when device exceeds max dimension", async () => {
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      mockAdb.pull.mockResolvedValue(undefined);
+
+      const result = await adapter.screenshot("emulator-5554", {
+        localPath: "/tmp/test.png",
+        maxDimension: 1000,
+      });
+
+      expect(result.mode).toBe("file");
+      expect(result.device).toEqual({ width: 1080, height: 2400 });
+      expect(result.image).toEqual({ width: 450, height: 1000 });
+      expect(result.scaleFactor).toBe(2.4);
+      expect(sharp).toHaveBeenCalled();
+    });
+
+    it("skips scaling when raw=true", async () => {
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      mockAdb.pull.mockResolvedValue(undefined);
+
+      const result = await adapter.screenshot("emulator-5554", {
+        localPath: "/tmp/test.png",
+        raw: true,
+      });
+
+      expect(result.scaleFactor).toBe(1.0);
+      expect(result.warning).toContain("Raw mode");
+    });
+
+    it("skips scaling when device fits within max dimension", async () => {
+      vi.mocked(sharp).mockImplementation(() => ({
+        metadata: vi.fn().mockResolvedValue({ width: 800, height: 600 }),
+        resize: vi.fn().mockReturnThis(),
+        toFile: vi.fn().mockResolvedValue(undefined),
+      } as any));
+
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      mockAdb.pull.mockResolvedValue(undefined);
+
+      const result = await adapter.screenshot("emulator-5554", {
+        localPath: "/tmp/test.png",
+        maxDimension: 1000,
+      });
+
+      expect(result.scaleFactor).toBe(1.0);
     });
   });
 

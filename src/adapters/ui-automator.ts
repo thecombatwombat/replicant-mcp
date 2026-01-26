@@ -20,6 +20,7 @@ import {
   VisualCandidate,
 } from "../types/icon-recognition.js";
 import { calculateScaleFactor, toImageSpace, toDeviceSpace, boundsToImageSpace } from "../services/scaling.js";
+import { getDefaultScreenshotPath } from "../utils/paths.js";
 
 export interface ScreenMetadata {
   width: number;
@@ -67,16 +68,6 @@ export interface ScalingState {
   deviceHeight: number;
   imageWidth: number;
   imageHeight: number;
-}
-
-/**
- * Get default screenshot path in project-relative .replicant/screenshots directory.
- * Creates the directory if it doesn't exist.
- */
-function getDefaultScreenshotPath(): string {
-  const dir = path.join(process.cwd(), ".replicant", "screenshots");
-  fs.mkdirSync(dir, { recursive: true });
-  return path.join(dir, `screenshot-${Date.now()}.png`);
 }
 
 export class UiAutomatorAdapter {

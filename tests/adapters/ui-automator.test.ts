@@ -121,7 +121,7 @@ describe("UiAutomatorAdapter", () => {
       const result = await adapter.screenshot("emulator-5554", {});
 
       expect(result.mode).toBe("file");
-      expect(result.path).toMatch(/\.replicant\/screenshots\/screenshot-\d+\.png$/);
+      expect(result.path).toMatch(/\.replicant\/screenshots\/screenshot-\d+-[a-z0-9]+\.png$/);
     });
 
     it("returns base64 when inline mode requested", async () => {
@@ -654,7 +654,7 @@ describe("UiAutomatorAdapter", () => {
 
       const result = await adapter.visualSnapshot("emulator-5554");
 
-      expect(result.screenshotPath).toMatch(/\.replicant\/screenshots\/screenshot-\d+\.png$/);
+      expect(result.screenshotPath).toMatch(/\.replicant\/screenshots\/screenshot-\d+-[a-z0-9]+\.png$/);
       expect(result.screen).toEqual({ width: 1080, height: 2400, density: 2.75 });
       expect(result.app.packageName).toBe("com.example");
       expect(result.app.activityName).toBe(".Main");

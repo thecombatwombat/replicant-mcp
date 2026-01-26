@@ -28,6 +28,9 @@ export const uiInputSchema = z.object({
   compact: z.boolean().optional(),
   direction: z.enum(["up", "down", "left", "right"]).optional(),
   amount: z.number().min(0).max(1).optional(),
+  // Pagination for dump operation
+  limit: z.number().min(1).max(100).optional(),
+  offset: z.number().min(0).optional(),
 });
 
 export type UiInput = z.infer<typeof uiInputSchema>;
@@ -151,7 +154,15 @@ export async function handleUiTool(
         // Compact mode: flat list of interactive elements only
         const flat = flattenTree(tree);
         const interactive = flat.filter((n) => n.clickable || n.focusable);
-        const elements = interactive.map((n) => ({
+
+        // Pagination
+        const limit = input.limit ?? 20;
+        const offset = input.offset ?? 0;
+        const totalCount = interactive.length;
+        const paginated = interactive.slice(offset, offset + limit);
+        const hasMore = offset + limit < totalCount;
+
+        const elements = paginated.map((n) => ({
           text: n.text || n.contentDesc || undefined,
           type: n.className.split(".").pop(),
           x: n.centerX,
@@ -160,15 +171,25 @@ export async function handleUiTool(
         }));
 
         // Also warn if tree has nodes but no interactive elements
-        const noInteractiveWarning = tree.length > 0 && elements.length === 0
+        const noInteractiveWarning = tree.length > 0 && totalCount === 0
           ? "Accessibility tree exists but no interactive elements found. Try 'ui find' with a text selector, or use screenshot for visual targeting."
+          : undefined;
+
+        // Hint for pagination
+        const hint = hasMore
+          ? `${elements.length} of ${totalCount} elements shown. Use 'ui find' for specific elements, or add offset: ${offset + limit} for more.`
           : undefined;
 
         return {
           dumpId,
           elements,
           count: elements.length,
+          totalCount,
+          hasMore,
+          offset,
+          limit,
           deviceId,
+          hint,
           warning: emptyWarning || noInteractiveWarning,
         };
       }
@@ -491,7 +512,7 @@ export const uiToolDefinition = {
       },
       compact: {
         type: "boolean",
-        description: "For dump: return flat list of interactive elements with {text, type, x, y, resourceId} instead of full tree.",
+        description: "For dump: return paginated flat list of interactive elements (default: 20, use limit/offset for more).",
       },
       direction: {
         type: "string",
@@ -503,6 +524,17 @@ export const uiToolDefinition = {
         minimum: 0,
         maximum: 1,
         description: "Scroll amount as fraction of screen (0-1, default: 0.5)",
+      },
+      limit: {
+        type: "number",
+        minimum: 1,
+        maximum: 100,
+        description: "For dump with compact: max elements to return (default: 20).",
+      },
+      offset: {
+        type: "number",
+        minimum: 0,
+        description: "For dump with compact: skip first N elements for pagination.",
       },
     },
     required: ["operation"],

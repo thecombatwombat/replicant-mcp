@@ -142,6 +142,11 @@ export async function handleUiTool(
       const dumpId = context.cache.generateId("ui-dump");
       context.cache.set(dumpId, { tree, deviceId }, "ui-dump", CACHE_TTLS.UI_TREE);
 
+      // Warning for empty dumps
+      const emptyWarning = tree.length === 0
+        ? "No accessibility nodes found. Possible causes: (1) UI still loading - wait and retry, (2) App uses custom rendering (Flutter, games, video players) - use screenshot instead, (3) App blocks accessibility services."
+        : undefined;
+
       if (input.compact) {
         // Compact mode: flat list of interactive elements only
         const flat = flattenTree(tree);
@@ -153,7 +158,19 @@ export async function handleUiTool(
           y: n.centerY,
           resourceId: n.resourceId ? n.resourceId.split("/").pop() : undefined,
         }));
-        return { dumpId, elements, count: elements.length, deviceId };
+
+        // Also warn if tree has nodes but no interactive elements
+        const noInteractiveWarning = tree.length > 0 && elements.length === 0
+          ? "Accessibility tree exists but no interactive elements found. Try 'ui find' with a text selector, or use screenshot for visual targeting."
+          : undefined;
+
+        return {
+          dumpId,
+          elements,
+          count: elements.length,
+          deviceId,
+          warning: emptyWarning || noInteractiveWarning,
+        };
       }
 
       // Full mode: hierarchical tree with all details
@@ -170,6 +187,7 @@ export async function handleUiTool(
         dumpId,
         tree: tree.map((n) => simplifyNode(n)),
         deviceId,
+        warning: emptyWarning,
       };
     }
 

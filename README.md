@@ -129,6 +129,22 @@ Add to `~/.codeium/windsurf/mcp_config.json`:
 }
 ```
 
+### OpenAI Codex CLI
+
+Add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.replicant]
+command = "npx"
+args = ["-y", "replicant-mcp"]
+```
+
+Or via CLI:
+
+```bash
+codex mcp add replicant -- npx -y replicant-mcp
+```
+
 > **Note:** Ensure `adb` and `emulator` are in your PATH, or set `ANDROID_HOME` environment variable. On macOS: `~/Library/Android/sdk`, on Linux: `~/Android/Sdk`.
 
 ---

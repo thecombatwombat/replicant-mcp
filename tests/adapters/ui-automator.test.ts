@@ -362,6 +362,27 @@ describe("UiAutomatorAdapter", () => {
       // Scaling state should remain unchanged (not corrupted)
       expect(adapter.getScalingState()).toEqual(originalState);
     });
+
+    it("cleans up temp file after successful inline screenshot", async () => {
+      const mockBuffer = Buffer.alloc(50000);
+      vi.mocked(sharp).mockImplementation(() => ({
+        metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
+        resize: vi.fn().mockReturnThis(),
+        jpeg: vi.fn().mockReturnThis(),
+        toBuffer: vi.fn().mockResolvedValue(mockBuffer),
+        toFile: vi.fn().mockResolvedValue(undefined),
+      } as any));
+
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      mockAdb.pull.mockResolvedValue(undefined);
+
+      await adapter.screenshot("emulator-5554", { inline: true });
+
+      // Verify unlink was called with a temp path
+      expect(fs.unlink).toHaveBeenCalledWith(
+        expect.stringMatching(/replicant-inline-\d+\.png$/)
+      );
+    });
   });
 
   describe("findWithOcrFallback", () => {

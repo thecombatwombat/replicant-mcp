@@ -182,7 +182,7 @@ Issues use description tags to indicate what's needed before execution:
 ## Workflow Rules
 
 - **No direct pushes to master**: All changes must go through pull requests
-- **PR workflow**: After creating a PR, automatically monitor for Greptile review. Address feedback, then wait for human approval before merging. Never merge-then-monitor.
+- **PR workflow**: After creating a PR, automatically monitor for Greptile review. Address feedback and request re-review. If Greptile keeps raising concerns you disagree with, file a ticket and ask the user for review instead. Wait for human approval before merging. Never merge-then-monitor.
 - **Branch naming**: Use prefixes:
   - `feature/` - new functionality
   - `fix/` - bug fixes

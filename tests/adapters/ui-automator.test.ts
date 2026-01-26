@@ -311,6 +311,28 @@ describe("UiAutomatorAdapter", () => {
       expect(state!.deviceWidth).toBe(1080);
       expect(state!.deviceHeight).toBe(2400);
     });
+
+    it("inline and file mode return consistent dimension fields", async () => {
+      const mockBuffer = Buffer.alloc(50000);
+      vi.mocked(sharp).mockImplementation(() => ({
+        metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
+        resize: vi.fn().mockReturnThis(),
+        jpeg: vi.fn().mockReturnThis(),
+        toBuffer: vi.fn().mockResolvedValue(mockBuffer),
+        toFile: vi.fn().mockResolvedValue(undefined),
+      } as any));
+
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      mockAdb.pull.mockResolvedValue(undefined);
+
+      const inlineResult = await adapter.screenshot("emulator-5554", { inline: true, maxDimension: 1000 });
+      const fileResult = await adapter.screenshot("emulator-5554", { localPath: "/tmp/test.png", maxDimension: 1000 });
+
+      // These fields must match between modes
+      expect(inlineResult.device).toEqual(fileResult.device);
+      expect(inlineResult.image).toEqual(fileResult.image);
+      expect(inlineResult.scaleFactor).toEqual(fileResult.scaleFactor);
+    });
   });
 
   describe("findWithOcrFallback", () => {

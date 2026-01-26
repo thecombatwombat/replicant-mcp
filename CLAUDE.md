@@ -134,8 +134,9 @@ This project uses beads for issue-driven development.
 **Before ending session (Landing the Plane):**
 1. File remaining work as issues
 2. Update issue statuses (`bd close`, `bd update --status=...`)
-3. Push everything: `git pull --rebase && bd sync && git push`
-4. Verify: `git status` shows "up to date with origin"
+3. Clean up worktrees: `git worktree list` → `git worktree remove <path>` for any in `.worktrees/`
+4. Push everything: `git pull --rebase && bd sync && git push`
+5. Verify: `git status` shows "up to date with origin"
 
 ## Workflow Rules
 

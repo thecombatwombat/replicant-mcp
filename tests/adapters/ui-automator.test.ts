@@ -288,6 +288,29 @@ describe("UiAutomatorAdapter", () => {
       expect(result.image).toEqual({ width: 450, height: 1000 });
       expect(result.scaleFactor).toBe(2.4);
     });
+
+    it("sets scalingState after inline screenshot_REGRESSION_wl1", async () => {
+      const mockBuffer = Buffer.alloc(50000);
+      vi.mocked(sharp).mockImplementation(() => ({
+        metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
+        resize: vi.fn().mockReturnThis(),
+        jpeg: vi.fn().mockReturnThis(),
+        toBuffer: vi.fn().mockResolvedValue(mockBuffer),
+        toFile: vi.fn().mockResolvedValue(undefined),
+      } as any));
+
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      mockAdb.pull.mockResolvedValue(undefined);
+
+      await adapter.screenshot("emulator-5554", { inline: true });
+
+      // CRITICAL: This must NOT be null - inline mode now sets scaling state
+      const state = adapter.getScalingState();
+      expect(state).not.toBeNull();
+      expect(state!.scaleFactor).toBe(2.4);
+      expect(state!.deviceWidth).toBe(1080);
+      expect(state!.deviceHeight).toBe(2400);
+    });
   });
 
   describe("findWithOcrFallback", () => {

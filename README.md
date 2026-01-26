@@ -40,7 +40,8 @@ replicant-mcp wraps all of this into a clean interface that AI can understand an
 | **Device Control** | List connected devices, select active device, query device properties |
 | **App Management** | Install, uninstall, launch, stop apps; clear app data; list installed packages |
 | **Log Analysis** | Filter logcat by package, tag, level, time; configurable line limits |
-| **UI Automation** | Accessibility-first element finding with multi-tier fallback (accessibility → OCR → visual), spatial proximity search (`nearestTo`), grid-based precision tapping, tap, text input, screenshots |
+| **UI Automation** | Accessibility-first element finding with multi-tier fallback (accessibility → OCR → visual), spatial proximity search (`nearestTo`), grid-based precision tapping, tap (with deviceSpace option), text input, screenshots |
+| **Screenshot Scaling** | Auto-resize to 1000px max, JPEG compression (~94% size reduction), transparent coordinate conversion (image ↔ device space) |
 | **Configuration** | YAML config via `REPLICANT_CONFIG` for UI behavior customization |
 | **Utilities** | Response caching with progressive disclosure, on-demand documentation |
 
@@ -63,8 +64,8 @@ replicant-mcp wraps all of this into a clean interface that AI can understand an
 | **Developer Experience** | Simplified tool authoring with `defineTool()` helper | Future |
 | | Auto-generate JSON schema from Zod via `zod-to-json-schema` | Future |
 | | Convention-based tool auto-discovery (no manual wiring) | Future |
-| **Screenshot Scaling** | Auto-resize screenshots to prevent API context limits | Planned |
-| | Transparent coordinate conversion (image ↔ device space) | Planned |
+| **Screenshot Scaling** | Auto-resize screenshots to prevent API context limits | ✅ |
+| | Transparent coordinate conversion (image ↔ device space) | ✅ |
 | | Raw mode for external context management | Planned |
 
 ---

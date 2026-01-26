@@ -102,7 +102,7 @@ All work is organized into epics (top-level work areas). View with `bd epic stat
 
 **RULE: Every issue must be part of the tree.**
 - Create epics: `bd create --type=epic --title="..."`
-- Create child issues: `bd create --parent=<epic-id> --title="..."`
+- Create child issues: `bd create --parent=<epic-id> --title="..." --type=task`
 - NO orphan issues allowed (enforced by PreToolUse hook)
 
 ### Parallel Execution Model

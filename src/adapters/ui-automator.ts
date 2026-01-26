@@ -1,5 +1,6 @@
 import * as path from "path";
 import * as fs from "fs";
+import * as os from "os";
 import sharp from "sharp";
 import { AdbAdapter } from "./adb.js";
 import { parseUiDump, findElements, flattenTree, AccessibilityNode } from "../parsers/ui-dump.js";
@@ -42,6 +43,7 @@ export interface ScreenshotResult {
   mode: "file" | "inline";
   path?: string;
   base64?: string;
+  mimeType?: string;
   sizeBytes?: number;
   device?: { width: number; height: number };
   image?: { width: number; height: number };
@@ -227,16 +229,52 @@ export class UiAutomatorAdapter {
 
     try {
       if (options.inline) {
-        // Inline mode: return base64 (no scaling support for inline mode)
-        // Clear scaling state since inline mode doesn't support coordinate conversion
-        this.scalingState = null;
-        const base64Result = await this.adb.shell(deviceId, `base64 ${remotePath}`);
-        const sizeResult = await this.adb.shell(deviceId, `stat -c%s ${remotePath}`);
-        return {
-          mode: "inline",
-          base64: base64Result.stdout.trim(),
-          sizeBytes: parseInt(sizeResult.stdout.trim(), 10),
-        };
+        // Inline mode: pull to temp, scale, convert to JPEG, return base64
+        const tempPath = path.join(os.tmpdir(), `replicant-inline-${Date.now()}.png`);
+
+        try {
+          // Pull to temp file
+          await this.adb.pull(deviceId, remotePath, tempPath);
+
+          // Get dimensions
+          const metadata = await sharp(tempPath).metadata();
+          const deviceWidth = metadata.width!;
+          const deviceHeight = metadata.height!;
+
+          // Calculate scale factor
+          const scaleFactor = calculateScaleFactor(deviceWidth, deviceHeight, maxDimension);
+          const imageWidth = Math.round(deviceWidth / scaleFactor);
+          const imageHeight = Math.round(deviceHeight / scaleFactor);
+
+          // Scale and convert to JPEG
+          const buffer = await sharp(tempPath)
+            .resize(imageWidth, imageHeight)
+            .jpeg({ quality: 70 })
+            .toBuffer();
+
+          // Update scaling state (now supported for inline!)
+          this.scalingState = {
+            scaleFactor,
+            deviceWidth,
+            deviceHeight,
+            imageWidth,
+            imageHeight,
+          };
+
+          return {
+            mode: "inline",
+            base64: buffer.toString("base64"),
+            mimeType: "image/jpeg",
+            sizeBytes: buffer.length,
+            device: { width: deviceWidth, height: deviceHeight },
+            image: { width: imageWidth, height: imageHeight },
+            scaleFactor,
+          };
+        } finally {
+          // Clean up temp file
+          const fsPromises = await import("fs/promises");
+          await fsPromises.unlink(tempPath).catch(() => {});
+        }
       } else {
         // File mode: pull to local, then optionally scale
         const localPath = options.localPath || getDefaultScreenshotPath();

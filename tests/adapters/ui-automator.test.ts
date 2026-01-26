@@ -383,6 +383,25 @@ describe("UiAutomatorAdapter", () => {
         expect.stringMatching(/replicant-inline-\d+\.png$/)
       );
     });
+
+    it("cleans up temp file even when sharp throws", async () => {
+      vi.mocked(sharp).mockImplementation(() => ({
+        metadata: vi.fn().mockRejectedValue(new Error("Sharp exploded")),
+      } as any));
+
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      mockAdb.pull.mockResolvedValue(undefined);
+
+      // Clear unlink mock calls
+      vi.mocked(fs.unlink).mockClear();
+
+      await expect(
+        adapter.screenshot("emulator-5554", { inline: true })
+      ).rejects.toThrow("Sharp exploded");
+
+      // Verify unlink was still called (cleanup in finally block)
+      expect(fs.unlink).toHaveBeenCalled();
+    });
   });
 
   describe("findWithOcrFallback", () => {

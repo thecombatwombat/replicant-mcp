@@ -64,28 +64,30 @@ emulator -version   # Should show Android emulator version
 
 ### Installation
 
-**npm (recommended):**
 ```bash
 npm install -g replicant-mcp
 ```
 
-**From source:**
+### Updating
+
 ```bash
-git clone https://github.com/thecombatwombat/replicant-mcp.git
-cd replicant-mcp
-npm install && npm run build
+npm update -g replicant-mcp
 ```
+
+---
+
+## Setup
 
 ### Claude Desktop
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
 ```json
 {
   "mcpServers": {
     "replicant": {
-      "command": "node",
-      "args": ["/absolute/path/to/replicant-mcp/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "replicant-mcp"]
     }
   }
 }
@@ -94,13 +96,40 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 ### Claude Code
 
 ```bash
-claude mcp add replicant \
-  -e ANDROID_HOME=$HOME/Library/Android/sdk \
-  -e PATH="$HOME/Library/Android/sdk/platform-tools:$HOME/Library/Android/sdk/emulator:$HOME/Library/Android/sdk/cmdline-tools/latest/bin:$PATH" \
-  -- node $(npm root -g)/replicant-mcp/dist/index.js
+claude mcp add replicant -- npx -y replicant-mcp
 ```
 
-> Adjust `ANDROID_HOME` if your SDK is elsewhere. On Linux, it's typically `$HOME/Android/Sdk`.
+### Cursor
+
+Add to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project):
+
+```json
+{
+  "mcpServers": {
+    "replicant": {
+      "command": "npx",
+      "args": ["-y", "replicant-mcp"]
+    }
+  }
+}
+```
+
+### Windsurf
+
+Add to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "replicant": {
+      "command": "npx",
+      "args": ["-y", "replicant-mcp"]
+    }
+  }
+}
+```
+
+> **Note:** Ensure `adb` and `emulator` are in your PATH, or set `ANDROID_HOME` environment variable. On macOS: `~/Library/Android/sdk`, on Linux: `~/Android/Sdk`.
 
 ---
 

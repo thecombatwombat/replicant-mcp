@@ -105,4 +105,10 @@ git push origin "v$NEW_VERSION"
 echo "📤 Publishing to npm..."
 npm publish --ignore-scripts  # skip prepublishOnly since we already tested
 
+echo "🏷️  Creating GitHub Release..."
+gh release create "v$NEW_VERSION" \
+  --title "v$NEW_VERSION" \
+  --generate-notes \
+  --latest
+
 echo "✅ Released v$NEW_VERSION"

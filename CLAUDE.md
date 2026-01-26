@@ -94,11 +94,33 @@ npm run release:major    # major: 1.2.1 → 2.0.0
 
 ## Issue Tracking (Beads)
 
-This project uses beads for issue-driven development.
+This project uses beads for issue-driven development with **parallel agent execution**.
 
-**Before brainstorming/planning:**
-- Run `bd ready` and `bd list --status=in_progress`
-- Present context as a clean dashboard (not raw CLI output):
+### Epic Structure
+
+All work is organized into epics (top-level work areas). View with `bd epic status` or `bd graph --all --compact`.
+
+**RULE: Every issue must be part of the tree.**
+- Create epics: `bd create --type=epic --title="..."`
+- Create child issues: `bd create --parent=<epic-id> --title="..."`
+- NO orphan issues allowed (enforced by PreToolUse hook)
+
+### Parallel Execution Model
+
+1. **One agent per epic** - Each epic is independently executable
+2. **Sub-agents for children** - Parallelize work within an epic
+3. **Dependencies control order** - `bd dep add <issue> <depends-on>`
+
+View parallelizable work:
+```bash
+bd ready              # Issues with no blockers
+bd graph --all        # Full dependency tree
+bd blocked            # What's waiting on what
+```
+
+### Before Brainstorming
+
+Run `bd ready` and `bd list --status=in_progress`, present as dashboard:
 
 ```markdown
 ## 📋 Project Context
@@ -109,27 +131,46 @@ This project uses beads for issue-driven development.
 | **Status** | [version], [test count] passing |
 | **Recent** | [2-3 recent changes from git log] |
 
-**Ready Issues:**
-| Pri | ID | Title |
-|-----|-----|-------|
-| P1 | `xxx` | ... |
-| P2 | `yyy` | ... |
+**Ready Epics:**
+| Pri | ID | Title | Progress |
+|-----|-----|-------|----------|
+| P1 | `xxx` | ... | 2/5 |
 
 **What would you like to brainstorm?**
 ```
 
-**After design is complete:**
-- Create beads issues for implementation tasks: `bd create --title="..." --type=task`
-- **Always set dependencies for follow-up issues:**
-  ```bash
-  # Follow-up tests/features should depend on the parent issue they stem from
-  bd dep add <follow-up-id> <parent-id>
+### Issue Readiness Tags
 
-  # Example: Test tickets from wl1 brainstorm depend on wl1
-  bd dep add replicant-mcp-7a2 replicant-mcp-wl1  # test depends on implementation
-  bd dep add replicant-mcp-0ia replicant-mcp-wl1  # related feature depends on parent
-  ```
-- Reference issue IDs in design docs and commits
+Issues use description tags to indicate what's needed before execution:
+
+```
+[Needs: design]           ← Brainstorm first, then remove
+[Needs: plan]             ← Write implementation plan, then remove
+[Design: path/to/doc.md]  ← Link to completed design
+[Plan: path/to/plan.md]   ← Link to completed plan
+```
+
+**Agent decision tree:**
+1. Pick issue from `bd ready`
+2. Has `[Needs: design]`? → Brainstorm → Update issue (remove tag, add `[Design: ...]`)
+3. Has `[Needs: plan]`? → Write plan → Update issue (remove tag, add `[Plan: ...]`)
+4. Execute (read linked docs for context)
+
+**No tag = ready to execute.** Only add tags when design/planning is needed.
+
+### After Design is Complete
+
+1. Identify or create the parent epic
+2. Create child issues under it:
+   ```bash
+   bd create --parent=<epic-id> --title="..." --type=task
+   ```
+3. Add readiness tags if needed: `[Needs: design]` or `[Needs: plan]`
+4. Set dependencies between related issues:
+   ```bash
+   bd dep add <issue> <depends-on>
+   ```
+5. Reference issue IDs in design docs and commits
 
 **Before ending session (Landing the Plane):**
 1. File remaining work as issues

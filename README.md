@@ -152,19 +152,22 @@ codex mcp add replicant -- npx -y replicant-mcp
 ## Example
 
 ```
-You: "The app crashed after I tapped Login. What happened?"
+You: "I just changed the checkout flow. Build the app, go through checkout
+      with a test product, and make sure the confirmation screen shows up."
 
-Claude: Let me check the error logs.
-        [Calls adb-logcat with level: "error", lines: 50]
+Claude: [Builds debug APK, installs on emulator, launches app]
+        [Taps "Electronics" category → "Wireless Headphones" → "Add to Cart"]
+        [Navigates to cart, taps "Checkout"]
+        [Fills shipping form, taps "Place Order"]
 
-        Found the crash:
+        Confirmation screen is showing:
+        - Order #38291
+        - "Wireless Headphones" × 1
+        - Total: $79.99
+        - Estimated delivery: Jan 30
 
-        java.lang.NullPointerException: Attempt to invoke virtual method
-        'void com.example.User.getName()' on a null object reference
-            at com.example.ProfileActivity.onCreate(ProfileActivity.kt:47)
-
-        Looks like `user` is null when ProfileActivity starts.
-        Want me to look at that file?
+        The flow works. Want me to test the edge cases—empty cart,
+        invalid address, payment failure?
 ```
 
 ---

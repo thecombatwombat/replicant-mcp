@@ -120,7 +120,15 @@ This project uses beads for issue-driven development.
 
 **After design is complete:**
 - Create beads issues for implementation tasks: `bd create --title="..." --type=task`
-- Set dependencies if needed: `bd dep add <child> <parent>`
+- **Always set dependencies for follow-up issues:**
+  ```bash
+  # Follow-up tests/features should depend on the parent issue they stem from
+  bd dep add <follow-up-id> <parent-id>
+
+  # Example: Test tickets from wl1 brainstorm depend on wl1
+  bd dep add replicant-mcp-7a2 replicant-mcp-wl1  # test depends on implementation
+  bd dep add replicant-mcp-0ia replicant-mcp-wl1  # related feature depends on parent
+  ```
 - Reference issue IDs in design docs and commits
 
 **Before ending session (Landing the Plane):**

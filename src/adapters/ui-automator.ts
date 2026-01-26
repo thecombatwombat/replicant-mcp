@@ -42,6 +42,7 @@ export interface ScreenshotResult {
   mode: "file" | "inline";
   path?: string;
   base64?: string;
+  mimeType?: string;
   sizeBytes?: number;
   device?: { width: number; height: number };
   image?: { width: number; height: number };

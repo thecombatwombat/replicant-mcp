@@ -125,39 +125,42 @@ describe("UiAutomatorAdapter", () => {
     });
 
     it("returns base64 when inline mode requested", async () => {
-      mockAdb.shell
-        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // screencap
-        .mockResolvedValueOnce({ stdout: "iVBORw0KGgo=", stderr: "", exitCode: 0 }) // base64
-        .mockResolvedValueOnce({ stdout: "12345", stderr: "", exitCode: 0 }) // stat
-        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // rm
+      const mockBuffer = Buffer.from("test-image-data");
+      vi.mocked(sharp).mockImplementation(() => ({
+        metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
+        resize: vi.fn().mockReturnThis(),
+        jpeg: vi.fn().mockReturnThis(),
+        toBuffer: vi.fn().mockResolvedValue(mockBuffer),
+        toFile: vi.fn().mockResolvedValue(undefined),
+      } as any));
+
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      mockAdb.pull.mockResolvedValue(undefined);
 
       const result = await adapter.screenshot("emulator-5554", { inline: true });
 
       expect(result.mode).toBe("inline");
-      expect(result.base64).toBe("iVBORw0KGgo=");
-      expect(result.sizeBytes).toBe(12345);
+      expect(result.base64).toBe(mockBuffer.toString("base64"));
+      expect(result.mimeType).toBe("image/jpeg");
     });
 
-    it("clears scaling state when inline mode requested", async () => {
-      // First take a scaled screenshot to set scalingState
+    it("sets scaling state when inline mode requested", async () => {
+      const mockBuffer = Buffer.alloc(50000);
+      vi.mocked(sharp).mockImplementation(() => ({
+        metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
+        resize: vi.fn().mockReturnThis(),
+        jpeg: vi.fn().mockReturnThis(),
+        toBuffer: vi.fn().mockResolvedValue(mockBuffer),
+        toFile: vi.fn().mockResolvedValue(undefined),
+      } as any));
+
       mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
       mockAdb.pull.mockResolvedValue(undefined);
-      await adapter.screenshot("emulator-5554", { localPath: "/tmp/test.png" });
-
-      // Verify scaling state was set
-      expect((adapter as unknown as { scalingState: unknown }).scalingState).not.toBeNull();
-
-      // Now take inline screenshot
-      mockAdb.shell
-        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // screencap
-        .mockResolvedValueOnce({ stdout: "iVBORw0KGgo=", stderr: "", exitCode: 0 }) // base64
-        .mockResolvedValueOnce({ stdout: "12345", stderr: "", exitCode: 0 }) // stat
-        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // rm
 
       await adapter.screenshot("emulator-5554", { inline: true });
 
-      // Verify scaling state is cleared
-      expect((adapter as unknown as { scalingState: unknown }).scalingState).toBeNull();
+      // Verify scaling state IS set (previously was cleared - this changed in wl1)
+      expect(adapter.getScalingState()).not.toBeNull();
     });
 
     it("throws SCREENSHOT_FAILED when capture fails", async () => {
@@ -224,6 +227,46 @@ describe("UiAutomatorAdapter", () => {
       });
 
       expect(result.scaleFactor).toBe(1.0);
+    });
+
+    it("returns mimeType field for inline screenshots", async () => {
+      const mockBuffer = Buffer.alloc(50000); // 50KB mock JPEG
+      vi.mocked(sharp).mockImplementation(() => ({
+        metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
+        resize: vi.fn().mockReturnThis(),
+        jpeg: vi.fn().mockReturnThis(),
+        toBuffer: vi.fn().mockResolvedValue(mockBuffer),
+        toFile: vi.fn().mockResolvedValue(undefined),
+      } as any));
+
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      mockAdb.pull.mockResolvedValue(undefined);
+
+      const result = await adapter.screenshot("emulator-5554", { inline: true });
+
+      expect(result.mimeType).toBe("image/jpeg");
+    });
+
+    it("returns scaled JPEG for inline screenshots under 200KB", async () => {
+      // Mock sharp to return a buffer
+      const mockBuffer = Buffer.alloc(50000); // 50KB mock JPEG
+      vi.mocked(sharp).mockImplementation(() => ({
+        metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
+        resize: vi.fn().mockReturnThis(),
+        jpeg: vi.fn().mockReturnThis(),
+        toBuffer: vi.fn().mockResolvedValue(mockBuffer),
+        toFile: vi.fn().mockResolvedValue(undefined),
+      } as any));
+
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      mockAdb.pull.mockResolvedValue(undefined);
+
+      const result = await adapter.screenshot("emulator-5554", { inline: true });
+
+      expect(result.mode).toBe("inline");
+      expect(result.mimeType).toBe("image/jpeg");
+      expect(result.sizeBytes).toBeLessThan(200000);
+      expect(result.base64).toBeDefined();
     });
   });
 

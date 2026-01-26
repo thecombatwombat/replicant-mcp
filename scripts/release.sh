@@ -21,6 +21,12 @@ done
 # Pre-flight checks
 echo "🔍 Pre-flight checks..."
 
+# Check gh CLI is available (needed for GitHub Release creation)
+if ! command -v gh &>/dev/null; then
+  echo "❌ GitHub CLI (gh) not found. Install from https://cli.github.com/"
+  exit 1
+fi
+
 # Check we're on master
 CURRENT_BRANCH=$(git branch --show-current)
 if [[ "$CURRENT_BRANCH" != "master" ]]; then

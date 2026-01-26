@@ -401,6 +401,15 @@ describe("UiAutomatorAdapter", () => {
 
       // Verify unlink was still called (cleanup in finally block)
       expect(fs.unlink).toHaveBeenCalled();
+
+      // Restore default sharp mock for subsequent tests
+      vi.mocked(sharp).mockImplementation(() => ({
+        metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
+        resize: vi.fn().mockReturnThis(),
+        jpeg: vi.fn().mockReturnThis(),
+        toBuffer: vi.fn().mockResolvedValue(Buffer.alloc(50000)),
+        toFile: vi.fn().mockResolvedValue(undefined),
+      } as any));
     });
   });
 

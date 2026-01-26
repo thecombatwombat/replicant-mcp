@@ -333,6 +333,35 @@ describe("UiAutomatorAdapter", () => {
       expect(inlineResult.image).toEqual(fileResult.image);
       expect(inlineResult.scaleFactor).toEqual(fileResult.scaleFactor);
     });
+
+    it("does not update scalingState when sharp fails", async () => {
+      // First set a known scaling state
+      vi.mocked(sharp).mockImplementation(() => ({
+        metadata: vi.fn().mockResolvedValue({ width: 800, height: 600 }),
+        resize: vi.fn().mockReturnThis(),
+        jpeg: vi.fn().mockReturnThis(),
+        toBuffer: vi.fn().mockResolvedValue(Buffer.alloc(1000)),
+        toFile: vi.fn().mockResolvedValue(undefined),
+      } as any));
+
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      mockAdb.pull.mockResolvedValue(undefined);
+
+      await adapter.screenshot("emulator-5554", { inline: true });
+      const originalState = adapter.getScalingState();
+
+      // Now make sharp fail
+      vi.mocked(sharp).mockImplementation(() => ({
+        metadata: vi.fn().mockRejectedValue(new Error("Sharp failed")),
+      } as any));
+
+      await expect(
+        adapter.screenshot("emulator-5554", { inline: true })
+      ).rejects.toThrow("Sharp failed");
+
+      // Scaling state should remain unchanged (not corrupted)
+      expect(adapter.getScalingState()).toEqual(originalState);
+    });
   });
 
   describe("findWithOcrFallback", () => {

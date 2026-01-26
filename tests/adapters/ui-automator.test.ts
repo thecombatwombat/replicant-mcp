@@ -268,6 +268,26 @@ describe("UiAutomatorAdapter", () => {
       expect(result.sizeBytes).toBeLessThan(200000);
       expect(result.base64).toBeDefined();
     });
+
+    it("reports correct device and image dimensions for inline screenshots", async () => {
+      const mockBuffer = Buffer.alloc(50000);
+      vi.mocked(sharp).mockImplementation(() => ({
+        metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
+        resize: vi.fn().mockReturnThis(),
+        jpeg: vi.fn().mockReturnThis(),
+        toBuffer: vi.fn().mockResolvedValue(mockBuffer),
+        toFile: vi.fn().mockResolvedValue(undefined),
+      } as any));
+
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      mockAdb.pull.mockResolvedValue(undefined);
+
+      const result = await adapter.screenshot("emulator-5554", { inline: true, maxDimension: 1000 });
+
+      expect(result.device).toEqual({ width: 1080, height: 2400 });
+      expect(result.image).toEqual({ width: 450, height: 1000 });
+      expect(result.scaleFactor).toBe(2.4);
+    });
   });
 
   describe("findWithOcrFallback", () => {

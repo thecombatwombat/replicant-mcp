@@ -80,15 +80,23 @@ export const POSITION_LABELS = [
 const GRID_LINE_WIDTH = 3;
 const LABEL_FONT_SIZE = 36;
 
+const MAX_GRID_DIMENSION = 1000;
+const JPEG_QUALITY = 70;
+
 /**
  * Create a 4x6 numbered grid overlay on a screenshot.
- * Returns base64 PNG.
+ * Returns base64 JPEG (compressed for context efficiency).
  */
 export async function createGridOverlay(imagePath: string): Promise<string> {
   const image = sharp(imagePath);
   const metadata = await image.metadata();
   const width = metadata.width!;
   const height = metadata.height!;
+
+  // Calculate scaling to fit within MAX_GRID_DIMENSION
+  const scaleFactor = Math.min(1, MAX_GRID_DIMENSION / Math.max(width, height));
+  const scaledWidth = Math.round(width * scaleFactor);
+  const scaledHeight = Math.round(height * scaleFactor);
 
   const cellWidth = width / GRID_COLS;
   const cellHeight = height / GRID_ROWS;
@@ -132,9 +140,15 @@ export async function createGridOverlay(imagePath: string): Promise<string> {
 
   const svgOverlay = `<svg width="${width}" height="${height}">${svgParts.join("")}</svg>`;
 
-  const buffer = await image
+  // Composite at original size first, then resize
+  const composited = await image
     .composite([{ input: Buffer.from(svgOverlay), top: 0, left: 0 }])
-    .png()
+    .toBuffer();
+
+  // Resize and compress to JPEG
+  const buffer = await sharp(composited)
+    .resize(scaledWidth, scaledHeight)
+    .jpeg({ quality: JPEG_QUALITY })
     .toBuffer();
 
   return buffer.toString("base64");

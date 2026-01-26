@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
+import { CACHE_TTLS } from "../types/index.js";
 
 export const adbDeviceInputSchema = z.object({
   operation: z.enum(["list", "select", "wait", "properties", "health-check"]),
@@ -52,16 +53,32 @@ export async function handleAdbDeviceTool(
         : await context.deviceState.ensureDevice(context.adb);
       const deviceId = device.id;
       const props = await context.adb.getProperties(deviceId);
+
+      // Cache full properties for retrieval via cache tool
+      const cacheId = context.cache.generateId("device-props");
+      context.cache.set(
+        cacheId,
+        { deviceId, properties: props },
+        "device-props",
+        CACHE_TTLS.DEVICE_PROPERTIES
+      );
+
+      // Return summary only (key properties + cache ID for full details)
       return {
         deviceId,
-        properties: {
+        summary: {
           model: props["ro.product.model"],
           manufacturer: props["ro.product.manufacturer"],
           sdkVersion: props["ro.build.version.sdk"],
           androidVersion: props["ro.build.version.release"],
           buildId: props["ro.build.id"],
+          device: props["ro.product.device"],
+          product: props["ro.product.name"],
+          hardware: props["ro.hardware"],
+          abiList: props["ro.product.cpu.abilist"],
         },
-        allProperties: props,
+        propertyCount: Object.keys(props).length,
+        cacheId,
       };
     }
 

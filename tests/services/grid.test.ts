@@ -84,11 +84,14 @@ describe("grid", () => {
       // Should return valid base64
       expect(base64).toMatch(/^[A-Za-z0-9+/=]+$/);
 
-      // Verify it's a valid image
+      // Verify it's a valid image (scaled to max 1000px dimension)
       const buffer = Buffer.from(base64, "base64");
       const metadata = await sharp(buffer).metadata();
-      expect(metadata.width).toBe(1080);
-      expect(metadata.height).toBe(1920);
+      // Original 1080x1920 scaled to fit within 1000px max dimension
+      // Scale factor: 1000/1920 = 0.5208, so 1080*0.5208 = 563, 1920*0.5208 = 1000
+      expect(metadata.width).toBe(563);
+      expect(metadata.height).toBe(1000);
+      expect(metadata.format).toBe("jpeg"); // Now JPEG, not PNG
 
       await fs.unlink(testImagePath);
     });

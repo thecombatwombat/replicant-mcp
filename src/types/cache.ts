@@ -28,4 +28,5 @@ export const CACHE_TTLS = {
   UI_TREE: 30 * 1000, // 30 sec
   GRADLE_VARIANTS: 60 * 60 * 1000, // 1 hour
   LOGCAT: 5 * 60 * 1000, // 5 min
+  DEVICE_PROPERTIES: 5 * 60 * 1000, // 5 min
 } as const;

@@ -126,4 +126,58 @@ describe("EnvironmentService", () => {
       await expect(service.getAdbPath()).rejects.toThrow("Android SDK not found");
     });
   });
+
+  describe("Windows support", () => {
+    beforeEach(() => {
+      service = new EnvironmentService();
+      (service as any).cached = null;
+      delete process.env.ANDROID_HOME;
+      delete process.env.ANDROID_SDK_ROOT;
+    });
+
+    it("uses .exe extension for adb on Windows", async () => {
+      process.env.ANDROID_HOME = "C:\\Users\\test\\AppData\\Local\\Android\\Sdk";
+      vi.mocked(os.platform).mockReturnValue("win32");
+      vi.mocked(os.homedir).mockReturnValue("C:\\Users\\test");
+      vi.mocked(fs.existsSync).mockImplementation((p) => {
+        return p === "C:\\Users\\test\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe";
+      });
+
+      const env = await service.detect();
+
+      expect(env.adbPath).toBe("C:\\Users\\test\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe");
+      expect(env.isValid).toBe(true);
+    });
+
+    it("uses .exe extension for emulator on Windows", async () => {
+      process.env.ANDROID_HOME = "C:\\Users\\test\\AppData\\Local\\Android\\Sdk";
+      vi.mocked(os.platform).mockReturnValue("win32");
+      vi.mocked(os.homedir).mockReturnValue("C:\\Users\\test");
+      vi.mocked(fs.existsSync).mockImplementation((p) => {
+        const validPaths = [
+          "C:\\Users\\test\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe",
+          "C:\\Users\\test\\AppData\\Local\\Android\\Sdk\\emulator\\emulator.exe",
+        ];
+        return validPaths.includes(p as string);
+      });
+
+      const env = await service.detect();
+
+      expect(env.emulatorPath).toBe("C:\\Users\\test\\AppData\\Local\\Android\\Sdk\\emulator\\emulator.exe");
+    });
+
+    it("probes Windows-specific paths when env vars not set", async () => {
+      vi.mocked(os.platform).mockReturnValue("win32");
+      vi.mocked(os.homedir).mockReturnValue("C:\\Users\\test");
+      process.env.LOCALAPPDATA = "C:\\Users\\test\\AppData\\Local";
+      vi.mocked(fs.existsSync).mockImplementation((p) => {
+        return p === "C:\\Users\\test\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe";
+      });
+
+      const env = await service.detect();
+
+      expect(env.sdkPath).toBe("C:\\Users\\test\\AppData\\Local\\Android\\Sdk");
+      expect(env.isValid).toBe(true);
+    });
+  });
 });

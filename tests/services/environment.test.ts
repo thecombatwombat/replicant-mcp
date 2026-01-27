@@ -241,5 +241,22 @@ describe("EnvironmentService", () => {
       expect(env.isValid).toBe(false);
       process.env.PATH = originalPath;
     });
+
+    it("uses .bat extension for avdmanager on Windows", async () => {
+      const sdkPath = "C:\\Users\\test\\AppData\\Local\\Android\\Sdk";
+      const expectedAdbPath = path.join(sdkPath, "platform-tools", "adb.exe");
+      const expectedAvdManagerPath = path.join(sdkPath, "cmdline-tools", "latest", "bin", "avdmanager.bat");
+      process.env.ANDROID_HOME = sdkPath;
+      vi.mocked(os.platform).mockReturnValue("win32");
+      vi.mocked(os.homedir).mockReturnValue("C:\\Users\\test");
+      vi.mocked(fs.existsSync).mockImplementation((p) => {
+        const validPaths = [expectedAdbPath, expectedAvdManagerPath];
+        return validPaths.includes(p as string);
+      });
+
+      const avdManagerPath = await service.getAvdManagerPath();
+
+      expect(avdManagerPath).toBe(expectedAvdManagerPath);
+    });
   });
 });

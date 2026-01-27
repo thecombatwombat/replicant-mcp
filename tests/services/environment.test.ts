@@ -209,7 +209,10 @@ describe("EnvironmentService", () => {
       vi.mocked(os.homedir).mockReturnValue("C:\\Users\\test");
       process.env.PATH = "C:\\Windows\\System32;C:\\android-sdk\\platform-tools";
       vi.mocked(fs.existsSync).mockImplementation((p) => {
-        return p === "C:\\android-sdk\\platform-tools\\adb.exe";
+        // Match both pure Windows path and mixed-slash path from path.join on non-Windows
+        const pStr = p as string;
+        return pStr === "C:\\android-sdk\\platform-tools\\adb.exe" ||
+               pStr === "C:\\android-sdk/platform-tools/adb.exe";
       });
 
       const env = await service.detect();

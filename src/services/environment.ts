@@ -141,6 +141,17 @@ export class EnvironmentService {
       }
     }
 
+    // 4. Probe PATH as last resort
+    const adbInPath = this.findAdbInPath(platform);
+    if (adbInPath) {
+      // adb is at <SDK>/platform-tools/adb, go up 2 levels
+      const platformToolsDir = this.getParentDir(adbInPath, platform);
+      const sdkPath = this.getParentDir(platformToolsDir, platform);
+      if (this.isValidSdkPath(sdkPath, platform)) {
+        return sdkPath;
+      }
+    }
+
     return null;
   }
 
@@ -192,5 +203,39 @@ export class EnvironmentService {
     };
 
     return baseName + (windowsExtensions[baseName] || ".exe");
+  }
+
+  private findAdbInPath(platform?: string): string | null {
+    const actualPlatform = platform ?? os.platform();
+    const adbName = this.getExecutableName("adb", actualPlatform);
+    const pathEnv = process.env.PATH || "";
+    const pathSeparator = actualPlatform === "win32" ? ";" : ":";
+    const dirSeparator = actualPlatform === "win32" ? "\\" : "/";
+
+    for (const dir of pathEnv.split(pathSeparator)) {
+      if (!dir) continue;
+      // Use platform-appropriate path separator
+      const candidate = dir + dirSeparator + adbName;
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+    return null;
+  }
+
+  private isValidSdkPath(sdkPath: string, platform?: string): boolean {
+    // Valid SDK should have platform-tools directory with adb
+    const actualPlatform = platform ?? os.platform();
+    const separator = actualPlatform === "win32" ? "\\" : "/";
+    const adbPath = sdkPath + separator + "platform-tools" + separator + this.getExecutableName("adb", platform);
+    return fs.existsSync(adbPath);
+  }
+
+  private getParentDir(filePath: string, platform?: string): string {
+    const actualPlatform = platform ?? os.platform();
+    const separator = actualPlatform === "win32" ? "\\" : "/";
+    const parts = filePath.split(separator);
+    parts.pop(); // Remove last component
+    return parts.join(separator);
   }
 }

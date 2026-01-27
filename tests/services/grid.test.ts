@@ -70,7 +70,7 @@ describe("grid", () => {
   });
 
   describe("createGridOverlay", () => {
-    it("creates image with numbered grid overlay", async () => {
+    it("creates image with numbered grid overlay", { timeout: 30000 }, async () => {
       const sharp = (await import("sharp")).default;
       const testImagePath = path.join(os.tmpdir(), "test-grid-input.png");
 

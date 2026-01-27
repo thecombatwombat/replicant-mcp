@@ -206,7 +206,7 @@ export class UiAutomatorAdapter {
 
   async screenshot(deviceId: string, options: ScreenshotOptions = {}): Promise<ScreenshotResult> {
     const remotePath = "/sdcard/replicant-screenshot.png";
-    const maxDimension = options.maxDimension ?? 1000;
+    const maxDimension = options.maxDimension ?? 800;
 
     // Capture screenshot on device
     const captureResult = await this.adb.shell(deviceId, `screencap -p ${remotePath}`);
@@ -237,10 +237,12 @@ export class UiAutomatorAdapter {
           const imageWidth = Math.round(deviceWidth / scaleFactor);
           const imageHeight = Math.round(deviceHeight / scaleFactor);
 
-          // Scale and convert to JPEG
+          // Sharpen, scale, convert to WebP, strip ICC profile
           const buffer = await sharp(tempPath)
+            .sharpen({ sigma: 0.5 })
             .resize(imageWidth, imageHeight)
-            .jpeg({ quality: 70 })
+            .webp({ quality: 72, effort: 5, smartSubsample: true })
+            .withMetadata({})
             .toBuffer();
 
           // Update scaling state (now supported for inline!)
@@ -255,7 +257,7 @@ export class UiAutomatorAdapter {
           return {
             mode: "inline",
             base64: buffer.toString("base64"),
-            mimeType: "image/jpeg",
+            mimeType: "image/webp",
             sizeBytes: buffer.length,
             device: { width: deviceWidth, height: deviceHeight },
             image: { width: imageWidth, height: imageHeight },

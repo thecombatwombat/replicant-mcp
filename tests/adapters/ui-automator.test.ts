@@ -129,7 +129,9 @@ describe("UiAutomatorAdapter", () => {
       vi.mocked(sharp).mockImplementation(() => ({
         metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
         resize: vi.fn().mockReturnThis(),
-        jpeg: vi.fn().mockReturnThis(),
+        sharpen: vi.fn().mockReturnThis(),
+        webp: vi.fn().mockReturnThis(),
+        withMetadata: vi.fn().mockReturnThis(),
         toBuffer: vi.fn().mockResolvedValue(mockBuffer),
         toFile: vi.fn().mockResolvedValue(undefined),
       } as any));
@@ -141,7 +143,7 @@ describe("UiAutomatorAdapter", () => {
 
       expect(result.mode).toBe("inline");
       expect(result.base64).toBe(mockBuffer.toString("base64"));
-      expect(result.mimeType).toBe("image/jpeg");
+      expect(result.mimeType).toBe("image/webp");
     });
 
     it("sets scaling state when inline mode requested", async () => {
@@ -149,7 +151,9 @@ describe("UiAutomatorAdapter", () => {
       vi.mocked(sharp).mockImplementation(() => ({
         metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
         resize: vi.fn().mockReturnThis(),
-        jpeg: vi.fn().mockReturnThis(),
+        sharpen: vi.fn().mockReturnThis(),
+        webp: vi.fn().mockReturnThis(),
+        withMetadata: vi.fn().mockReturnThis(),
         toBuffer: vi.fn().mockResolvedValue(mockBuffer),
         toFile: vi.fn().mockResolvedValue(undefined),
       } as any));
@@ -230,11 +234,13 @@ describe("UiAutomatorAdapter", () => {
     });
 
     it("returns mimeType field for inline screenshots", async () => {
-      const mockBuffer = Buffer.alloc(50000); // 50KB mock JPEG
+      const mockBuffer = Buffer.alloc(50000); // 50KB mock WebP
       vi.mocked(sharp).mockImplementation(() => ({
         metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
         resize: vi.fn().mockReturnThis(),
-        jpeg: vi.fn().mockReturnThis(),
+        sharpen: vi.fn().mockReturnThis(),
+        webp: vi.fn().mockReturnThis(),
+        withMetadata: vi.fn().mockReturnThis(),
         toBuffer: vi.fn().mockResolvedValue(mockBuffer),
         toFile: vi.fn().mockResolvedValue(undefined),
       } as any));
@@ -244,16 +250,18 @@ describe("UiAutomatorAdapter", () => {
 
       const result = await adapter.screenshot("emulator-5554", { inline: true });
 
-      expect(result.mimeType).toBe("image/jpeg");
+      expect(result.mimeType).toBe("image/webp");
     });
 
-    it("returns scaled JPEG for inline screenshots under 200KB", async () => {
+    it("returns scaled WebP for inline screenshots under 200KB", async () => {
       // Mock sharp to return a buffer
-      const mockBuffer = Buffer.alloc(50000); // 50KB mock JPEG
+      const mockBuffer = Buffer.alloc(50000); // 50KB mock WebP
       vi.mocked(sharp).mockImplementation(() => ({
         metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
         resize: vi.fn().mockReturnThis(),
-        jpeg: vi.fn().mockReturnThis(),
+        sharpen: vi.fn().mockReturnThis(),
+        webp: vi.fn().mockReturnThis(),
+        withMetadata: vi.fn().mockReturnThis(),
         toBuffer: vi.fn().mockResolvedValue(mockBuffer),
         toFile: vi.fn().mockResolvedValue(undefined),
       } as any));
@@ -264,7 +272,7 @@ describe("UiAutomatorAdapter", () => {
       const result = await adapter.screenshot("emulator-5554", { inline: true });
 
       expect(result.mode).toBe("inline");
-      expect(result.mimeType).toBe("image/jpeg");
+      expect(result.mimeType).toBe("image/webp");
       expect(result.sizeBytes).toBeLessThan(200000);
       expect(result.base64).toBeDefined();
     });
@@ -274,7 +282,9 @@ describe("UiAutomatorAdapter", () => {
       vi.mocked(sharp).mockImplementation(() => ({
         metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
         resize: vi.fn().mockReturnThis(),
-        jpeg: vi.fn().mockReturnThis(),
+        sharpen: vi.fn().mockReturnThis(),
+        webp: vi.fn().mockReturnThis(),
+        withMetadata: vi.fn().mockReturnThis(),
         toBuffer: vi.fn().mockResolvedValue(mockBuffer),
         toFile: vi.fn().mockResolvedValue(undefined),
       } as any));
@@ -294,7 +304,9 @@ describe("UiAutomatorAdapter", () => {
       vi.mocked(sharp).mockImplementation(() => ({
         metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
         resize: vi.fn().mockReturnThis(),
-        jpeg: vi.fn().mockReturnThis(),
+        sharpen: vi.fn().mockReturnThis(),
+        webp: vi.fn().mockReturnThis(),
+        withMetadata: vi.fn().mockReturnThis(),
         toBuffer: vi.fn().mockResolvedValue(mockBuffer),
         toFile: vi.fn().mockResolvedValue(undefined),
       } as any));
@@ -307,7 +319,7 @@ describe("UiAutomatorAdapter", () => {
       // CRITICAL: This must NOT be null - inline mode now sets scaling state
       const state = adapter.getScalingState();
       expect(state).not.toBeNull();
-      expect(state!.scaleFactor).toBe(2.4);
+      expect(state!.scaleFactor).toBe(3); // 2400/800 with new default maxDimension
       expect(state!.deviceWidth).toBe(1080);
       expect(state!.deviceHeight).toBe(2400);
     });
@@ -317,7 +329,9 @@ describe("UiAutomatorAdapter", () => {
       vi.mocked(sharp).mockImplementation(() => ({
         metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
         resize: vi.fn().mockReturnThis(),
-        jpeg: vi.fn().mockReturnThis(),
+        sharpen: vi.fn().mockReturnThis(),
+        webp: vi.fn().mockReturnThis(),
+        withMetadata: vi.fn().mockReturnThis(),
         toBuffer: vi.fn().mockResolvedValue(mockBuffer),
         toFile: vi.fn().mockResolvedValue(undefined),
       } as any));
@@ -339,7 +353,9 @@ describe("UiAutomatorAdapter", () => {
       vi.mocked(sharp).mockImplementation(() => ({
         metadata: vi.fn().mockResolvedValue({ width: 800, height: 600 }),
         resize: vi.fn().mockReturnThis(),
-        jpeg: vi.fn().mockReturnThis(),
+        sharpen: vi.fn().mockReturnThis(),
+        webp: vi.fn().mockReturnThis(),
+        withMetadata: vi.fn().mockReturnThis(),
         toBuffer: vi.fn().mockResolvedValue(Buffer.alloc(1000)),
         toFile: vi.fn().mockResolvedValue(undefined),
       } as any));
@@ -368,7 +384,9 @@ describe("UiAutomatorAdapter", () => {
       vi.mocked(sharp).mockImplementation(() => ({
         metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
         resize: vi.fn().mockReturnThis(),
-        jpeg: vi.fn().mockReturnThis(),
+        sharpen: vi.fn().mockReturnThis(),
+        webp: vi.fn().mockReturnThis(),
+        withMetadata: vi.fn().mockReturnThis(),
         toBuffer: vi.fn().mockResolvedValue(mockBuffer),
         toFile: vi.fn().mockResolvedValue(undefined),
       } as any));
@@ -406,7 +424,9 @@ describe("UiAutomatorAdapter", () => {
       vi.mocked(sharp).mockImplementation(() => ({
         metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
         resize: vi.fn().mockReturnThis(),
-        jpeg: vi.fn().mockReturnThis(),
+        sharpen: vi.fn().mockReturnThis(),
+        webp: vi.fn().mockReturnThis(),
+        withMetadata: vi.fn().mockReturnThis(),
         toBuffer: vi.fn().mockResolvedValue(Buffer.alloc(50000)),
         toFile: vi.fn().mockResolvedValue(undefined),
       } as any));

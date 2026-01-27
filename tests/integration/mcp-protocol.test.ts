@@ -237,6 +237,16 @@ describe("MCP Protocol Compliance", () => {
       expect(parseAttempt).not.toThrow();
     });
   });
+
+  describe("Image Content Blocks", () => {
+    it("should return text-only for results without base64/mimeType", async () => {
+      // Regular tool calls should still return text-only
+      const result = await client.callTool({ name: "rtfm", arguments: { tool: "cache" } });
+
+      expect(result.content).toHaveLength(1);
+      expect(result.content[0].type).toBe("text");
+    });
+  });
 });
 
 describe("Tool Input Schema Validation", () => {

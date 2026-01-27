@@ -38,8 +38,8 @@ export class EnvironmentService {
       return this.cached;
     }
 
-    const adbPath = path.join(sdkPath, "platform-tools", "adb");
-    const emulatorPath = path.join(sdkPath, "emulator", "emulator");
+    const adbPath = path.join(sdkPath, "platform-tools", this.getExecutableName("adb", platform));
+    const emulatorPath = path.join(sdkPath, "emulator", this.getExecutableName("emulator", platform));
 
     // Verify adb exists
     if (!fs.existsSync(adbPath)) {
@@ -97,9 +97,9 @@ export class EnvironmentService {
         "Install Android Studio or set ANDROID_HOME environment variable"
       );
     }
-    const avdManagerPath = path.join(env.sdkPath, "cmdline-tools", "latest", "bin", "avdmanager");
+    const avdManagerPath = path.join(env.sdkPath, "cmdline-tools", "latest", "bin", this.getExecutableName("avdmanager", env.platform));
     // Fallback to older location
-    const legacyPath = path.join(env.sdkPath, "tools", "bin", "avdmanager");
+    const legacyPath = path.join(env.sdkPath, "tools", "bin", this.getExecutableName("avdmanager", env.platform));
 
     if (fs.existsSync(avdManagerPath)) {
       return avdManagerPath;
@@ -118,7 +118,7 @@ export class EnvironmentService {
   private findSdkPath(platform: string): string | null {
     // 1. Check ANDROID_HOME
     if (process.env.ANDROID_HOME) {
-      const adbPath = path.join(process.env.ANDROID_HOME, "platform-tools", "adb");
+      const adbPath = path.join(process.env.ANDROID_HOME, "platform-tools", this.getExecutableName("adb", platform));
       if (fs.existsSync(adbPath)) {
         return process.env.ANDROID_HOME;
       }
@@ -126,7 +126,7 @@ export class EnvironmentService {
 
     // 2. Check ANDROID_SDK_ROOT
     if (process.env.ANDROID_SDK_ROOT) {
-      const adbPath = path.join(process.env.ANDROID_SDK_ROOT, "platform-tools", "adb");
+      const adbPath = path.join(process.env.ANDROID_SDK_ROOT, "platform-tools", this.getExecutableName("adb", platform));
       if (fs.existsSync(adbPath)) {
         return process.env.ANDROID_SDK_ROOT;
       }
@@ -135,7 +135,7 @@ export class EnvironmentService {
     // 3. Probe common paths
     const searchPaths = this.getSearchPaths(platform);
     for (const sdkPath of searchPaths) {
-      const adbPath = path.join(sdkPath, "platform-tools", "adb");
+      const adbPath = path.join(sdkPath, "platform-tools", this.getExecutableName("adb", platform));
       if (fs.existsSync(adbPath)) {
         return sdkPath;
       }
@@ -177,5 +177,20 @@ export class EnvironmentService {
   // Clear cache (for testing)
   clearCache(): void {
     this.cached = null;
+  }
+
+  private getExecutableName(baseName: string, platform?: string): string {
+    const currentPlatform = platform ?? os.platform();
+    if (currentPlatform !== "win32") {
+      return baseName;
+    }
+
+    const windowsExtensions: Record<string, string> = {
+      adb: ".exe",
+      emulator: ".exe",
+      avdmanager: ".bat",
+    };
+
+    return baseName + (windowsExtensions[baseName] || ".exe");
   }
 }

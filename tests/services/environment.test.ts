@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { EnvironmentService } from "../../src/services/environment.js";
 import * as fs from "fs";
 import * as os from "os";
+import * as path from "path";
 
 // Mock fs and os
 vi.mock("fs");
@@ -136,47 +137,52 @@ describe("EnvironmentService", () => {
     });
 
     it("uses .exe extension for adb on Windows", async () => {
-      process.env.ANDROID_HOME = "C:\\Users\\test\\AppData\\Local\\Android\\Sdk";
+      const sdkPath = "C:\\Users\\test\\AppData\\Local\\Android\\Sdk";
+      const expectedAdbPath = path.join(sdkPath, "platform-tools", "adb.exe");
+      process.env.ANDROID_HOME = sdkPath;
       vi.mocked(os.platform).mockReturnValue("win32");
       vi.mocked(os.homedir).mockReturnValue("C:\\Users\\test");
       vi.mocked(fs.existsSync).mockImplementation((p) => {
-        return p === "C:\\Users\\test\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe";
+        return p === expectedAdbPath;
       });
 
       const env = await service.detect();
 
-      expect(env.adbPath).toBe("C:\\Users\\test\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe");
+      expect(env.adbPath).toBe(expectedAdbPath);
       expect(env.isValid).toBe(true);
     });
 
     it("uses .exe extension for emulator on Windows", async () => {
-      process.env.ANDROID_HOME = "C:\\Users\\test\\AppData\\Local\\Android\\Sdk";
+      const sdkPath = "C:\\Users\\test\\AppData\\Local\\Android\\Sdk";
+      const expectedAdbPath = path.join(sdkPath, "platform-tools", "adb.exe");
+      const expectedEmulatorPath = path.join(sdkPath, "emulator", "emulator.exe");
+      process.env.ANDROID_HOME = sdkPath;
       vi.mocked(os.platform).mockReturnValue("win32");
       vi.mocked(os.homedir).mockReturnValue("C:\\Users\\test");
       vi.mocked(fs.existsSync).mockImplementation((p) => {
-        const validPaths = [
-          "C:\\Users\\test\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe",
-          "C:\\Users\\test\\AppData\\Local\\Android\\Sdk\\emulator\\emulator.exe",
-        ];
+        const validPaths = [expectedAdbPath, expectedEmulatorPath];
         return validPaths.includes(p as string);
       });
 
       const env = await service.detect();
 
-      expect(env.emulatorPath).toBe("C:\\Users\\test\\AppData\\Local\\Android\\Sdk\\emulator\\emulator.exe");
+      expect(env.emulatorPath).toBe(expectedEmulatorPath);
     });
 
     it("probes Windows-specific paths when env vars not set", async () => {
+      const localAppData = "C:\\Users\\test\\AppData\\Local";
+      const expectedSdkPath = path.join(localAppData, "Android", "Sdk");
+      const expectedAdbPath = path.join(expectedSdkPath, "platform-tools", "adb.exe");
       vi.mocked(os.platform).mockReturnValue("win32");
       vi.mocked(os.homedir).mockReturnValue("C:\\Users\\test");
-      process.env.LOCALAPPDATA = "C:\\Users\\test\\AppData\\Local";
+      process.env.LOCALAPPDATA = localAppData;
       vi.mocked(fs.existsSync).mockImplementation((p) => {
-        return p === "C:\\Users\\test\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe";
+        return p === expectedAdbPath;
       });
 
       const env = await service.detect();
 
-      expect(env.sdkPath).toBe("C:\\Users\\test\\AppData\\Local\\Android\\Sdk");
+      expect(env.sdkPath).toBe(expectedSdkPath);
       expect(env.isValid).toBe(true);
     });
   });

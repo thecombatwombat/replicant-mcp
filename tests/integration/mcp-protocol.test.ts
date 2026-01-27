@@ -5,7 +5,7 @@
  * the Model Context Protocol specification.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -252,9 +252,8 @@ describe("MCP Protocol Compliance", () => {
         scaleFactor: 2.4,
       };
 
-      // Intercept the ui screenshot call
-      const originalScreenshot = context.ui.screenshot;
-      context.ui.screenshot = async () => mockScreenshotResult;
+      // Use vi.spyOn for more reliable mocking across Node versions
+      const spy = vi.spyOn(context.ui, "screenshot").mockResolvedValue(mockScreenshotResult);
 
       try {
         const result = await client.callTool({ name: "ui", arguments: { operation: "screenshot" } });
@@ -277,7 +276,7 @@ describe("MCP Protocol Compliance", () => {
         expect(metadata.sizeBytes).toBe(68);
         expect(metadata.scaleFactor).toBe(2.4);
       } finally {
-        context.ui.screenshot = originalScreenshot;
+        spy.mockRestore();
       }
     });
 

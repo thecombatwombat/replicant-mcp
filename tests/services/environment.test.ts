@@ -185,5 +185,58 @@ describe("EnvironmentService", () => {
       expect(env.sdkPath).toBe(expectedSdkPath);
       expect(env.isValid).toBe(true);
     });
+
+    it("finds adb in PATH when SDK paths fail (Unix)", async () => {
+      const originalPath = process.env.PATH;
+      vi.mocked(os.platform).mockReturnValue("linux");
+      vi.mocked(os.homedir).mockReturnValue("/home/test");
+      process.env.PATH = "/usr/bin:/home/test/android-sdk/platform-tools";
+      vi.mocked(fs.existsSync).mockImplementation((p) => {
+        // Only adb in PATH exists, not in standard locations
+        return p === "/home/test/android-sdk/platform-tools/adb";
+      });
+
+      const env = await service.detect();
+
+      expect(env.sdkPath).toBe("/home/test/android-sdk");
+      expect(env.isValid).toBe(true);
+      process.env.PATH = originalPath;
+    });
+
+    it("finds adb in PATH when SDK paths fail (Windows)", async () => {
+      const originalPath = process.env.PATH;
+      vi.mocked(os.platform).mockReturnValue("win32");
+      vi.mocked(os.homedir).mockReturnValue("C:\\Users\\test");
+      process.env.PATH = "C:\\Windows\\System32;C:\\android-sdk\\platform-tools";
+      vi.mocked(fs.existsSync).mockImplementation((p) => {
+        return p === "C:\\android-sdk\\platform-tools\\adb.exe";
+      });
+
+      const env = await service.detect();
+
+      expect(env.sdkPath).toBe("C:\\android-sdk");
+      expect(env.isValid).toBe(true);
+      process.env.PATH = originalPath;
+    });
+
+    it("validates derived SDK path has platform-tools", async () => {
+      const originalPath = process.env.PATH;
+      vi.mocked(os.platform).mockReturnValue("linux");
+      vi.mocked(os.homedir).mockReturnValue("/home/test");
+      // adb is in /usr/local/bin (standalone, not in SDK)
+      process.env.PATH = "/usr/local/bin";
+      vi.mocked(fs.existsSync).mockImplementation((p) => {
+        // adb exists but parent doesn't have platform-tools structure
+        if (p === "/usr/local/bin/adb") return true;
+        if (p === "/usr/local/platform-tools") return false;
+        return false;
+      });
+
+      const env = await service.detect();
+
+      // Should NOT use standalone adb as SDK
+      expect(env.isValid).toBe(false);
+      process.env.PATH = originalPath;
+    });
   });
 });

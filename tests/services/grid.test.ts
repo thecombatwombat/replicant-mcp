@@ -1,6 +1,8 @@
 // tests/services/grid.test.ts
 import { describe, it, expect } from "vitest";
 import * as fs from "fs/promises";
+import * as os from "os";
+import * as path from "path";
 import {
   calculateGridCellBounds,
   calculatePositionCoordinates,
@@ -70,7 +72,7 @@ describe("grid", () => {
   describe("createGridOverlay", () => {
     it("creates image with numbered grid overlay", async () => {
       const sharp = (await import("sharp")).default;
-      const testImagePath = "/tmp/test-grid-input.png";
+      const testImagePath = path.join(os.tmpdir(), "test-grid-input.png");
 
       // Create a test image
       await sharp({

@@ -26,61 +26,71 @@ describe("EnvironmentService", () => {
 
   describe("detect", () => {
     it("uses ANDROID_HOME when set and valid", async () => {
-      process.env.ANDROID_HOME = "/opt/android-sdk";
+      const sdkPath = path.join("/opt", "android-sdk");
+      const adbPath = path.join(sdkPath, "platform-tools", "adb");
+      process.env.ANDROID_HOME = sdkPath;
       vi.mocked(os.platform).mockReturnValue("darwin");
-      vi.mocked(fs.existsSync).mockImplementation((path) => {
-        return path === "/opt/android-sdk/platform-tools/adb";
+      vi.mocked(fs.existsSync).mockImplementation((p) => {
+        return p === adbPath;
       });
 
       const env = await service.detect();
 
-      expect(env.sdkPath).toBe("/opt/android-sdk");
-      expect(env.adbPath).toBe("/opt/android-sdk/platform-tools/adb");
+      expect(env.sdkPath).toBe(sdkPath);
+      expect(env.adbPath).toBe(adbPath);
       expect(env.isValid).toBe(true);
     });
 
     it("uses ANDROID_SDK_ROOT as fallback", async () => {
-      process.env.ANDROID_SDK_ROOT = "/usr/local/android";
+      const sdkPath = path.join("/usr", "local", "android");
+      const adbPath = path.join(sdkPath, "platform-tools", "adb");
+      process.env.ANDROID_SDK_ROOT = sdkPath;
       vi.mocked(os.platform).mockReturnValue("linux");
-      vi.mocked(fs.existsSync).mockImplementation((path) => {
-        return path === "/usr/local/android/platform-tools/adb";
+      vi.mocked(fs.existsSync).mockImplementation((p) => {
+        return p === adbPath;
       });
 
       const env = await service.detect();
 
-      expect(env.sdkPath).toBe("/usr/local/android");
+      expect(env.sdkPath).toBe(sdkPath);
       expect(env.isValid).toBe(true);
     });
 
     it("probes common macOS paths when env vars not set", async () => {
+      const homedir = path.join("/Users", "test");
+      const sdkPath = path.join(homedir, "Library", "Android", "sdk");
+      const adbPath = path.join(sdkPath, "platform-tools", "adb");
       vi.mocked(os.platform).mockReturnValue("darwin");
-      vi.mocked(os.homedir).mockReturnValue("/Users/test");
-      vi.mocked(fs.existsSync).mockImplementation((path) => {
-        return path === "/Users/test/Library/Android/sdk/platform-tools/adb";
+      vi.mocked(os.homedir).mockReturnValue(homedir);
+      vi.mocked(fs.existsSync).mockImplementation((p) => {
+        return p === adbPath;
       });
 
       const env = await service.detect();
 
-      expect(env.sdkPath).toBe("/Users/test/Library/Android/sdk");
+      expect(env.sdkPath).toBe(sdkPath);
       expect(env.isValid).toBe(true);
     });
 
     it("probes common Linux paths when env vars not set", async () => {
+      const homedir = path.join("/home", "test");
+      const sdkPath = path.join(homedir, "Android", "Sdk");
+      const adbPath = path.join(sdkPath, "platform-tools", "adb");
       vi.mocked(os.platform).mockReturnValue("linux");
-      vi.mocked(os.homedir).mockReturnValue("/home/test");
-      vi.mocked(fs.existsSync).mockImplementation((path) => {
-        return path === "/home/test/Android/Sdk/platform-tools/adb";
+      vi.mocked(os.homedir).mockReturnValue(homedir);
+      vi.mocked(fs.existsSync).mockImplementation((p) => {
+        return p === adbPath;
       });
 
       const env = await service.detect();
 
-      expect(env.sdkPath).toBe("/home/test/Android/Sdk");
+      expect(env.sdkPath).toBe(sdkPath);
       expect(env.isValid).toBe(true);
     });
 
     it("returns invalid when SDK not found anywhere", async () => {
       vi.mocked(os.platform).mockReturnValue("darwin");
-      vi.mocked(os.homedir).mockReturnValue("/Users/test");
+      vi.mocked(os.homedir).mockReturnValue(path.join("/Users", "test"));
       vi.mocked(fs.existsSync).mockReturnValue(false);
 
       const env = await service.detect();
@@ -91,7 +101,7 @@ describe("EnvironmentService", () => {
     });
 
     it("caches result after first detection", async () => {
-      process.env.ANDROID_HOME = "/opt/android-sdk";
+      process.env.ANDROID_HOME = path.join("/opt", "android-sdk");
       vi.mocked(os.platform).mockReturnValue("darwin");
       vi.mocked(fs.existsSync).mockReturnValue(true);
 
@@ -110,18 +120,20 @@ describe("EnvironmentService", () => {
 
   describe("getAdbPath", () => {
     it("returns adb path when valid", async () => {
-      process.env.ANDROID_HOME = "/opt/android-sdk";
+      const sdkPath = path.join("/opt", "android-sdk");
+      const adbPath = path.join(sdkPath, "platform-tools", "adb");
+      process.env.ANDROID_HOME = sdkPath;
       vi.mocked(os.platform).mockReturnValue("darwin");
       vi.mocked(fs.existsSync).mockReturnValue(true);
 
-      const adbPath = await service.getAdbPath();
+      const result = await service.getAdbPath();
 
-      expect(adbPath).toBe("/opt/android-sdk/platform-tools/adb");
+      expect(result).toBe(adbPath);
     });
 
     it("throws when SDK not found", async () => {
       vi.mocked(os.platform).mockReturnValue("darwin");
-      vi.mocked(os.homedir).mockReturnValue("/Users/test");
+      vi.mocked(os.homedir).mockReturnValue(path.join("/Users", "test"));
       vi.mocked(fs.existsSync).mockReturnValue(false);
 
       await expect(service.getAdbPath()).rejects.toThrow("Android SDK not found");
@@ -188,50 +200,66 @@ describe("EnvironmentService", () => {
 
     it("finds adb in PATH when SDK paths fail (Unix)", async () => {
       const originalPath = process.env.PATH;
+      const homedir = path.join("/home", "test");
+      const sdkPath = path.join(homedir, "android-sdk");
+      const adbDir = path.join(sdkPath, "platform-tools");
+      const adbPath = path.join(adbDir, "adb");
       vi.mocked(os.platform).mockReturnValue("linux");
-      vi.mocked(os.homedir).mockReturnValue("/home/test");
-      process.env.PATH = "/usr/bin:/home/test/android-sdk/platform-tools";
+      vi.mocked(os.homedir).mockReturnValue(homedir);
+      // Use path separator appropriate for the test runner
+      process.env.PATH = `/usr/bin:${adbDir}`;
       vi.mocked(fs.existsSync).mockImplementation((p) => {
         // Only adb in PATH exists, not in standard locations
-        return p === "/home/test/android-sdk/platform-tools/adb";
+        return p === adbPath;
       });
 
       const env = await service.detect();
 
-      expect(env.sdkPath).toBe("/home/test/android-sdk");
+      expect(env.sdkPath).toBe(sdkPath);
       expect(env.isValid).toBe(true);
       process.env.PATH = originalPath;
     });
 
     it("finds adb in PATH when SDK paths fail (Windows)", async () => {
       const originalPath = process.env.PATH;
+      // Use pure Windows paths - the production code uses manual string concat, not path.join
+      const sdkPath = "C:\\android-sdk";
+      const adbDir = "C:\\android-sdk\\platform-tools";
       vi.mocked(os.platform).mockReturnValue("win32");
       vi.mocked(os.homedir).mockReturnValue("C:\\Users\\test");
-      process.env.PATH = "C:\\Windows\\System32;C:\\android-sdk\\platform-tools";
+      process.env.PATH = `C:\\Windows\\System32;${adbDir}`;
       vi.mocked(fs.existsSync).mockImplementation((p) => {
-        // Match both pure Windows path and mixed-slash path from path.join on non-Windows
         const pStr = p as string;
-        return pStr === "C:\\android-sdk\\platform-tools\\adb.exe" ||
-               pStr === "C:\\android-sdk/platform-tools/adb.exe";
+        // Normalize path for comparison (handle both \ and / separators)
+        // This is needed because path.join uses the host platform's separator
+        const normalized = pStr.replace(/\//g, "\\");
+        return (
+          normalized === "C:\\android-sdk\\platform-tools\\adb.exe" ||
+          normalized === "C:\\android-sdk\\emulator\\emulator.exe"
+        );
       });
 
       const env = await service.detect();
 
-      expect(env.sdkPath).toBe("C:\\android-sdk");
+      expect(env.sdkPath).toBe(sdkPath);
       expect(env.isValid).toBe(true);
       process.env.PATH = originalPath;
     });
 
     it("validates derived SDK path has platform-tools", async () => {
       const originalPath = process.env.PATH;
+      const homedir = path.join("/home", "test");
+      const binDir = path.join("/usr", "local", "bin");
+      const adbPath = path.join(binDir, "adb");
+      const invalidSdkPlatformTools = path.join("/usr", "local", "platform-tools");
       vi.mocked(os.platform).mockReturnValue("linux");
-      vi.mocked(os.homedir).mockReturnValue("/home/test");
+      vi.mocked(os.homedir).mockReturnValue(homedir);
       // adb is in /usr/local/bin (standalone, not in SDK)
-      process.env.PATH = "/usr/local/bin";
+      process.env.PATH = binDir;
       vi.mocked(fs.existsSync).mockImplementation((p) => {
         // adb exists but parent doesn't have platform-tools structure
-        if (p === "/usr/local/bin/adb") return true;
-        if (p === "/usr/local/platform-tools") return false;
+        if (p === adbPath) return true;
+        if (p === invalidSdkPlatformTools) return false;
         return false;
       });
 

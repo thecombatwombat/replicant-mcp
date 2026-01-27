@@ -51,7 +51,7 @@ describe("getDefaultScreenshotPath", () => {
     // The path should start with the actual home directory, not "/"
     expect(result.startsWith("/.replicant")).toBe(false);
     expect(result.startsWith(actualHomedir)).toBe(true);
-    expect(result).toContain(".replicant/screenshots");
+    expect(result).toContain(path.join(".replicant", "screenshots"));
     expect(result).toMatch(/screenshot-\d+-[a-z0-9]+\.png$/);
 
     cwdSpy.mockRestore();

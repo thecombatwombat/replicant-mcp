@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import * as fs from "fs/promises";
+import * as os from "os";
+import * as path from "path";
 import {
   cropCandidateImage,
   filterIconCandidates,
@@ -115,7 +117,7 @@ describe("visual-candidates", () => {
     it("crops and encodes image region as base64 JPEG", async () => {
       // Create a simple test image (100x100 red square)
       const sharp = (await import("sharp")).default;
-      const testImagePath = "/tmp/test-crop-input.png";
+      const testImagePath = path.join(os.tmpdir(), "test-crop-input.png");
       await sharp({
         create: { width: 100, height: 100, channels: 3, background: { r: 255, g: 0, b: 0 } },
       })
@@ -144,7 +146,7 @@ describe("visual-candidates", () => {
 
     it("scales down large regions to max 128x128", async () => {
       const sharp = (await import("sharp")).default;
-      const testImagePath = "/tmp/test-crop-large.png";
+      const testImagePath = path.join(os.tmpdir(), "test-crop-large.png");
       await sharp({
         create: { width: 500, height: 500, channels: 3, background: { r: 0, g: 255, b: 0 } },
       })

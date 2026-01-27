@@ -198,18 +198,17 @@ describe("EnvironmentService", () => {
       expect(env.isValid).toBe(true);
     });
 
-    it("finds adb in PATH when SDK paths fail (Unix)", async () => {
+    // Skip this test on Windows as it tests Unix-specific PATH behavior
+    it.skipIf(process.platform === "win32")("finds adb in PATH when SDK paths fail (Unix)", async () => {
       const originalPath = process.env.PATH;
-      const homedir = path.join("/home", "test");
-      const sdkPath = path.join(homedir, "android-sdk");
-      const adbDir = path.join(sdkPath, "platform-tools");
-      const adbPath = path.join(adbDir, "adb");
+      const homedir = "/home/test";
+      const sdkPath = "/home/test/android-sdk";
+      const adbDir = "/home/test/android-sdk/platform-tools";
+      const adbPath = "/home/test/android-sdk/platform-tools/adb";
       vi.mocked(os.platform).mockReturnValue("linux");
       vi.mocked(os.homedir).mockReturnValue(homedir);
-      // Use path separator appropriate for the test runner
       process.env.PATH = `/usr/bin:${adbDir}`;
       vi.mocked(fs.existsSync).mockImplementation((p) => {
-        // Only adb in PATH exists, not in standard locations
         return p === adbPath;
       });
 
@@ -246,12 +245,13 @@ describe("EnvironmentService", () => {
       process.env.PATH = originalPath;
     });
 
-    it("validates derived SDK path has platform-tools", async () => {
+    // Skip this test on Windows as it tests Unix-specific PATH behavior
+    it.skipIf(process.platform === "win32")("validates derived SDK path has platform-tools", async () => {
       const originalPath = process.env.PATH;
-      const homedir = path.join("/home", "test");
-      const binDir = path.join("/usr", "local", "bin");
-      const adbPath = path.join(binDir, "adb");
-      const invalidSdkPlatformTools = path.join("/usr", "local", "platform-tools");
+      const homedir = "/home/test";
+      const binDir = "/usr/local/bin";
+      const adbPath = "/usr/local/bin/adb";
+      const invalidSdkPlatformTools = "/usr/local/platform-tools";
       vi.mocked(os.platform).mockReturnValue("linux");
       vi.mocked(os.homedir).mockReturnValue(homedir);
       // adb is in /usr/local/bin (standalone, not in SDK)

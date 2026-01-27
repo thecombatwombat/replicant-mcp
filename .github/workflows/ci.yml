@@ -66,8 +66,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Run unit tests
-        run: npm test -- --run
+      - name: Run unit tests (excluding integration tests)
+        run: npm test -- --run --exclude tests/integration/
 
   integration-test:
     runs-on: ubuntu-latest

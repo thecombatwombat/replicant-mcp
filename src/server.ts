@@ -158,6 +158,18 @@ Use \`rtfm\` for detailed documentation on any tool.`,
           throw new Error(`Unknown tool: ${name}`);
       }
 
+      // Return images as native MCP image content blocks for efficiency
+      // (avoids Claude tokenizing base64 as text)
+      if (result && typeof result === "object" && "base64" in result && "mimeType" in result) {
+        const { base64, mimeType, ...metadata } = result as { base64: string; mimeType: string; [key: string]: unknown };
+        return {
+          content: [
+            { type: "image", data: base64, mimeType },
+            { type: "text", text: JSON.stringify(metadata, null, 2) },
+          ],
+        };
+      }
+
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
       };

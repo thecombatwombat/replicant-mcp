@@ -237,6 +237,58 @@ describe("MCP Protocol Compliance", () => {
       expect(parseAttempt).not.toThrow();
     });
   });
+
+  describe("Image Content Blocks", () => {
+    it("should return image content blocks for results with base64 and mimeType", async () => {
+      // Mock the UI adapter to return a screenshot-like result
+      const mockBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+      const mockScreenshotResult = {
+        mode: "inline",
+        base64: mockBase64,
+        mimeType: "image/png",
+        sizeBytes: 68,
+        device: { width: 1080, height: 2400 },
+        image: { width: 450, height: 1000 },
+        scaleFactor: 2.4,
+      };
+
+      // Intercept the ui screenshot call
+      const originalScreenshot = context.ui.screenshot;
+      context.ui.screenshot = async () => mockScreenshotResult;
+
+      try {
+        const result = await client.callTool({ name: "ui", arguments: { operation: "screenshot" } });
+
+        // Should have 2 content blocks: image + metadata
+        expect(result.content).toHaveLength(2);
+
+        // First block should be the image
+        const imageBlock = result.content[0];
+        expect(imageBlock.type).toBe("image");
+        expect((imageBlock as { type: "image"; data: string; mimeType: string }).data).toBe(mockBase64);
+        expect((imageBlock as { type: "image"; data: string; mimeType: string }).mimeType).toBe("image/png");
+
+        // Second block should be metadata (without base64)
+        const textBlock = result.content[1];
+        expect(textBlock.type).toBe("text");
+        const metadata = JSON.parse((textBlock as { type: "text"; text: string }).text);
+        expect(metadata.base64).toBeUndefined();
+        expect(metadata.mimeType).toBeUndefined();
+        expect(metadata.sizeBytes).toBe(68);
+        expect(metadata.scaleFactor).toBe(2.4);
+      } finally {
+        context.ui.screenshot = originalScreenshot;
+      }
+    });
+
+    it("should return text-only for results without base64/mimeType", async () => {
+      // Regular tool calls should still return text-only
+      const result = await client.callTool({ name: "rtfm", arguments: { tool: "cache" } });
+
+      expect(result.content).toHaveLength(1);
+      expect(result.content[0].type).toBe("text");
+    });
+  });
 });
 
 describe("Tool Input Schema Validation", () => {

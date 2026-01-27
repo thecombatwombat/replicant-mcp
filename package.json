@@ -1,6 +1,6 @@
 {
   "name": "replicant-mcp",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "Android MCP server for AI-assisted Android development",
   "type": "module",
   "main": "dist/index.js",

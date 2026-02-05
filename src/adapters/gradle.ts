@@ -17,6 +17,10 @@ export class GradleAdapter {
     private projectPath?: string
   ) {}
 
+  setProjectPath(path: string): void {
+    this.projectPath = path;
+  }
+
   async build(
     operation: "assembleDebug" | "assembleRelease" | "bundle",
     module?: string,
@@ -112,7 +116,9 @@ export class GradleAdapter {
         throw new ReplicantError(
           ErrorCode.GRADLE_NOT_FOUND,
           "Gradle wrapper not found",
-          "Ensure you are in an Android project directory with gradlew"
+          "Set REPLICANT_PROJECT_ROOT to your Android project directory, " +
+          "or add build.projectRoot to your config file. " +
+          "See: https://github.com/thecombatwombat/replicant-mcp#configuration"
         );
       }
       throw error;

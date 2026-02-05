@@ -193,6 +193,12 @@ export async function runServer(): Promise<void> {
   // Load configuration from REPLICANT_CONFIG if set
   await context.config.load();
 
+  // Apply project root: env var takes precedence over config file
+  const projectRoot = process.env.REPLICANT_PROJECT_ROOT || context.config.get().build?.projectRoot;
+  if (projectRoot) {
+    context.gradle.setProjectPath(projectRoot);
+  }
+
   const server = await createServer(context);
   const transport = new StdioServerTransport();
   await server.connect(transport);

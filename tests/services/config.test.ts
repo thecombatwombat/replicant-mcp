@@ -69,6 +69,50 @@ ui:
       expect(config.ui.visualModePackages).toEqual([]); // default
       expect(config.ui.autoFallbackScreenshot).toBe(true); // default
       expect(config.ui.includeBase64).toBe(true); // overridden
+      expect(config.build).toEqual({}); // default
+    });
+
+    it("loads config with build.projectRoot", async () => {
+      process.env.REPLICANT_CONFIG = "/path/to/config.yaml";
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFile).mockResolvedValue(`
+build:
+  projectRoot: /home/user/my-android-app
+`);
+
+      const config = await loadConfig();
+
+      expect(config.build.projectRoot).toBe("/home/user/my-android-app");
+      // UI defaults preserved
+      expect(config.ui.visualModePackages).toEqual([]);
+      expect(config.ui.autoFallbackScreenshot).toBe(true);
+    });
+
+    it("handles partial config with only build section (no ui)", async () => {
+      process.env.REPLICANT_CONFIG = "/path/to/config.yaml";
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFile).mockResolvedValue(`
+build:
+  projectRoot: /projects/android
+`);
+
+      const config = await loadConfig();
+
+      expect(config.build.projectRoot).toBe("/projects/android");
+      expect(config.ui).toEqual(DEFAULT_CONFIG.ui);
+    });
+
+    it("defaults build section to empty object when missing", async () => {
+      process.env.REPLICANT_CONFIG = "/path/to/config.yaml";
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFile).mockResolvedValue(`
+ui:
+  includeBase64: true
+`);
+
+      const config = await loadConfig();
+
+      expect(config.build).toEqual({});
     });
 
     it("handles empty config file", async () => {
@@ -109,6 +153,20 @@ ui:
       await manager.load();
 
       expect(manager.getUiConfig().visualModePackages).toEqual(["com.test.app"]);
+    });
+
+    it("getBuildConfig returns build config", async () => {
+      process.env.REPLICANT_CONFIG = "/path/to/config.yaml";
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFile).mockResolvedValue(`
+build:
+  projectRoot: /home/user/android-project
+`);
+
+      const manager = new ConfigManager();
+      await manager.load();
+
+      expect(manager.getBuildConfig().projectRoot).toBe("/home/user/android-project");
     });
 
     it("isVisualModePackage checks visualModePackages list", async () => {

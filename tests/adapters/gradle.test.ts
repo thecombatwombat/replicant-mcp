@@ -1,5 +1,74 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { parseBuildOutput, parseTestOutput, parseModuleList } from "../../src/parsers/gradle-output.js";
+import { GradleAdapter } from "../../src/adapters/gradle.js";
+import { ProcessRunner } from "../../src/services/process-runner.js";
+import { ReplicantError } from "../../src/types/errors.js";
+
+describe("GradleAdapter", () => {
+  describe("setProjectPath", () => {
+    it("changes the cwd used for gradle commands", async () => {
+      const mockRunner = {
+        run: vi.fn().mockResolvedValue({
+          stdout: "BUILD SUCCESSFUL in 5s\n1 actionable task: 1 executed",
+          stderr: "",
+          exitCode: 0,
+        }),
+      } as unknown as ProcessRunner;
+
+      const adapter = new GradleAdapter(mockRunner);
+      adapter.setProjectPath("/home/user/my-android-project");
+
+      await adapter.clean();
+
+      expect(mockRunner.run).toHaveBeenCalledWith(
+        "./gradlew",
+        ["clean"],
+        expect.objectContaining({ cwd: "/home/user/my-android-project" })
+      );
+    });
+
+    it("overrides the initial projectPath", async () => {
+      const mockRunner = {
+        run: vi.fn().mockResolvedValue({
+          stdout: "BUILD SUCCESSFUL in 5s\n1 actionable task: 1 executed",
+          stderr: "",
+          exitCode: 0,
+        }),
+      } as unknown as ProcessRunner;
+
+      const adapter = new GradleAdapter(mockRunner, "/original/path");
+      adapter.setProjectPath("/new/path");
+
+      await adapter.clean();
+
+      expect(mockRunner.run).toHaveBeenCalledWith(
+        "./gradlew",
+        ["clean"],
+        expect.objectContaining({ cwd: "/new/path" })
+      );
+    });
+  });
+
+  describe("error handling", () => {
+    it("mentions REPLICANT_PROJECT_ROOT when gradlew not found", async () => {
+      const mockRunner = {
+        run: vi.fn().mockRejectedValue(new Error("ENOENT: no such file or directory")),
+      } as unknown as ProcessRunner;
+
+      const adapter = new GradleAdapter(mockRunner);
+
+      try {
+        await adapter.clean();
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ReplicantError);
+        const replicantError = error as ReplicantError;
+        expect(replicantError.suggestion).toContain("REPLICANT_PROJECT_ROOT");
+        expect(replicantError.suggestion).toContain("build.projectRoot");
+      }
+    });
+  });
+});
 
 describe("Gradle Output Parsing", () => {
   describe("parseBuildOutput", () => {

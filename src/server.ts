@@ -6,7 +6,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { CacheManager, DeviceStateManager, ProcessRunner, EnvironmentService, ConfigManager } from "./services/index.js";
 import { AdbAdapter, EmulatorAdapter, GradleAdapter, UiAutomatorAdapter } from "./adapters/index.js";
-import { ReplicantError } from "./types/index.js";
+import { ReplicantError, FindElement } from "./types/index.js";
 import {
   cacheToolDefinition,
   handleCacheTool,
@@ -44,6 +44,7 @@ export interface ServerContext {
   emulator: EmulatorAdapter;
   gradle: GradleAdapter;
   ui: UiAutomatorAdapter;
+  lastFindResults: FindElement[];
 }
 
 export function createServerContext(): ServerContext {
@@ -61,6 +62,7 @@ export function createServerContext(): ServerContext {
     emulator: new EmulatorAdapter(processRunner),
     gradle: new GradleAdapter(processRunner),
     ui: new UiAutomatorAdapter(adb),
+    lastFindResults: [],
   };
 }
 
@@ -161,7 +163,7 @@ Use \`rtfm\` for detailed documentation on any tool.`,
       // Return images as native MCP image content blocks for efficiency
       // (avoids Claude tokenizing base64 as text)
       if (result && typeof result === "object" && "base64" in result && "mimeType" in result) {
-        const { base64, mimeType, ...metadata } = result as { base64: string; mimeType: string; [key: string]: unknown };
+        const { base64, mimeType, ...metadata } = result as Record<string, unknown> & { base64: string; mimeType: string };
         return {
           content: [
             { type: "image", data: base64, mimeType },

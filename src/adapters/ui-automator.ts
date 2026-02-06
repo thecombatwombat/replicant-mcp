@@ -16,7 +16,7 @@ import {
 } from "../services/grid.js";
 import {
   FindWithFallbacksResult,
-  FindOptions as IconFindOptions,
+  FindOptions,
   VisualCandidate,
 } from "../types/icon-recognition.js";
 import { calculateScaleFactor, toImageSpace, toDeviceSpace, boundsToImageSpace } from "../services/scaling.js";
@@ -52,11 +52,6 @@ export interface ScreenshotResult {
   warning?: string;
 }
 
-// Backward compatibility alias - use FindWithFallbacksResult for new code
-export type FindWithOcrResult = FindWithFallbacksResult;
-
-// Re-export FindOptions from icon-recognition types for backward compatibility
-export type FindOptions = IconFindOptions;
 
 /**
  * Tracks the current scaling state between device and image coordinates.
@@ -644,17 +639,4 @@ export class UiAutomatorAdapter {
     };
   }
 
-  // Backward compatible alias
-  async findWithOcrFallback(
-    deviceId: string,
-    selector: {
-      resourceId?: string;
-      text?: string;
-      textContains?: string;
-      className?: string;
-    },
-    options: FindOptions = {}
-  ): Promise<FindWithFallbacksResult> {
-    return this.findWithFallbacks(deviceId, selector, options);
-  }
 }

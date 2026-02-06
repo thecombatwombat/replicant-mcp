@@ -80,12 +80,15 @@ npm run release:major    # major: 1.2.1 → 2.0.0
 - `minor` - New features, new tool parameters, backward-compatible changes
 - `major` - Breaking changes to tool schemas or behavior
 
-**The script handles everything:**
+**The script handles prep and push:**
 1. Pre-flight checks (branch, clean state, synced, version available)
 2. Tests
 3. Version bump + commit + tag
 4. Push to origin
-5. Publish to npm
+
+**CI handles publish (triggered by the `v*` tag push):**
+1. Publish to npm (OIDC trusted publisher, with provenance)
+2. Create GitHub Release with auto-generated notes
 
 **If release fails mid-way:** The script runs checks before any destructive actions. If it fails after committing (rare), you may need to manually clean up the tag/commit.
 

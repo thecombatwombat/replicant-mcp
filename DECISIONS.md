@@ -133,6 +133,13 @@ Decision: (1) Widen SessionStart jitter from 0-5s to 0-30s (matches daemon's 30s
 Alternatives: PID-based lock detection (lock is bd's responsibility, not ours), daemon log monitoring (upstream concern), one-daemon-per-machine architecture (bd daemon start is already idempotent), verbose hook logging (hook output already shows in session messages).
 Refs: scripts/beads-sync-start.sh, scripts/beads-sync-end.sh, scripts/check-env.sh
 
+## [2026-02-06] Remove publish and GitHub Release from release.sh (let CI own it)
+Tags: workflow, ci, release, npm
+Context: Both `scripts/release.sh` and `.github/workflows/release.yml` published to npm and created GitHub Releases. The local script published first, then CI failed trying to publish the same version. Every release since v1.3.1 had a failed CI run.
+Decision: Remove npm publish and `gh release create` from `release.sh`. The script now stops after pushing the tag. CI already handles both with better security (OIDC trusted publisher + provenance attestation). Single responsibility: script preps and pushes, CI publishes.
+Alternatives: Remove CI publish (loses OIDC/provenance benefits), add `--skip-publish` flag to script (complexity for no benefit since CI always runs), have CI detect already-published versions and skip (masks the real problem).
+Refs: scripts/release.sh, .github/workflows/release.yml, CLAUDE.md
+
 ## [2026-02-06] Code health guardrails and UI tool decomposition
 Tags: architecture, code-quality, tooling, refactoring
 Context: `handleUiTool` was a 345-line function with an 8-operation switch — the hardest file to modify safely. `lastFindResults` was module-level mutable state. `ErrorContext` had `[key: string]: unknown` defeating TypeScript checks. Backward-compat aliases `FindWithOcrResult` and `findWithOcrFallback` were dead weight.

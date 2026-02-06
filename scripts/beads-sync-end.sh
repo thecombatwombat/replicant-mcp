@@ -13,7 +13,11 @@ set -euo pipefail
 command -v bd >/dev/null || exit 0
 [ -d .beads ] || exit 0
 
-# Only sync if there are pending changes
+# Only sync if there are pending changes.
+# Retry once on lock contention — the daemon picks it up within 30s either way.
 if ! bd sync --status 2>&1 | grep -q 'Pending changes: none'; then
-  bd sync --full 2>&1
+  if ! bd sync --full 2>&1; then
+    sleep $(( 2 + RANDOM % 5 ))
+    bd sync --full 2>&1 || true
+  fi
 fi

@@ -172,13 +172,44 @@ check_git() {
     ok "Branch '$branch' in sync with remote"
   fi
 
-  # Stale worktrees
+  # Stale worktrees (exclude beads-sync which is required by bd)
   local worktrees
-  worktrees="$(git -C "$REPO_ROOT" worktree list 2>/dev/null | grep -v "$REPO_ROOT " || true)"
+  worktrees="$(git -C "$REPO_ROOT" worktree list 2>/dev/null | grep -v "$REPO_ROOT " | grep -v "beads-sync" || true)"
   if [ -n "$worktrees" ]; then
     local wt_count
     wt_count="$(echo "$worktrees" | wc -l | tr -d ' ')"
     warn "$wt_count extra worktree(s) — consider cleanup"
+  fi
+}
+
+# --- Beads daemon health (skip in quick mode) ---
+check_daemon() {
+  echo ""
+  echo "BEADS DAEMON"
+
+  if ! command -v bd &>/dev/null; then
+    return
+  fi
+
+  if [ ! -d "$REPO_ROOT/.beads" ]; then
+    return
+  fi
+
+  local daemon_status
+  daemon_status="$(bd daemon status 2>&1)" || true
+
+  if ! echo "$daemon_status" | grep -q "running"; then
+    warn "beads daemon not running — run: bd daemon start --auto-commit --auto-push --auto-pull --interval 30s"
+    return
+  fi
+
+  ok "beads daemon running"
+
+  # Check for required sync flags
+  if ! echo "$daemon_status" | grep -q 'commit.*push.*pull'; then
+    warn "daemon missing sync flags — restart with: bd daemon stop . && bd daemon start --auto-commit --auto-push --auto-pull --interval 30s"
+  else
+    ok "daemon has commit/push/pull flags"
   fi
 }
 
@@ -215,6 +246,7 @@ if $QUICK; then
   echo "  (quick mode — run /check-env for full check)"
 else
   check_beads
+  check_daemon
   check_build
 fi
 

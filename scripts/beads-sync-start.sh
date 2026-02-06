@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
-# Beads sync on session start.
+# Beads sync on session start — designed for 30-50 parallel agents.
 #
-# 1. Pull latest issues from all other agents/sessions (bd sync --full)
-# 2. Ensure the daemon is running with auto-commit/push/pull
-#    so issues stay fresh during long sessions (~30s staleness max)
+# Strategy:
+#   1. Random jitter (0-30s) to avoid thundering herd on sync
+#   2. Try bd sync --full once. If locked, wait and retry once.
+#   3. If still locked, skip — the daemon picks it up within 30s.
+#   4. Ensure daemon is running (try start, don't stop/restart).
+#
+# We NEVER delete the sync lock. Lock contention is expected with
+# many agents. Retries + daemon provide eventual consistency.
 #
 # Safe to run on every session — skips if bd or .beads/ not present.
 
@@ -13,13 +18,30 @@ set -euo pipefail
 command -v bd >/dev/null || exit 0
 [ -d .beads ] || exit 0
 
-# Pull latest from remote (other agents may have created/updated issues)
-bd sync --full 2>&1 || true
+# Jitter: random 0-30s delay to spread out sync attempts across agents.
+# Without this, N agents starting simultaneously all hit git at once.
+# Window matches the daemon's 30s sync interval — data is at most 30s stale anyway.
+sleep $(( RANDOM % 31 ))
 
-# Ensure daemon is running with full sync flags.
-# If it's already running correctly, this is a no-op.
-if ! bd daemon status 2>&1 | grep -q 'commit.*push.*pull'; then
-  bd daemon stop . 2>/dev/null || true
-  sleep 1
-  bd daemon start --auto-commit --auto-push --auto-pull --interval 30s 2>&1 || true
+# Try sync. If another agent holds the lock, wait and retry once.
+if ! bd sync --full 2>&1; then
+  sleep $(( 2 + RANDOM % 5 ))
+  bd sync --full 2>&1 || true
+fi
+
+# Ensure daemon is running with auto-sync flags.
+# "bd daemon start" is a no-op if already running (exits 0), so safe to call.
+# Only restart if the running daemon is missing required flags — this is rare
+# (misconfigured daemon) and worth the one-time restart.
+DAEMON_FLAGS="--auto-commit --auto-push --auto-pull --interval 30s"
+daemon_status="$(bd daemon status 2>&1)" || true
+if echo "$daemon_status" | grep -q "running"; then
+  # Running — only restart if missing a sync flag
+  if ! echo "$daemon_status" | grep -q 'commit.*push.*pull'; then
+    bd daemon stop . 2>/dev/null || true
+    sleep 1
+    bd daemon start $DAEMON_FLAGS 2>&1 || true
+  fi
+else
+  bd daemon start $DAEMON_FLAGS 2>&1 || true
 fi

@@ -119,9 +119,9 @@ Decision: `scripts/check-env.sh` checks tool versions, git state, beads health, 
 Alternatives: Manual bd doctor + git status (forgettable), CI-only checks (doesn't help local/remote dev), single monolithic health script without quick mode (too slow for session start).
 Refs: PR#55
 
-## [2026-02-06] SessionEnd hook for automatic bd sync
-Tags: tooling, beads, automation
-Context: Beads issues need `bd sync` to push to git. Forgetting means the next session (local or remote) starts with stale data.
-Decision: SessionEnd hook checks for pending changes via `bd sync --status`, syncs only if needed. Automatic, zero-friction.
-Alternatives: Rely on manual sync (forgettable), always sync even when nothing changed (wasteful), sync on every beads command (too frequent).
-Refs: commit 0abdc4f
+## [2026-02-06] Bulletproof beads sync across all agents and environments
+Tags: tooling, beads, automation, multi-agent
+Context: With multiple agents (local, remote, simultaneous), beads data goes stale fast. `bd sync` only exports locally without committing/pushing. The daemon was running with `Sync: none`. New sessions didn't pull latest state. Two agents could claim the same issue.
+Decision: Three-layer sync strategy: (1) SessionStart pulls latest via `bd sync --full`, (2) daemon runs with `--auto-commit --auto-push --auto-pull --interval 30s` for continuous sync during sessions, (3) SessionEnd does final `bd sync --full` push. SessionStart also ensures daemon is running with correct flags.
+Alternatives: Hook-based only (stale during long sessions), daemon-only (misses session boundaries), manual sync (forgettable and error-prone).
+Refs: .claude/settings.json

@@ -69,6 +69,23 @@ check_gh_token() {
   fi
 }
 
+init_bd() {
+  # Skip if .beads/beads.db already exists (already initialized)
+  if [ -f ".beads/beads.db" ]; then
+    echo "bd already initialized"
+    return
+  fi
+
+  # Only init if .beads/ directory exists (this is a beads-tracked repo)
+  if [ -d ".beads" ]; then
+    echo "Initializing bd for fresh clone..."
+    bd init 2>&1 || echo "bd init failed (non-fatal)"
+    git config beads.role maintainer
+    echo "bd initialized"
+  fi
+}
+
 install_bd
 install_gh
+init_bd
 check_gh_token

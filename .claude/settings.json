@@ -11,6 +11,10 @@
           {
             "type": "command",
             "command": "bash scripts/check-env.sh --quick 2>&1 || true"
+          },
+          {
+            "type": "command",
+            "command": "if command -v bd >/dev/null && [ -d .beads ]; then bd sync --full 2>&1 || true; bd daemon status 2>&1 | grep -q 'commit.*push.*pull' || (bd daemon stop . 2>/dev/null; sleep 1; bd daemon start --auto-commit --auto-push --auto-pull --interval 30s 2>&1) || true; fi"
           }
         ]
       }

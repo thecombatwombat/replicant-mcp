@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/install-dev-tools.sh 2>&1"
+          }
+        ]
+      }
+    ]
+  }
+}

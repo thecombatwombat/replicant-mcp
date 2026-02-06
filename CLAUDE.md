@@ -122,6 +122,15 @@ bd graph --all        # Full dependency tree
 bd blocked            # What's waiting on what
 ```
 
+### Task Granularity
+
+The unit of work is: one agent, one session, one task.
+- Split work into independently-completable subtasks under epics
+- Each task = one agent can claim and finish it without coordinating mid-flight
+- Use dependencies to control execution order (`bd dep add <task> <depends-on>`)
+- Sweet spot: 15-60 min of agent work per task. Don't go finer than one coherent commit.
+- Goal: `bd ready` returns multiple parallelizable items whenever possible
+
 ### Before Brainstorming
 
 Run `bd ready` and `bd list --status=in_progress`, present as dashboard:
@@ -164,24 +173,27 @@ Issues use description tags to indicate what's needed before execution:
 
 ### After Design is Complete
 
-1. Identify or create the parent epic
-2. Create child issues under it:
+1. Persist plan to `docs/plans/YYYY-MM-DD-<topic>-design.md` immediately (don't wait for PR)
+2. Identify or create the parent epic
+3. Create child issues under it:
    ```bash
    bd create --parent=<epic-id> --title="..." --type=task
    ```
-3. Add readiness tags if needed: `[Needs: design]` or `[Needs: plan]`
-4. Set dependencies between related issues:
+4. Add readiness tags if needed: `[Needs: design]` or `[Needs: plan]`
+5. Set dependencies between related issues:
    ```bash
    bd dep add <issue> <depends-on>
    ```
-5. Reference issue IDs in design docs and commits
+6. Reference issue IDs in design docs and commits
 
 **Before ending session (Landing the Plane):**
-1. File remaining work as issues
-2. Update issue statuses (`bd close`, `bd update --status=...`)
-3. Clean up worktrees: `git worktree list` → `git worktree remove <path>` for any in `.worktrees/`
-4. Push everything: `git pull --rebase && bd sync && git push`
-5. Verify: `git status` shows "up to date with origin"
+1. Persist any finalized plans to `docs/plans/` (if not already done after plan approval)
+2. Ensure all work has beads issues under epics with correct dependencies
+3. File remaining work as issues
+4. Update issue statuses (`bd close`, `bd update --status=...`)
+5. Clean up worktrees: `git worktree list` → `git worktree remove <path>` for any in `.worktrees/`
+6. Push everything: `git pull --rebase && bd sync && git push`
+7. Verify: `git status` shows "up to date with origin"
 
 ## Code Health Rules
 
@@ -190,6 +202,9 @@ Issues use description tags to indicate what's needed before execution:
 - No module-level mutable state. Use ServerContext.
 - Use ReplicantError. Never swallow errors silently.
 - Run `npm run check-complexity` to verify before creating PRs.
+- Every non-trivial task must have a beads issue before work starts. Create under a parent epic with dependencies.
+- Finalized plans must be persisted to `docs/plans/YYYY-MM-DD-<topic>-design.md` immediately after plan approval.
+- Link plans to beads issues: `bd update <id> --description "[Plan: docs/plans/YYYY-MM-DD-<topic>.md]"`
 
 ## PR Workflow
 

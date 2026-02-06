@@ -15,18 +15,20 @@ Create a pull request with built-in quality gates. Follow these steps exactly:
 
 5. **Find changed files**: Run `git diff --name-only master...HEAD` to get all files changed vs base branch.
 
-6. **Run code-simplifier**: Use the Task tool to launch the `code-simplifier` agent on changed files.
+6. **ADR check**: Review `git diff master...HEAD` for significant decisions — architectural (new patterns, technology choices, design trade-offs) OR workflow (process changes, enforcement mechanisms, convention changes). If any found, check `DECISIONS.md` for a corresponding entry. If missing, add the entry before proceeding.
 
-7. **Run complexity check**: Execute `scripts/check-complexity.sh`. If violations found, fix them before proceeding.
+7. **Run code-simplifier**: Use the Task tool to launch the `code-simplifier` agent on changed files.
 
-8. **Stage and commit**: If the simplifier or violation fixes made changes, stage and commit them:
+8. **Run complexity check**: Execute `scripts/check-complexity.sh`. If violations found, fix them before proceeding.
+
+9. **Stage and commit**: If the simplifier, ADR additions, or violation fixes made changes, stage and commit them:
    ```
    git add <changed-files>
    git commit -m "refactor: simplify code and fix complexity violations"
    ```
 
-9. **Push branch**: `git push -u origin HEAD`
+10. **Push branch**: `git push -u origin HEAD`
 
-10. **Create PR**: Use `gh pr create` with a descriptive title and body summarizing all commits on the branch.
+11. **Create PR**: Use `gh pr create` with a descriptive title and body summarizing all commits on the branch.
 
 If complexity violations persist after the fix attempt, report them and stop — do not create the PR.

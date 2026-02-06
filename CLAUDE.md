@@ -27,7 +27,7 @@ npm start
 
 ## Decision Log
 
-**Before making architectural choices, check `DECISIONS.md`.** It records why past decisions were made and what alternatives were rejected. When you make a new architectural decision, add an entry.
+**Before making architectural or workflow choices, check `DECISIONS.md`.** It records why past decisions were made and what alternatives were rejected. When you make a significant decision — architectural (new patterns, technology choices, design trade-offs) OR workflow (process changes, enforcement mechanisms, convention changes) — add an entry.
 
 ## MCP Resources
 
@@ -222,6 +222,7 @@ CI re-checks on the PR as a safety net.
   - `docs/` - documentation only
   - `refactor/` - code restructuring without behavior change
   - `chore/` - maintenance tasks (deps, CI, tooling)
+  - `trivial/` - typos, minor doc fixes (skips beads check in PR gate)
 - **Branch format**: `<prefix>/<short-description>` (e.g., `feature/visual-fallback`, `fix/gradle-timeout`)
 
 ## Documentation Rules

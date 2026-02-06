@@ -17,12 +17,19 @@ if ! echo "$command" | grep -q 'gh pr create'; then
   exit 0
 fi
 
-# Check for in-progress beads issues (warn-only, don't block)
+# Check for in-progress beads issues (blocking, with trivial/ escape hatch)
 if command -v bd &>/dev/null; then
-  beads_output=$(bd list --status=in_progress 2>/dev/null | head -1)
-  if [ -z "$beads_output" ]; then
-    echo "WARNING: No in-progress beads issues. Run \`bd create\` first."
+  current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+  if [[ "$current_branch" == trivial/* ]]; then
+    echo "Skipping beads check for trivial/ branch."
     echo ""
+  else
+    beads_output=$(bd list --status=in_progress 2>/dev/null | head -1)
+    if [ -z "$beads_output" ]; then
+      echo "BLOCKED: No in-progress beads issues. Run \`bd create\` and \`bd update <id> --status=in_progress\` first."
+      echo "Tip: Use a \`trivial/\` branch prefix to skip this check for minor fixes."
+      exit 2
+    fi
   fi
 fi
 

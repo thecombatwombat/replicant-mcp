@@ -4,6 +4,8 @@ import { GradleAdapter } from "../../src/adapters/gradle.js";
 import { ProcessRunner } from "../../src/services/process-runner.js";
 import { ReplicantError } from "../../src/types/errors.js";
 
+const expectedGradleCmd = process.platform === "win32" ? "gradlew.bat" : "./gradlew";
+
 describe("GradleAdapter", () => {
   describe("setProjectPath", () => {
     it("changes the cwd used for gradle commands", async () => {
@@ -21,7 +23,7 @@ describe("GradleAdapter", () => {
       await adapter.clean();
 
       expect(mockRunner.run).toHaveBeenCalledWith(
-        "./gradlew",
+        expectedGradleCmd,
         ["clean"],
         expect.objectContaining({ cwd: "/home/user/my-android-project" })
       );
@@ -42,7 +44,7 @@ describe("GradleAdapter", () => {
       await adapter.clean();
 
       expect(mockRunner.run).toHaveBeenCalledWith(
-        "./gradlew",
+        expectedGradleCmd,
         ["clean"],
         expect.objectContaining({ cwd: "/new/path" })
       );

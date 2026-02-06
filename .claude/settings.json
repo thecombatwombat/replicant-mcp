@@ -6,15 +6,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/install-dev-tools.sh 2>&1"
+            "command": "bash scripts/install-dev-tools.sh 2>&1",
+            "_comment": "Install bd and gh at versions pinned in .tool-versions"
           },
           {
             "type": "command",
-            "command": "bash scripts/check-env.sh --quick 2>&1 || true"
+            "command": "bash scripts/check-env.sh --quick 2>&1 || true",
+            "_comment": "Quick env health check: tool versions, git state, plugin sync"
           },
           {
             "type": "command",
-            "command": "if command -v bd >/dev/null && [ -d .beads ]; then bd sync --full 2>&1 || true; bd daemon status 2>&1 | grep -q 'commit.*push.*pull' || (bd daemon stop . 2>/dev/null; sleep 1; bd daemon start --auto-commit --auto-push --auto-pull --interval 30s 2>&1) || true; fi"
+            "command": "bash scripts/beads-sync-start.sh 2>&1 || true",
+            "_comment": "Pull latest beads from remote + ensure daemon has auto-sync enabled"
           }
         ]
       }
@@ -25,7 +28,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v bd >/dev/null && [ -d .beads ] && ! bd sync --status 2>&1 | grep -q 'Pending changes: none'; then bd sync --full 2>&1; fi"
+            "command": "bash scripts/beads-sync-end.sh 2>&1 || true",
+            "_comment": "Push pending beads changes to remote for next session"
           }
         ]
       }

@@ -55,6 +55,56 @@ check_tool_versions() {
   done < "$TOOL_VERSIONS"
 }
 
+# --- Plugin version sync ---
+check_plugin_version() {
+  echo ""
+  echo "PLUGIN SYNC"
+
+  if ! command -v bd &>/dev/null; then
+    return
+  fi
+
+  local bd_version
+  bd_version="$(bd version 2>&1 | awk '{for(i=1;i<=NF;i++) if($i ~ /^[0-9]+\.[0-9]+/) {print $i; exit}}')" || true
+
+  # Find installed_plugins.json (works on both macOS and Linux)
+  local plugins_json=""
+  for candidate in \
+    "$HOME/.claude/plugins/installed_plugins.json" \
+    "$HOME/.config/claude/plugins/installed_plugins.json"; do
+    if [ -f "$candidate" ]; then
+      plugins_json="$candidate"
+      break
+    fi
+  done
+
+  if [ -z "$plugins_json" ]; then
+    ok "bd CLI $bd_version (plugin file not found — skipped)"
+    return
+  fi
+
+  local plugin_version
+  plugin_version="$(python3 -c "
+import json, sys
+with open('$plugins_json') as f:
+    d = json.load(f)
+for name, entries in d.get('plugins', {}).items():
+    if 'beads' in name.lower():
+        for e in entries:
+            print(e.get('version', 'unknown'))
+            sys.exit(0)
+print('not-installed')
+" 2>/dev/null)" || plugin_version="unknown"
+
+  if [ "$plugin_version" = "not-installed" ]; then
+    warn "beads plugin not installed (bd CLI is $bd_version)"
+  elif [ "$plugin_version" = "$bd_version" ]; then
+    ok "bd CLI $bd_version = plugin $plugin_version"
+  else
+    warn "bd CLI $bd_version != plugin $plugin_version — run: /plugin update beads@beads-marketplace"
+  fi
+}
+
 # --- Beads health ---
 check_beads() {
   echo ""
@@ -157,6 +207,7 @@ echo "=============================="
 
 check_tool_versions
 check_git
+check_plugin_version
 
 if $QUICK; then
   # Quick mode: skip slow checks

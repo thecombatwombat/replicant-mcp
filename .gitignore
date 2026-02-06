@@ -25,8 +25,9 @@ dist/
 # Coverage
 coverage/
 
-# Claude Code (local settings ignored, but commands/ is tracked)
+# Claude Code (local settings ignored, but commands/ and settings are tracked)
 .claude/*
 !.claude/commands/
+!.claude/settings.json
 .beads/
 .replicant/

@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v bd >/dev/null && [ -d .beads ] && ! bd sync --status 2>&1 | grep -q 'Pending changes: none'; then bd sync 2>&1; fi"
+            "command": "if command -v bd >/dev/null && [ -d .beads ] && ! bd sync --status 2>&1 | grep -q 'Pending changes: none'; then bd sync --full 2>&1; fi"
           }
         ]
       }

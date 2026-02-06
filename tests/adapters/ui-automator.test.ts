@@ -433,7 +433,7 @@ describe("UiAutomatorAdapter", () => {
     });
   });
 
-  describe("findWithOcrFallback", () => {
+  describe("findWithFallbacks", () => {
     beforeEach(() => {
       vi.clearAllMocks();
     });
@@ -452,7 +452,7 @@ describe("UiAutomatorAdapter", () => {
         }) // cat dump
         .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // rm dump
 
-      const result = await adapter.findWithOcrFallback("emulator-5554", { text: "Login" });
+      const result = await adapter.findWithFallbacks("emulator-5554", { text: "Login" });
 
       expect(result.elements).toHaveLength(1);
       expect((result.elements[0] as any).text).toBe("Login");
@@ -483,7 +483,7 @@ describe("UiAutomatorAdapter", () => {
         { index: 0, text: "Chobani High Protein", bounds: "[10,100][200,150]", center: { x: 105, y: 125 }, confidence: 0.92 },
       ]);
 
-      const result = await adapter.findWithOcrFallback("emulator-5554", { text: "Chobani" });
+      const result = await adapter.findWithFallbacks("emulator-5554", { text: "Chobani" });
 
       expect(result.elements).toHaveLength(1);
       expect((result.elements[0] as any).text).toBe("Chobani High Protein");
@@ -516,7 +516,7 @@ describe("UiAutomatorAdapter", () => {
         { index: 0, text: "Test", bounds: "[0,0][50,25]", center: { x: 25, y: 12 }, confidence: 0.85 },
       ]);
 
-      const result = await adapter.findWithOcrFallback("emulator-5554", { text: "test" }, { debug: true });
+      const result = await adapter.findWithFallbacks("emulator-5554", { text: "test" }, { debug: true });
 
       expect(result.source).toBe("ocr");
       // Updated message with new findWithFallbacks
@@ -567,7 +567,7 @@ describe("UiAutomatorAdapter", () => {
       // Mock grid overlay
       vi.mocked(createGridOverlay).mockResolvedValue("base64GridImage");
 
-      const result = await adapter.findWithOcrFallback("emulator-5554", { text: "NotFound" });
+      const result = await adapter.findWithFallbacks("emulator-5554", { text: "NotFound" });
 
       expect(result.elements).toHaveLength(0);
       // With the new tiers, when OCR fails and no candidates, it falls to grid (Tier 5)
@@ -1089,7 +1089,7 @@ describe("UiAutomatorAdapter", () => {
     });
 
     describe("Backward compatibility", () => {
-      it("findWithOcrFallback still works as alias", async () => {
+      it("findWithFallbacks still works as alias", async () => {
         mockAdb.shell
           .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // uiautomator dump
           .mockResolvedValueOnce({
@@ -1099,7 +1099,7 @@ describe("UiAutomatorAdapter", () => {
           }) // cat dump
           .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // rm dump
 
-        const result = await adapter.findWithOcrFallback("emulator-5554", { text: "Submit" });
+        const result = await adapter.findWithFallbacks("emulator-5554", { text: "Submit" });
 
         expect(result.elements).toHaveLength(1);
         expect(result.source).toBe("accessibility");

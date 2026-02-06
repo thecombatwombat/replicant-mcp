@@ -46,14 +46,14 @@ export interface ErrorContext {
   exitCode?: number;
   stderr?: string;
   checkedPaths?: string[];
-  [key: string]: unknown;
+  buildResult?: Record<string, unknown>;
 }
 
 export interface ToolError {
   error: ErrorCode;
   message: string;
   suggestion?: string;
-  details?: Record<string, unknown>;
+  details?: ErrorContext;
 }
 
 export class ReplicantError extends Error {

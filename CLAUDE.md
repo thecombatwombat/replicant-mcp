@@ -183,6 +183,20 @@ Issues use description tags to indicate what's needed before execution:
 4. Push everything: `git pull --rebase && bd sync && git push`
 5. Verify: `git status` shows "up to date with origin"
 
+## Code Health Rules
+
+- File limit: 500 lines. Function limit: 80 lines. CLI command builders (`src/cli/`) are excluded from function checks.
+- Tool operations are separate named functions; main handler dispatches.
+- No module-level mutable state. Use ServerContext.
+- Use ReplicantError. Never swallow errors silently.
+- Run `npm run check-complexity` to verify before creating PRs.
+
+## PR Workflow
+
+Use `/create-pr` for all PRs. It runs code-simplifier and complexity checks automatically.
+If using `gh pr create` directly, the PreToolUse hook enforces the same checks.
+CI re-checks on the PR as a safety net.
+
 ## Workflow Rules
 
 - **No direct pushes to master**: All changes must go through pull requests

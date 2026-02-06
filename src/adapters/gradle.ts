@@ -41,7 +41,7 @@ export class GradleAdapter {
         ErrorCode.BUILD_FAILED,
         `Build failed: ${parsed.failedTask || "unknown error"}`,
         "Check gradle-get-details for full error output",
-        { buildResult: parsed }
+        { buildResult: { ...parsed } }
       );
     }
 

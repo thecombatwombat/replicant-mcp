@@ -9,9 +9,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createServerContext, ServerContext } from "../../src/server.js";
 
 // Mock execa to control CLI output
-vi.mock("execa", () => ({
-  execa: vi.fn(),
-}));
+vi.mock("execa", async () => {
+  const actual = await vi.importActual("execa");
+  return {
+    ...actual,
+    execa: vi.fn(),
+  };
+});
 
 // Mock fs for environment detection
 vi.mock("fs", async () => {

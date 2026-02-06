@@ -33,6 +33,18 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/pre-pr-gate.sh",
+            "_comment": "Block gh pr create if complexity violations exist"
+          }
+        ]
+      }
     ]
   }
 }

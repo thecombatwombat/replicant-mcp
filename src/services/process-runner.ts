@@ -1,4 +1,4 @@
-import { execa } from "execa";
+import { execa, ExecaError } from "execa";
 import { ReplicantError, ErrorCode } from "../types/index.js";
 import type { EnvironmentService } from "./environment.js";
 
@@ -52,32 +52,18 @@ export class ProcessRunner {
         exitCode: result.exitCode ?? 0,
       };
     } catch (error: unknown) {
-      // Check for timeout (execa v9 uses timedOut property)
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "timedOut" in error &&
-        (error as { timedOut: boolean }).timedOut
-      ) {
-        throw new ReplicantError(
-          ErrorCode.TIMEOUT,
-          `Command timed out after ${timeoutMs}ms`,
-          "Try increasing the timeout or simplifying the command"
-        );
-      }
-      // For non-zero exit code, return the result instead of throwing
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "exitCode" in error &&
-        "stdout" in error &&
-        "stderr" in error
-      ) {
-        const execaError = error as { exitCode: number; stdout: string; stderr: string };
+      if (error instanceof ExecaError) {
+        if (error.timedOut) {
+          throw new ReplicantError(
+            ErrorCode.TIMEOUT,
+            `Command timed out after ${timeoutMs}ms`,
+            "Try increasing the timeout or simplifying the command"
+          );
+        }
         return {
-          stdout: execaError.stdout,
-          stderr: execaError.stderr,
-          exitCode: execaError.exitCode,
+          stdout: (error.stdout ?? "") as string,
+          stderr: (error.stderr ?? "") as string,
+          exitCode: error.exitCode ?? 1,
         };
       }
       throw error;

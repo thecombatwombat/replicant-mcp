@@ -1,26 +1,16 @@
 import * as path from "path";
-import * as fs from "fs";
 import * as os from "os";
 import sharp from "sharp";
 import { AdbAdapter } from "./adb.js";
 import { parseUiDump, findElements, flattenTree, AccessibilityNode } from "../parsers/ui-dump.js";
-import { ReplicantError, ErrorCode, OcrElement, VisualSnapshot } from "../types/index.js";
-import { extractText, searchText } from "../services/ocr.js";
-import { matchIconPattern, matchesResourceId } from "../services/icon-patterns.js";
-import { filterIconCandidates, formatBounds, cropCandidateImage } from "../services/visual-candidates.js";
-import {
-  calculateGridCellBounds,
-  calculatePositionCoordinates,
-  createGridOverlay,
-  POSITION_LABELS,
-} from "../services/grid.js";
+import { ReplicantError, ErrorCode, VisualSnapshot } from "../types/index.js";
 import {
   FindWithFallbacksResult,
   FindOptions,
-  VisualCandidate,
 } from "../types/icon-recognition.js";
 import { calculateScaleFactor, toImageSpace, toDeviceSpace, boundsToImageSpace } from "../services/scaling.js";
 import { getDefaultScreenshotPath } from "../utils/paths.js";
+import { findWithFallbacks } from "./ui-fallback-find.js";
 
 export interface ScreenMetadata {
   width: number;
@@ -468,175 +458,19 @@ export class UiAutomatorAdapter {
     },
     options: FindOptions = {}
   ): Promise<FindWithFallbacksResult> {
-    // Handle Tier 5 grid refinement FIRST (when gridCell and gridPosition are provided)
-    if (options.gridCell !== undefined && options.gridPosition !== undefined) {
-      // Use image dimensions if scaling is active, otherwise device dimensions
-      let width: number, height: number;
-      if (this.scalingState && this.scalingState.scaleFactor !== 1.0) {
-        width = this.scalingState.imageWidth;
-        height = this.scalingState.imageHeight;
-      } else {
-        const screen = await this.getScreenMetadata(deviceId);
-        width = screen.width;
-        height = screen.height;
-      }
-      const cellBounds = calculateGridCellBounds(options.gridCell, width, height);
-      const coords = calculatePositionCoordinates(options.gridPosition, cellBounds);
-
-      return {
-        elements: [
-          {
-            index: 0,
-            bounds: `[${cellBounds.x0},${cellBounds.y0}][${cellBounds.x1},${cellBounds.y1}]`,
-            center: coords,
-          },
-        ],
-        source: "grid",
-        tier: 5,
-        confidence: "low",
-      };
-    }
-
-    // Tier 1: Accessibility text match
-    const accessibilityResults = await this.find(deviceId, selector);
-
-    if (accessibilityResults.length > 0) {
-      return {
-        elements: accessibilityResults,
-        source: "accessibility",
-        tier: 1,
-        confidence: "high",
-      };
-    }
-
-    // Tier 2: ResourceId pattern match (for text-based queries)
-    if (selector.text || selector.textContains) {
-      const query = selector.text || selector.textContains!;
-      const patterns = matchIconPattern(query);
-
-      if (patterns) {
-        const tree = await this.dump(deviceId);
-        const flat = flattenTree(tree);
-        const patternMatches = flat.filter(
-          (node) => node.resourceId && matchesResourceId(node.resourceId, patterns)
-        );
-
-        if (patternMatches.length > 0) {
-          return {
-            elements: patternMatches,
-            source: "accessibility",
-            tier: 2,
-            confidence: "high",
-            fallbackReason: options.debug
-              ? "no text match, found via resourceId pattern"
-              : undefined,
-          };
-        }
-      }
-    }
-
-    // Tier 3: OCR (existing logic)
-    if (selector.text || selector.textContains) {
-      const searchTerm = selector.text || selector.textContains!;
-
-      // Take screenshot for OCR
-      const screenshotResult = await this.screenshot(deviceId, {});
-
-      try {
-        // Run OCR
-        const ocrResults = await extractText(screenshotResult.path!);
-        const matches = searchText(ocrResults, searchTerm);
-
-        if (matches.length > 0) {
-          return {
-            elements: matches,
-            source: "ocr",
-            tier: 3,
-            confidence: "high",
-            fallbackReason: options.debug
-              ? "no accessibility or pattern match, found via OCR"
-              : undefined,
-          };
-        }
-
-        // Tier 4: Visual candidates (unlabeled clickables)
-        const tree = await this.dump(deviceId);
-        const flat = flattenTree(tree);
-        const iconCandidates = filterIconCandidates(flat);
-
-        if (iconCandidates.length > 0) {
-          const candidates: VisualCandidate[] = await Promise.all(
-            iconCandidates.map(async (node, index) => ({
-              index,
-              bounds: formatBounds(node),
-              center: { x: node.centerX, y: node.centerY },
-              image: await cropCandidateImage(screenshotResult.path!, node.bounds),
-            }))
-          );
-
-          const allUnlabeled = flat.filter((n) => n.clickable && !n.text && !n.contentDesc);
-
-          return {
-            elements: [],
-            source: "visual",
-            tier: 4,
-            confidence: "medium",
-            candidates,
-            truncated: iconCandidates.length < allUnlabeled.length,
-            totalCandidates: allUnlabeled.length,
-            fallbackReason: options.debug
-              ? "no text/pattern/OCR match, showing visual candidates"
-              : undefined,
-          };
-        }
-
-        // Tier 5: Grid fallback (empty or unusable accessibility tree)
-        const gridImage = await createGridOverlay(screenshotResult.path!);
-
-        return {
-          elements: [],
-          source: "grid",
-          tier: 5,
-          confidence: "low",
-          gridImage,
-          gridPositions: POSITION_LABELS,
-          fallbackReason: options.debug
-            ? "no usable elements, showing grid for coordinate selection"
-            : undefined,
-        };
-      } finally {
-        // Always clean up screenshot - Tier 3/4/5 all embed base64 data in response
-        if (screenshotResult.path) {
-          const fs = await import("fs/promises");
-          await fs.unlink(screenshotResult.path).catch(() => {});
-        }
-      }
-    }
-
-    // No text selector - return empty with visual fallback if requested
-    if (options.includeVisualFallback) {
-      const snapshot = await this.visualSnapshot(deviceId, {
-        includeBase64: options.includeBase64,
-      });
-
-      return {
-        elements: [],
-        source: "accessibility",
-        tier: 1,
-        confidence: "high",
-        visualFallback: {
-          ...snapshot,
-          hint: "No elements matched selector. Use screenshot to identify tap coordinates.",
-        },
-      };
-    }
-
-    return {
-      elements: [],
-      source: "accessibility",
-      tier: 1,
-      confidence: "high",
-    };
+    return findWithFallbacks(
+      {
+        find: (id, sel) => this.find(id, sel),
+        dump: (id) => this.dump(id),
+        screenshot: (id, opts) => this.screenshot(id, opts),
+        getScreenMetadata: (id) => this.getScreenMetadata(id),
+        visualSnapshot: (id, opts) => this.visualSnapshot(id, opts),
+        getScalingState: () => this.getScalingState(),
+      },
+      deviceId,
+      selector,
+      options
+    );
   }
 
 }

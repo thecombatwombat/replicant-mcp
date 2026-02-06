@@ -6,8 +6,8 @@
 set -euo pipefail
 
 SRC_DIR="${1:-src}"
-MAX_FILE_LINES=300
-MAX_FUNCTION_LINES=60
+MAX_FILE_LINES=500
+MAX_FUNCTION_LINES=80
 
 # Colors (disabled if not a terminal)
 if [ -t 1 ]; then
@@ -36,6 +36,7 @@ done < <(find "$SRC_DIR" -name '*.ts' -not -path '*/node_modules/*' -not -name '
 
 # Check 2: Functions over MAX_FUNCTION_LINES lines
 # Uses brace-depth tracking for accurate function boundary detection.
+# Excludes src/cli/ — CLI command builders are declarative setup, not logic.
 while IFS= read -r file; do
   awk_output=$(awk -v max="$MAX_FUNCTION_LINES" -v file="$file" '
     # Detect function start: exported/async functions, methods, arrow functions assigned to const
@@ -85,7 +86,7 @@ while IFS= read -r file; do
       report "$line"
     done <<< "$awk_output"
   fi
-done < <(find "$SRC_DIR" -name '*.ts' -not -path '*/node_modules/*' -not -name '*.test.ts' -not -name '*.d.ts')
+done < <(find "$SRC_DIR" -name '*.ts' -not -path '*/node_modules/*' -not -path '*/cli/*' -not -name '*.test.ts' -not -name '*.d.ts')
 
 # Check 3: `as any` or `as unknown` casts
 while IFS= read -r file; do

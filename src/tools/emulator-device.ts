@@ -22,105 +22,110 @@ export const emulatorDeviceInputSchema = z.object({
 
 export type EmulatorDeviceInput = z.infer<typeof emulatorDeviceInputSchema>;
 
+async function handleList(input: EmulatorDeviceInput, context: ServerContext): Promise<Record<string, unknown>> {
+  const result = await context.emulator.list();
+  return { available: result.available, running: result.running };
+}
+
+async function handleCreate(input: EmulatorDeviceInput, context: ServerContext): Promise<Record<string, unknown>> {
+  if (!input.avdName || !input.device || !input.systemImage) {
+    throw new Error("avdName, device, and systemImage are required for create");
+  }
+  await context.emulator.create(input.avdName, input.device, input.systemImage);
+  return { created: input.avdName };
+}
+
+async function handleStart(input: EmulatorDeviceInput, context: ServerContext): Promise<Record<string, unknown>> {
+  if (!input.avdName) {
+    throw new Error("avdName is required for start");
+  }
+  const emulatorId = await context.emulator.start(input.avdName);
+
+  const devices = await context.adb.getDevices();
+  const device = devices.find((d) => d.id === emulatorId);
+  if (device) {
+    context.deviceState.setCurrentDevice(device);
+  }
+
+  return { started: input.avdName, emulatorId, autoSelected: true };
+}
+
+async function handleKill(input: EmulatorDeviceInput, context: ServerContext): Promise<Record<string, unknown>> {
+  const emulatorId = input.emulatorId || context.deviceState.getCurrentDevice()?.id;
+  if (!emulatorId) {
+    throw new Error("emulatorId is required or select an emulator first");
+  }
+  await context.emulator.kill(emulatorId);
+
+  if (context.deviceState.getCurrentDevice()?.id === emulatorId) {
+    context.deviceState.clearCurrentDevice();
+  }
+
+  return { killed: emulatorId };
+}
+
+async function handleWipe(input: EmulatorDeviceInput, context: ServerContext): Promise<Record<string, unknown>> {
+  if (!input.avdName) {
+    throw new Error("avdName is required for wipe");
+  }
+  await context.emulator.wipe(input.avdName);
+  return { wiped: input.avdName };
+}
+
+function resolveEmulatorId(input: EmulatorDeviceInput, context: ServerContext): string {
+  const emulatorId = input.emulatorId || context.deviceState.getCurrentDevice()?.id;
+  if (!emulatorId) {
+    throw new Error(`emulatorId is required for ${input.operation}`);
+  }
+  return emulatorId;
+}
+
+async function handleSnapshotSave(input: EmulatorDeviceInput, context: ServerContext): Promise<Record<string, unknown>> {
+  const emulatorId = resolveEmulatorId(input, context);
+  if (!input.snapshotName) throw new Error("snapshotName is required for snapshot-save");
+  await context.emulator.snapshotSave(emulatorId, input.snapshotName);
+  return { saved: input.snapshotName, emulatorId };
+}
+
+async function handleSnapshotLoad(input: EmulatorDeviceInput, context: ServerContext): Promise<Record<string, unknown>> {
+  const emulatorId = resolveEmulatorId(input, context);
+  if (!input.snapshotName) throw new Error("snapshotName is required for snapshot-load");
+  await context.emulator.snapshotLoad(emulatorId, input.snapshotName);
+  return { loaded: input.snapshotName, emulatorId };
+}
+
+async function handleSnapshotList(input: EmulatorDeviceInput, context: ServerContext): Promise<Record<string, unknown>> {
+  const emulatorId = resolveEmulatorId(input, context);
+  const snapshots = await context.emulator.snapshotList(emulatorId);
+  return { snapshots, emulatorId };
+}
+
+async function handleSnapshotDelete(input: EmulatorDeviceInput, context: ServerContext): Promise<Record<string, unknown>> {
+  const emulatorId = resolveEmulatorId(input, context);
+  if (!input.snapshotName) throw new Error("snapshotName is required for snapshot-delete");
+  await context.emulator.snapshotDelete(emulatorId, input.snapshotName);
+  return { deleted: input.snapshotName, emulatorId };
+}
+
+const operations: Record<string, (input: EmulatorDeviceInput, context: ServerContext) => Promise<Record<string, unknown>>> = {
+  list: handleList,
+  create: handleCreate,
+  start: handleStart,
+  kill: handleKill,
+  wipe: handleWipe,
+  "snapshot-save": handleSnapshotSave,
+  "snapshot-load": handleSnapshotLoad,
+  "snapshot-list": handleSnapshotList,
+  "snapshot-delete": handleSnapshotDelete,
+};
+
 export async function handleEmulatorDeviceTool(
   input: EmulatorDeviceInput,
   context: ServerContext
 ): Promise<Record<string, unknown>> {
-  switch (input.operation) {
-    case "list": {
-      const result = await context.emulator.list();
-      return {
-        available: result.available,
-        running: result.running,
-      };
-    }
-
-    case "create": {
-      if (!input.avdName || !input.device || !input.systemImage) {
-        throw new Error("avdName, device, and systemImage are required for create");
-      }
-      await context.emulator.create(input.avdName, input.device, input.systemImage);
-      return { created: input.avdName };
-    }
-
-    case "start": {
-      if (!input.avdName) {
-        throw new Error("avdName is required for start");
-      }
-      const emulatorId = await context.emulator.start(input.avdName);
-
-      // Auto-select the started emulator
-      const devices = await context.adb.getDevices();
-      const device = devices.find((d) => d.id === emulatorId);
-      if (device) {
-        context.deviceState.setCurrentDevice(device);
-      }
-
-      return { started: input.avdName, emulatorId, autoSelected: true };
-    }
-
-    case "kill": {
-      const emulatorId = input.emulatorId || context.deviceState.getCurrentDevice()?.id;
-      if (!emulatorId) {
-        throw new Error("emulatorId is required or select an emulator first");
-      }
-      await context.emulator.kill(emulatorId);
-
-      // Clear device selection if it was the killed emulator
-      if (context.deviceState.getCurrentDevice()?.id === emulatorId) {
-        context.deviceState.clearCurrentDevice();
-      }
-
-      return { killed: emulatorId };
-    }
-
-    case "wipe": {
-      if (!input.avdName) {
-        throw new Error("avdName is required for wipe");
-      }
-      await context.emulator.wipe(input.avdName);
-      return { wiped: input.avdName };
-    }
-
-    case "snapshot-save": {
-      const emulatorId = input.emulatorId || context.deviceState.getCurrentDevice()?.id;
-      if (!emulatorId || !input.snapshotName) {
-        throw new Error("emulatorId and snapshotName are required for snapshot-save");
-      }
-      await context.emulator.snapshotSave(emulatorId, input.snapshotName);
-      return { saved: input.snapshotName, emulatorId };
-    }
-
-    case "snapshot-load": {
-      const emulatorId = input.emulatorId || context.deviceState.getCurrentDevice()?.id;
-      if (!emulatorId || !input.snapshotName) {
-        throw new Error("emulatorId and snapshotName are required for snapshot-load");
-      }
-      await context.emulator.snapshotLoad(emulatorId, input.snapshotName);
-      return { loaded: input.snapshotName, emulatorId };
-    }
-
-    case "snapshot-list": {
-      const emulatorId = input.emulatorId || context.deviceState.getCurrentDevice()?.id;
-      if (!emulatorId) {
-        throw new Error("emulatorId is required for snapshot-list");
-      }
-      const snapshots = await context.emulator.snapshotList(emulatorId);
-      return { snapshots, emulatorId };
-    }
-
-    case "snapshot-delete": {
-      const emulatorId = input.emulatorId || context.deviceState.getCurrentDevice()?.id;
-      if (!emulatorId || !input.snapshotName) {
-        throw new Error("emulatorId and snapshotName are required for snapshot-delete");
-      }
-      await context.emulator.snapshotDelete(emulatorId, input.snapshotName);
-      return { deleted: input.snapshotName, emulatorId };
-    }
-
-    default:
-      throw new Error(`Unknown operation: ${input.operation}`);
-  }
+  const handler = operations[input.operation];
+  if (!handler) throw new Error(`Unknown operation: ${input.operation}`);
+  return handler(input, context);
 }
 
 export const emulatorDeviceToolDefinition = {

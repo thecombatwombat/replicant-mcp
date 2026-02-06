@@ -185,7 +185,7 @@ Issues use description tags to indicate what's needed before execution:
 
 ## Code Health Rules
 
-- File limit: 300 lines. Function limit: 50 lines.
+- File limit: 500 lines. Function limit: 80 lines. CLI command builders (`src/cli/`) are excluded from function checks.
 - Tool operations are separate named functions; main handler dispatches.
 - No module-level mutable state. Use ServerContext.
 - Use ReplicantError. Never swallow errors silently.

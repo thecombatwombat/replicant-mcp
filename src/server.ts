@@ -66,6 +66,56 @@ export function createServerContext(): ServerContext {
   };
 }
 
+const toolDefinitions = [
+  cacheToolDefinition,
+  rtfmToolDefinition,
+  adbDeviceToolDefinition,
+  adbAppToolDefinition,
+  adbLogcatToolDefinition,
+  adbShellToolDefinition,
+  emulatorDeviceToolDefinition,
+  gradleBuildToolDefinition,
+  gradleTestToolDefinition,
+  gradleListToolDefinition,
+  gradleGetDetailsToolDefinition,
+  uiToolDefinition,
+];
+
+async function dispatchToolCall(
+  name: string,
+  args: Record<string, unknown>,
+  context: ServerContext
+): Promise<Record<string, unknown>> {
+  switch (name) {
+    case "cache":
+      return handleCacheTool(args as Parameters<typeof handleCacheTool>[0], context.cache);
+    case "rtfm":
+      return handleRtfmTool(args as Parameters<typeof handleRtfmTool>[0]);
+    case "adb-device":
+      return handleAdbDeviceTool(args as Parameters<typeof handleAdbDeviceTool>[0], context);
+    case "adb-app":
+      return handleAdbAppTool(args as Parameters<typeof handleAdbAppTool>[0], context);
+    case "adb-logcat":
+      return handleAdbLogcatTool(args as Parameters<typeof handleAdbLogcatTool>[0], context);
+    case "adb-shell":
+      return handleAdbShellTool(args as Parameters<typeof handleAdbShellTool>[0], context);
+    case "emulator-device":
+      return handleEmulatorDeviceTool(args as Parameters<typeof handleEmulatorDeviceTool>[0], context);
+    case "gradle-build":
+      return handleGradleBuildTool(args as Parameters<typeof handleGradleBuildTool>[0], context);
+    case "gradle-test":
+      return handleGradleTestTool(args as Parameters<typeof handleGradleTestTool>[0], context);
+    case "gradle-list":
+      return handleGradleListTool(args as Parameters<typeof handleGradleListTool>[0], context);
+    case "gradle-get-details":
+      return handleGradleGetDetailsTool(args as Parameters<typeof handleGradleGetDetailsTool>[0], context);
+    case "ui":
+      return handleUiTool(args as Parameters<typeof handleUiTool>[0], context, context.config.getUiConfig());
+    default:
+      throw new Error(`Unknown tool: ${name}`);
+  }
+}
+
 export async function createServer(context: ServerContext): Promise<Server> {
   const server = new Server(
     {
@@ -94,74 +144,16 @@ Use \`rtfm\` for detailed documentation on any tool.`,
     }
   );
 
-  // Register tool list handler
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: [
-      cacheToolDefinition,
-      rtfmToolDefinition,
-      adbDeviceToolDefinition,
-      adbAppToolDefinition,
-      adbLogcatToolDefinition,
-      adbShellToolDefinition,
-      emulatorDeviceToolDefinition,
-      gradleBuildToolDefinition,
-      gradleTestToolDefinition,
-      gradleListToolDefinition,
-      gradleGetDetailsToolDefinition,
-      uiToolDefinition,
-    ],
+    tools: toolDefinitions,
   }));
 
-  // Register tool call handler
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
 
     try {
-      let result: Record<string, unknown>;
+      const result = await dispatchToolCall(name, args as Record<string, unknown>, context);
 
-      switch (name) {
-        case "cache":
-          result = await handleCacheTool(args as Parameters<typeof handleCacheTool>[0], context.cache);
-          break;
-        case "rtfm":
-          result = await handleRtfmTool(args as Parameters<typeof handleRtfmTool>[0]);
-          break;
-        case "adb-device":
-          result = await handleAdbDeviceTool(args as Parameters<typeof handleAdbDeviceTool>[0], context);
-          break;
-        case "adb-app":
-          result = await handleAdbAppTool(args as Parameters<typeof handleAdbAppTool>[0], context);
-          break;
-        case "adb-logcat":
-          result = await handleAdbLogcatTool(args as Parameters<typeof handleAdbLogcatTool>[0], context);
-          break;
-        case "adb-shell":
-          result = await handleAdbShellTool(args as Parameters<typeof handleAdbShellTool>[0], context);
-          break;
-        case "emulator-device":
-          result = await handleEmulatorDeviceTool(args as Parameters<typeof handleEmulatorDeviceTool>[0], context);
-          break;
-        case "gradle-build":
-          result = await handleGradleBuildTool(args as Parameters<typeof handleGradleBuildTool>[0], context);
-          break;
-        case "gradle-test":
-          result = await handleGradleTestTool(args as Parameters<typeof handleGradleTestTool>[0], context);
-          break;
-        case "gradle-list":
-          result = await handleGradleListTool(args as Parameters<typeof handleGradleListTool>[0], context);
-          break;
-        case "gradle-get-details":
-          result = await handleGradleGetDetailsTool(args as Parameters<typeof handleGradleGetDetailsTool>[0], context);
-          break;
-        case "ui":
-          result = await handleUiTool(args as Parameters<typeof handleUiTool>[0], context, context.config.getUiConfig());
-          break;
-        default:
-          throw new Error(`Unknown tool: ${name}`);
-      }
-
-      // Return images as native MCP image content blocks for efficiency
-      // (avoids Claude tokenizing base64 as text)
       if (result && typeof result === "object" && "base64" in result && "mimeType" in result) {
         const { base64, mimeType, ...metadata } = result as Record<string, unknown> & { base64: string; mimeType: string };
         return {

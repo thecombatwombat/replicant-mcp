@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # pre-pr-gate.sh — PreToolUse hook for Bash commands.
 # Reads tool input from stdin, checks if command contains `gh pr create`.
-# If so, runs complexity checks and warns on violations.
+# If so, runs complexity checks and blocks on violations.
 # All other commands pass through unchanged.
 
 set -euo pipefail
@@ -21,10 +21,10 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 output=$("$SCRIPT_DIR/check-complexity.sh" 2>&1) && exit 0
 
-# Violations found — warn but allow (will be enforced by CI)
-echo "WARNING: Code complexity violations detected. CI will enforce these."
+# Violations found — block PR creation
+echo "BLOCKED: Code complexity violations detected. Fix before creating PR."
 echo ""
 echo "$output"
 echo ""
-echo "Consider running /create-pr which fixes violations automatically."
-exit 0
+echo "Run /create-pr which fixes violations automatically, or fix manually."
+exit 2

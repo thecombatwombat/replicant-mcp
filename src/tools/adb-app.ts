@@ -14,93 +14,88 @@ export const adbAppInputSchema = z.object({
 
 export type AdbAppInput = z.infer<typeof adbAppInputSchema>;
 
+async function handleInstall(input: AdbAppInput, deviceId: string, context: ServerContext): Promise<Record<string, unknown>> {
+  if (!input.apkPath) throw new Error("apkPath is required for install operation");
+  await context.adb.install(deviceId, input.apkPath);
+  return { installed: input.apkPath, deviceId };
+}
+
+async function handleUninstall(input: AdbAppInput, deviceId: string, context: ServerContext): Promise<Record<string, unknown>> {
+  if (!input.packageName) throw new Error("packageName is required for uninstall operation");
+  await context.adb.uninstall(deviceId, input.packageName);
+  return { uninstalled: input.packageName, deviceId };
+}
+
+async function handleLaunch(input: AdbAppInput, deviceId: string, context: ServerContext): Promise<Record<string, unknown>> {
+  if (!input.packageName) throw new Error("packageName is required for launch operation");
+  await context.adb.launch(deviceId, input.packageName);
+  return { launched: input.packageName, deviceId };
+}
+
+async function handleStop(input: AdbAppInput, deviceId: string, context: ServerContext): Promise<Record<string, unknown>> {
+  if (!input.packageName) throw new Error("packageName is required for stop operation");
+  await context.adb.stop(deviceId, input.packageName);
+  return { stopped: input.packageName, deviceId };
+}
+
+async function handleClearData(input: AdbAppInput, deviceId: string, context: ServerContext): Promise<Record<string, unknown>> {
+  if (!input.packageName) throw new Error("packageName is required for clear-data operation");
+  await context.adb.clearData(deviceId, input.packageName);
+  return { cleared: input.packageName, deviceId };
+}
+
+async function handleList(input: AdbAppInput, deviceId: string, context: ServerContext): Promise<Record<string, unknown>> {
+  const allPackages = await context.adb.getPackages(deviceId);
+  const limit = input.limit ?? 20;
+  const offset = input.offset ?? 0;
+  const filter = input.filter?.toLowerCase();
+
+  const filtered = filter
+    ? allPackages.filter((pkg) => pkg.toLowerCase().includes(filter))
+    : allPackages;
+
+  const paginated = filtered.slice(offset, offset + limit);
+  const hasMore = offset + limit < filtered.length;
+
+  const cacheId = context.cache.generateId("app-list");
+  context.cache.set(
+    cacheId,
+    { packages: filtered, deviceId, filter: filter || null },
+    "app-list",
+    CACHE_TTLS.APP_LIST
+  );
+
+  return {
+    packages: paginated,
+    count: paginated.length,
+    totalCount: filtered.length,
+    hasMore,
+    offset,
+    limit,
+    cacheId,
+    deviceId,
+  };
+}
+
+type AppHandler = (input: AdbAppInput, deviceId: string, context: ServerContext) => Promise<Record<string, unknown>>;
+
+const operations: Record<string, AppHandler> = {
+  install: handleInstall,
+  uninstall: handleUninstall,
+  launch: handleLaunch,
+  stop: handleStop,
+  "clear-data": handleClearData,
+  list: handleList,
+};
+
 export async function handleAdbAppTool(
   input: AdbAppInput,
   context: ServerContext
 ): Promise<Record<string, unknown>> {
   const device = await context.deviceState.ensureDevice(context.adb);
-  const deviceId = device.id;
-
-  switch (input.operation) {
-    case "install": {
-      if (!input.apkPath) {
-        throw new Error("apkPath is required for install operation");
-      }
-      await context.adb.install(deviceId, input.apkPath);
-      return { installed: input.apkPath, deviceId };
-    }
-
-    case "uninstall": {
-      if (!input.packageName) {
-        throw new Error("packageName is required for uninstall operation");
-      }
-      await context.adb.uninstall(deviceId, input.packageName);
-      return { uninstalled: input.packageName, deviceId };
-    }
-
-    case "launch": {
-      if (!input.packageName) {
-        throw new Error("packageName is required for launch operation");
-      }
-      await context.adb.launch(deviceId, input.packageName);
-      return { launched: input.packageName, deviceId };
-    }
-
-    case "stop": {
-      if (!input.packageName) {
-        throw new Error("packageName is required for stop operation");
-      }
-      await context.adb.stop(deviceId, input.packageName);
-      return { stopped: input.packageName, deviceId };
-    }
-
-    case "clear-data": {
-      if (!input.packageName) {
-        throw new Error("packageName is required for clear-data operation");
-      }
-      await context.adb.clearData(deviceId, input.packageName);
-      return { cleared: input.packageName, deviceId };
-    }
-
-    case "list": {
-      const allPackages = await context.adb.getPackages(deviceId);
-      const limit = input.limit ?? 20;
-      const offset = input.offset ?? 0;
-      const filter = input.filter?.toLowerCase();
-
-      // Apply filter if provided
-      const filtered = filter
-        ? allPackages.filter((pkg) => pkg.toLowerCase().includes(filter))
-        : allPackages;
-
-      // Paginate
-      const paginated = filtered.slice(offset, offset + limit);
-      const hasMore = offset + limit < filtered.length;
-
-      // Cache full list for subsequent requests
-      const cacheId = context.cache.generateId("app-list");
-      context.cache.set(
-        cacheId,
-        { packages: filtered, deviceId, filter: filter || null },
-        "app-list",
-        CACHE_TTLS.APP_LIST
-      );
-
-      return {
-        packages: paginated,
-        count: paginated.length,
-        totalCount: filtered.length,
-        hasMore,
-        offset,
-        limit,
-        cacheId,
-        deviceId,
-      };
-    }
-
-    default:
-      throw new Error(`Unknown operation: ${input.operation}`);
-  }
+  const handler = operations[input.operation];
+  if (!handler) throw new Error(`Unknown operation: ${input.operation}`);
+  return handler(input, device.id, context);
 }
 
 export const adbAppToolDefinition = {

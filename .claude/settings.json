@@ -10,7 +10,7 @@
           },
           {
             "type": "command",
-            "command": "bash scripts/maintain.sh --quick 2>&1 || true"
+            "command": "bash scripts/check-env.sh --quick 2>&1 || true"
           }
         ]
       }

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Project maintenance checks for replicant-mcp.
+# Dev environment health checks for replicant-mcp.
 # Outputs a structured report of issues found.
 # Exit code: 0 = all good, 1 = warnings found.
 #
 # Usage:
-#   scripts/maintain.sh          # full check
-#   scripts/maintain.sh --quick  # fast subset for SessionStart
+#   scripts/check-env.sh          # full check
+#   scripts/check-env.sh --quick  # fast subset for SessionStart
 
 set -euo pipefail
 
@@ -202,8 +202,8 @@ check_build() {
 }
 
 # --- Run checks ---
-echo "maintain: project health check"
-echo "=============================="
+echo "check-env: dev environment health"
+echo "=================================="
 
 check_tool_versions
 check_git
@@ -212,7 +212,7 @@ check_plugin_version
 if $QUICK; then
   # Quick mode: skip slow checks
   echo ""
-  echo "  (quick mode — run /maintain for full check)"
+  echo "  (quick mode — run /check-env for full check)"
 else
   check_beads
   check_build

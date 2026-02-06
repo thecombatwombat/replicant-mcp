@@ -191,6 +191,7 @@ Issues use description tags to indicate what's needed before execution:
   - `chore/` - maintenance tasks (deps, CI, tooling)
 - **Branch format**: `<prefix>/<short-description>` (e.g., `feature/visual-fallback`, `fix/gradle-timeout`)
 
+
 ## Documentation Rules
 
 - **Keep README roadmap in sync**: When planning new features or completing existing ones, update the "Current Features" and "Future Roadmap" tables in README.md:

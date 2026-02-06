@@ -51,5 +51,24 @@ install_gh() {
   echo "gh $GH_VERSION installed"
 }
 
+check_gh_token() {
+  if [ -z "${GH_TOKEN:-}" ] && ! gh auth status &>/dev/null 2>&1; then
+    echo ""
+    echo "WARNING: gh is installed but not authenticated."
+    echo "To enable PR creation, issue management, etc.:"
+    echo ""
+    echo "  1. Create a GitHub Personal Access Token:"
+    echo "     https://github.com/settings/tokens?type=beta"
+    echo "     -> 'Generate new token' -> scope to thecombatwombat/replicant-mcp"
+    echo "     -> Permissions: Read/Write for Contents, Pull Requests, Issues"
+    echo ""
+    echo "  2. Add it to your Claude Code environment:"
+    echo "     claude.ai/code -> environment settings -> Environment variables"
+    echo "     Add: GH_TOKEN=github_pat_xxxx..."
+    echo ""
+  fi
+}
+
 install_bd
 install_gh
+check_gh_token

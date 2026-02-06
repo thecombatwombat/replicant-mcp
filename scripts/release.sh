@@ -21,12 +21,6 @@ done
 # Pre-flight checks
 echo "🔍 Pre-flight checks..."
 
-# Check gh CLI is available (needed for GitHub Release creation)
-if ! command -v gh &>/dev/null; then
-  echo "❌ GitHub CLI (gh) not found. Install from https://cli.github.com/"
-  exit 1
-fi
-
 # Check we're on master
 CURRENT_BRANCH=$(git branch --show-current)
 if [[ "$CURRENT_BRANCH" != "master" ]]; then
@@ -108,13 +102,4 @@ echo "🚀 Pushing to origin..."
 git push origin master
 git push origin "v$NEW_VERSION"
 
-echo "📤 Publishing to npm..."
-npm publish --ignore-scripts  # skip prepublishOnly since we already tested
-
-echo "🏷️  Creating GitHub Release..."
-gh release create "v$NEW_VERSION" \
-  --title "v$NEW_VERSION" \
-  --generate-notes \
-  --latest
-
-echo "✅ Released v$NEW_VERSION"
+echo "✅ v$NEW_VERSION tagged and pushed. CI will publish to npm and create the GitHub Release."

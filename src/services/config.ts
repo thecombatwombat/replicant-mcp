@@ -1,7 +1,7 @@
 import { readFile } from "fs/promises";
 import { existsSync } from "fs";
 import { parse as parseYaml } from "yaml";
-import { ReplicantConfig, DEFAULT_CONFIG, UiConfig } from "../types/config.js";
+import { ReplicantConfig, DEFAULT_CONFIG, UiConfig, BuildConfig } from "../types/config.js";
 
 /**
  * Load configuration from REPLICANT_CONFIG environment variable path
@@ -30,12 +30,23 @@ export async function loadConfig(): Promise<ReplicantConfig> {
     // Deep merge with defaults
     return {
       ui: mergeUiConfig(DEFAULT_CONFIG.ui, parsed.ui),
+      build: mergeBuildConfig(DEFAULT_CONFIG.build, parsed.build),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`Failed to parse REPLICANT_CONFIG at ${configPath}: ${message}. Using defaults.`);
     return DEFAULT_CONFIG;
   }
+}
+
+function mergeBuildConfig(defaults: BuildConfig, overrides?: Partial<BuildConfig>): BuildConfig {
+  if (!overrides) {
+    return defaults;
+  }
+
+  return {
+    projectRoot: overrides.projectRoot ?? defaults.projectRoot,
+  };
 }
 
 function mergeUiConfig(defaults: UiConfig, overrides?: Partial<UiConfig>): UiConfig {
@@ -67,6 +78,10 @@ export class ConfigManager {
 
   getUiConfig(): UiConfig {
     return this.config.ui;
+  }
+
+  getBuildConfig(): BuildConfig {
+    return this.config.build;
   }
 
   isVisualModePackage(packageName: string): boolean {

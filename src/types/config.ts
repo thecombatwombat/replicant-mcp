@@ -14,8 +14,14 @@ export interface UiConfig {
   maxImageDimension: number;
 }
 
+export interface BuildConfig {
+  /** Absolute path to the Android project root containing gradlew */
+  projectRoot?: string;
+}
+
 export interface ReplicantConfig {
   ui: UiConfig;
+  build: BuildConfig;
 }
 
 export const DEFAULT_CONFIG: ReplicantConfig = {
@@ -25,6 +31,7 @@ export const DEFAULT_CONFIG: ReplicantConfig = {
     includeBase64: false,
     maxImageDimension: 800,
   },
+  build: {},
 };
 
 /**

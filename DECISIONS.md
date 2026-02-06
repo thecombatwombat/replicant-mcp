@@ -125,3 +125,10 @@ Context: With multiple agents (local, remote, simultaneous), beads data goes sta
 Decision: Three-layer sync strategy: (1) SessionStart pulls latest via `bd sync --full`, (2) daemon runs with `--auto-commit --auto-push --auto-pull --interval 30s` for continuous sync during sessions, (3) SessionEnd does final `bd sync --full` push. SessionStart also ensures daemon is running with correct flags.
 Alternatives: Hook-based only (stale during long sessions), daemon-only (misses session boundaries), manual sync (forgettable and error-prone).
 Refs: .claude/settings.json
+
+## [2026-02-06] Harden beads sync for 30-50 agent scale
+Tags: tooling, beads, multi-agent, reliability
+Context: Initial three-layer sync strategy worked but had implementation gaps for true multi-agent scale: jitter window too small (0-5s with 50 agents = ~10 agents/second still colliding), SessionEnd had no retry on lock contention, and daemon health wasn't monitored.
+Decision: (1) Widen SessionStart jitter from 0-5s to 0-30s (matches daemon's 30s interval — data is at most 30s stale anyway). (2) Add retry-once to SessionEnd sync (same pattern as SessionStart). (3) Add daemon health check to `check-env.sh` full mode. Key insight: the daemon is the correctness mechanism; session hooks are best-effort optimizations that reduce staleness at boundaries. Don't over-invest in hook complexity.
+Alternatives: PID-based lock detection (lock is bd's responsibility, not ours), daemon log monitoring (upstream concern), one-daemon-per-machine architecture (bd daemon start is already idempotent), verbose hook logging (hook output already shows in session messages).
+Refs: scripts/beads-sync-start.sh, scripts/beads-sync-end.sh, scripts/check-env.sh

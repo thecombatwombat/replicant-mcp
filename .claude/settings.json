@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "bash scripts/install-dev-tools.sh 2>&1"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/check-env.sh --quick 2>&1 || true"
           }
         ]
       }

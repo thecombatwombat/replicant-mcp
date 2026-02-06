@@ -4,8 +4,21 @@
 
 set -euo pipefail
 
-BD_VERSION="0.49.4"
-GH_VERSION="2.67.0"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+TOOL_VERSIONS="$REPO_ROOT/.tool-versions"
+
+read_version() {
+  local tool="$1"
+  if [ ! -f "$TOOL_VERSIONS" ]; then
+    echo "ERROR: .tool-versions not found at $TOOL_VERSIONS" >&2
+    exit 1
+  fi
+  grep "^${tool} " "$TOOL_VERSIONS" | awk '{print $2}'
+}
+
+BD_VERSION="$(read_version bd)"
+GH_VERSION="$(read_version gh)"
 INSTALL_DIR="/usr/local/bin"
 ARCH="$(uname -m)"
 
@@ -69,6 +82,23 @@ check_gh_token() {
   fi
 }
 
+init_bd() {
+  # Skip if .beads/beads.db already exists (already initialized)
+  if [ -f ".beads/beads.db" ]; then
+    echo "bd already initialized"
+    return
+  fi
+
+  # Only init if .beads/ directory exists (this is a beads-tracked repo)
+  if [ -d ".beads" ]; then
+    echo "Initializing bd for fresh clone..."
+    bd init 2>&1 || echo "bd init failed (non-fatal)"
+    git config beads.role maintainer
+    echo "bd initialized"
+  fi
+}
+
 install_bd
 install_gh
+init_bd
 check_gh_token

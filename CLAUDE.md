@@ -25,6 +25,10 @@ npm start
 2. **Single Device Focus**: Use `adb-device list` then `adb-device select` to choose active device.
 3. **Accessibility-First**: Prefer `ui dump` over screenshots for UI interaction.
 
+## Decision Log
+
+**Before making architectural choices, check `DECISIONS.md`.** It records why past decisions were made and what alternatives were rejected. When you make a new architectural decision, add an entry.
+
 ## MCP Resources
 
 - **Context7**: Always use Context7 MCP for library/API documentation, code examples, setup steps, and configuration guidance—no need to ask first.

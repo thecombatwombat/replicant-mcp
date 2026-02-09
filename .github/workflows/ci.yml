@@ -149,11 +149,10 @@ jobs:
           chmod +x scripts/smoke-test.sh
           ./scripts/smoke-test.sh || true
 
-  # Optional: Full Android emulator test (expensive, only on main)
+  # Full Android emulator test (expensive but necessary for quality)
   emulator-test:
     runs-on: ubuntu-latest
     needs: [test, integration-test]
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout code

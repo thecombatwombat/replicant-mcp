@@ -209,6 +209,26 @@ Issues use description tags to indicate what's needed before execution:
 - Finalized plans must be persisted to `docs/plans/YYYY-MM-DD-<topic>-design.md` immediately after plan approval.
 - Link plans to beads issues: `bd update <id> --description "[Plan: docs/plans/YYYY-MM-DD-<topic>.md]"`
 
+## Testing Standards
+
+**Coverage is enforced.** Thresholds are defined in `vitest.config.ts` and checked in CI. PRs that drop coverage will fail.
+
+**Test before implement:** For new features, write tests first or immediately after implementation — not as an afterthought.
+
+**Test structure:**
+- Unit tests: `tests/<category>/` matching src structure
+- Integration tests: `tests/integration/` for multi-component flows
+- Follow existing patterns (see `tests/tools/cache.test.ts`): describe/beforeEach/it blocks
+
+**What to test:**
+- ✅ Happy paths + error cases + edge cases
+- ✅ Retry logic, timeout handling, failure modes
+- ✅ Boundary inputs (empty, null, max values)
+- ✅ External dependency mocking (adb, gradle, file system)
+- ❌ NOT just smoke tests — comprehensive behavioral coverage required
+
+**When coverage fails:** Run `npm run test:coverage` locally to check current thresholds and fix before PR.
+
 ## PR Workflow
 
 Use `/create-pr` for all PRs. It runs code-simplifier and complexity checks automatically.

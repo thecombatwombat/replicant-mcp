@@ -37,8 +37,22 @@ jobs:
         if: matrix.node-version != '20.x'
         run: npm test -- --run
 
-      - name: Run unit tests with coverage
+      - name: Check if source files changed
+        id: src-changed
         if: matrix.node-version == '20.x'
+        run: |
+          # Compare against merge base to detect changes in this PR/push
+          git fetch origin ${{ github.base_ref || 'master' }} --depth=1 || true
+          BASE=$(git merge-base HEAD origin/${{ github.base_ref || 'master' }} 2>/dev/null || echo "HEAD^")
+
+          if git diff --name-only $BASE...HEAD | grep -q '^src/'; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run unit tests with coverage
+        if: matrix.node-version == '20.x' && steps.src-changed.outputs.changed == 'true'
         run: npm test -- --run --coverage
 
       - name: Upload coverage

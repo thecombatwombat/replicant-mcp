@@ -267,7 +267,7 @@ npm run test:coverage
 
 # Output should show:
 # All files          | 68.71 | 60.49 | 63.17 | 70.1
-# Thresholds         | 60    | 55    | 55    | 60
+# Thresholds         | 68    | 60    | 63    | 70
 # ✓ Coverage thresholds met
 ```
 
@@ -285,7 +285,7 @@ npm run test:coverage
 
 ## Migration Path
 
-**Phase 1 (this PR):** Lock baseline at 60% to prevent regression
+**Phase 1 (this PR):** Lock baseline at current coverage levels to prevent regression
 
 **Phase 2 (next sprint):** Improve low-coverage areas identified in exploration
 

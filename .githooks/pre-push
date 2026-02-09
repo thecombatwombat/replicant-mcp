@@ -1,0 +1,57 @@
+#!/bin/sh
+# pre-push hook: Block direct pushes to master/main
+
+remote="$1"
+url="$2"
+
+zero=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
+
+while read local_ref local_oid remote_ref remote_oid; do
+  # Extract branch name from ref (e.g., refs/heads/master -> master)
+  branch=$(echo "$local_ref" | sed 's/refs\/heads\///g')
+
+  # Block master/main pushes, with release commit exception
+  if [[ "$branch" =~ ^(master|main)$ ]]; then
+    # Allow if this is a release commit (chore: release vX.Y.Z pattern)
+    if git log -1 --format=%B | grep -q "^chore: release v[0-9]"; then
+      echo "✓ Release commit detected. Pushing to $branch allowed."
+      exit 0
+    fi
+
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "✗ ERROR: Cannot push directly to $branch"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "All changes must go through pull requests."
+    echo ""
+    echo "Correct workflow:"
+    echo "  1. git checkout -b feature/your-feature"
+    echo "  2. git push origin feature/your-feature"
+    echo "  3. gh pr create"
+    echo ""
+    exit 1
+  fi
+
+  # Warn about non-standard branch names (but allow)
+  if [[ ! "$branch" =~ ^(feature|fix|docs|refactor|chore|trivial)/ ]] && \
+     [[ ! "$branch" =~ ^(master|main)$ ]]; then
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "⚠ WARNING: Non-standard branch name"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Your branch: $branch"
+    echo ""
+    echo "Recommended prefixes:"
+    echo "  feature/  - New functionality"
+    echo "  fix/      - Bug fixes"
+    echo "  docs/     - Documentation only"
+    echo "  refactor/ - Code restructuring"
+    echo "  chore/    - Maintenance tasks"
+    echo "  trivial/  - Minor fixes (skips beads check)"
+    echo ""
+    echo "Proceeding anyway (warning only)..."
+    echo ""
+  fi
+done
+
+exit 0

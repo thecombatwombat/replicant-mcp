@@ -18,15 +18,22 @@ set -euo pipefail
 command -v bd >/dev/null || exit 0
 [ -d .beads ] || exit 0
 
-# Jitter: random 0-30s delay to spread out sync attempts across agents.
-# Without this, N agents starting simultaneously all hit git at once.
-# Window matches the daemon's 30s sync interval — data is at most 30s stale anyway.
-sleep $(( RANDOM % 31 ))
+# Detect if running in parallel agent context or single interactive session
+if [ -n "${AGENT_CONTEXT:-}" ]; then
+  # Parallel agents: use jitter to avoid thundering herd
+  sleep $(( RANDOM % 31 ))
 
-# Try sync. If another agent holds the lock, wait and retry once.
-if ! bd sync --full 2>&1; then
-  sleep $(( 2 + RANDOM % 5 ))
-  bd sync --full 2>&1 || true
+  # Try sync. If another agent holds the lock, wait and retry once.
+  if ! bd sync --full 2>&1; then
+    sleep $(( 2 + RANDOM % 5 ))
+    bd sync --full 2>&1 || true
+  fi
+else
+  # Single interactive session: run sync in background, no blocking
+  (
+    sleep $(( RANDOM % 3 ))  # Short jitter for concurrent sessions
+    bd sync --full 2>&1 || bd sync --full 2>&1 || true
+  ) &
 fi
 
 # Ensure daemon is running with auto-sync flags.

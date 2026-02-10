@@ -1,0 +1,7 @@
+{
+  "last_failure": "2026-02-10T05:26:17.589588-08:00",
+  "failure_count": 1,
+  "backoff_until": "2026-02-10T05:26:47.589588-08:00",
+  "needs_manual_sync": false,
+  "failure_reason": "failed to pull from sync branch: git fetch failed in worktree: signal: killed\n"
+}

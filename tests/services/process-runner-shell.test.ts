@@ -104,6 +104,30 @@ describe("ProcessRunner shell payload safety guards", () => {
     ).rejects.toThrow("is not allowed");
   });
 
+  it("blocks rm -rf /oem", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "rm -rf /oem"])
+    ).rejects.toThrow("is not allowed");
+  });
+
+  it("blocks rm -rf /product", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "rm -rf /product"])
+    ).rejects.toThrow("is not allowed");
+  });
+
+  it("blocks rm /system without flags", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "rm /system"])
+    ).rejects.toThrow("is not allowed");
+  });
+
+  it("blocks rm -r / with single flag", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "rm -r /"])
+    ).rejects.toThrow("is not allowed");
+  });
+
   it("blocks multi-arg shell payloads with dangerous commands", async () => {
     await expect(
       runner.run("adb", ["-s", "emulator-5554", "shell", "rm", "-rf", "/"])
@@ -210,6 +234,36 @@ describe("ProcessRunner shell metacharacter and bypass prevention", () => {
     await expect(
       runner.run("adb", ["-s", "emulator-5554", "shell", "bash -c 'reboot'"])
     ).rejects.toThrow("Shell interpreters with -c are not allowed");
+  });
+
+  it("blocks dash -c wrapper", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "dash -c 'reboot'"])
+    ).rejects.toThrow("Shell interpreters with -c are not allowed");
+  });
+
+  it("blocks zsh -c wrapper", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "zsh -c 'reboot'"])
+    ).rejects.toThrow("Shell interpreters with -c are not allowed");
+  });
+
+  it("blocks ${VAR} expansion", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "echo ${PATH}"])
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("blocks standalone subshell parenthesis", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "(reboot)"])
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("blocks $_ underscore variable expansion", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "echo $_HOME"])
+    ).rejects.toThrow("Shell metacharacters are not allowed");
   });
 
   it("allows input text with quoted strings (no metacharacters)", async () => {

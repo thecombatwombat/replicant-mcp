@@ -22,6 +22,21 @@ const BLOCKED_PATTERNS = [
   /\bformat\b/, // format commands
 ];
 
+const BLOCKED_SHELL_PATTERNS = [
+  /^rm\s+(-[rf]+\s+)*\/\s*$/, // rm -rf / (root itself)
+  /^rm\s+(-[rf]+\s+)*\/(system|vendor|oem|product)(\/|\s|$)/, // rm on system partitions
+  /^su(\s|$)/, // su
+  /^sudo(\s|$)/, // sudo
+  /\bformat\b/, // format commands
+  /^setprop\s+persist\./, // persistent property changes
+  /^dd\s/, // raw disk operations
+  /^mkfs/, // filesystem creation
+  /^flash/, // flash operations
+  /^wipe/, // wipe data/cache
+  /^recovery\b/, // recovery mode
+  /^reboot\b/, // reboot device (also in BLOCKED_COMMANDS)
+];
+
 export class ProcessRunner {
   private readonly defaultTimeoutMs = 30_000;
   private readonly maxTimeoutMs = 120_000;
@@ -113,6 +128,64 @@ export class ProcessRunner {
         throw new ReplicantError(
           ErrorCode.COMMAND_BLOCKED,
           `Command '${fullCommand}' is not allowed`,
+          "Use safe commands only"
+        );
+      }
+    }
+
+    this.validateShellPayload(command, args);
+  }
+
+  private validateShellPayload(command: string, args: string[]): void {
+    // Only validate shell payloads for adb commands
+    const basename = command.split("/").pop() ?? command;
+    if (basename !== "adb") return;
+    const shellIndex = args.indexOf("shell");
+    if (shellIndex === -1 || shellIndex >= args.length - 1) return;
+
+    let payloadArgs = args.slice(shellIndex + 1);
+    // Strip leading "--" (end-of-options marker)
+    if (payloadArgs[0] === "--") {
+      payloadArgs = payloadArgs.slice(1);
+    }
+
+    const shellPayload = payloadArgs.join(" ").trim();
+    if (!shellPayload) return;
+
+    // Block shell metacharacters that enable command chaining/substitution.
+    // $letter/$(/$ are blocked (variable expansion, command substitution) but
+    // bare $ before digits is allowed (e.g., input text '$100').
+    if (/[;&|`()]|\$[({a-zA-Z_]/.test(shellPayload)) {
+      throw new ReplicantError(
+        ErrorCode.COMMAND_BLOCKED,
+        "Shell metacharacters are not allowed in shell commands",
+        "Use simple commands without chaining, pipes, or substitution"
+      );
+    }
+
+    // Block shell wrapper commands (sh -c, bash -c)
+    if (/^(sh|bash|dash|zsh)\s+-c\b/.test(shellPayload)) {
+      throw new ReplicantError(
+        ErrorCode.COMMAND_BLOCKED,
+        "Shell interpreters with -c are not allowed",
+        "Run the command directly without a shell wrapper"
+      );
+    }
+
+    const shellCommand = shellPayload.split(/\s+/)[0];
+    if (BLOCKED_COMMANDS.has(shellCommand)) {
+      throw new ReplicantError(
+        ErrorCode.COMMAND_BLOCKED,
+        `Shell command '${shellPayload}' is not allowed`,
+        "Use safe commands only"
+      );
+    }
+
+    for (const pattern of BLOCKED_SHELL_PATTERNS) {
+      if (pattern.test(shellPayload)) {
+        throw new ReplicantError(
+          ErrorCode.COMMAND_BLOCKED,
+          `Shell command '${shellPayload}' is not allowed`,
           "Use safe commands only"
         );
       }

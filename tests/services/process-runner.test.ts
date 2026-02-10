@@ -34,6 +34,30 @@ describe("ProcessRunner", () => {
     it("blocks reboot commands", async () => {
       await expect(runner.run("reboot", [])).rejects.toThrow("is not allowed");
     });
+
+    it("blocks shutdown commands", async () => {
+      await expect(runner.run("shutdown", [])).rejects.toThrow("is not allowed");
+    });
+
+    it("blocks su commands", async () => {
+      await expect(runner.run("su", ["-c", "id"])).rejects.toThrow("is not allowed");
+    });
+
+    it("blocks sudo commands", async () => {
+      await expect(runner.run("sudo", ["rm", "-rf", "/"])).rejects.toThrow("is not allowed");
+    });
+
+    it("blocks halt commands", async () => {
+      await expect(runner.run("halt", [])).rejects.toThrow("is not allowed");
+    });
+
+    it("blocks poweroff commands", async () => {
+      await expect(runner.run("poweroff", [])).rejects.toThrow("is not allowed");
+    });
+
+    it("blocks format commands", async () => {
+      await expect(runner.run("format", ["/dev/sda"])).rejects.toThrow("is not allowed");
+    });
   });
 
   describe("runAdb", () => {

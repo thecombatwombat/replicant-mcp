@@ -1,7 +1,0 @@
-{
-  "last_failure": "2026-02-10T02:49:01.200916-08:00",
-  "failure_count": 55,
-  "backoff_until": "2026-02-10T03:19:01.200916-08:00",
-  "needs_manual_sync": true,
-  "failure_reason": "failed to pull from sync branch: git merge --ff-only failed: exit status 1\nerror: Your local changes to the following files would be overwritten by merge:\n\t.beads/issues.jsonl\nPlease commit your changes or stash them before you merge.\nAborting\nUpdating 04f0d71..a36946a\n"
-}

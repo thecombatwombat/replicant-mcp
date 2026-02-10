@@ -1,9 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { execa } from "execa";
 import { ProcessRunner } from "../../src/services/process-runner.js";
 
-// Mock execa: delegates to real implementation by default,
-// overridden in shell-payload tests to prevent real adb execution on emulator CI
+// Keep a reference to the real execa for restoring after mock overrides
+const { execa: realExeca } = await vi.importActual<typeof import("execa")>("execa");
+
+// Mock execa at module scope so ProcessRunner gets the spy.
+// Default implementation delegates to the real execa; shell-payload
+// test blocks override it to prevent real adb execution on emulator CI.
 vi.mock("execa", async (importOriginal) => {
   const mod = await importOriginal<typeof import("execa")>();
   return { ...mod, execa: vi.fn().mockImplementation(mod.execa) };
@@ -15,6 +19,10 @@ describe("ProcessRunner", () => {
   const runner = new ProcessRunner();
 
   describe("run", () => {
+    beforeEach(() => {
+      mockedExeca.mockImplementation(realExeca as any);
+    });
+
     it("executes a simple command and returns output", async () => {
       const result = await runner.run("echo", ["hello"]);
       expect(result.stdout.trim()).toBe("hello");
@@ -61,6 +69,10 @@ describe("ProcessRunner", () => {
   describe("shell payload safety guards", () => {
     beforeEach(() => {
       mockedExeca.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 } as any);
+    });
+
+    afterEach(() => {
+      mockedExeca.mockImplementation(realExeca as any);
     });
 
     it("blocks rm -rf / in adb shell payload", async () => {
@@ -195,6 +207,10 @@ describe("ProcessRunner", () => {
   describe("shell metacharacter and bypass prevention", () => {
     beforeEach(() => {
       mockedExeca.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 } as any);
+    });
+
+    afterEach(() => {
+      mockedExeca.mockImplementation(realExeca as any);
     });
 
     it("blocks semicolon command chaining", async () => {

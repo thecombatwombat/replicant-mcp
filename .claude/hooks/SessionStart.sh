@@ -11,6 +11,3 @@ if [ -d ".githooks" ]; then
     echo "✓ Configured git hooks path: .githooks"
   fi
 fi
-
-# Run beads sync with jitter
-exec "$(dirname "$0")/../../scripts/beads-sync-start.sh"

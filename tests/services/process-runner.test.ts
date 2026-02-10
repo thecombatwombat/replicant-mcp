@@ -1,5 +1,15 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { execa } from "execa";
 import { ProcessRunner } from "../../src/services/process-runner.js";
+
+// Mock execa: delegates to real implementation by default,
+// overridden in shell-payload tests to prevent real adb execution on emulator CI
+vi.mock("execa", async (importOriginal) => {
+  const mod = await importOriginal<typeof import("execa")>();
+  return { ...mod, execa: vi.fn().mockImplementation(mod.execa) };
+});
+
+const mockedExeca = vi.mocked(execa);
 
 describe("ProcessRunner", () => {
   const runner = new ProcessRunner();
@@ -49,6 +59,10 @@ describe("ProcessRunner", () => {
   });
 
   describe("shell payload safety guards", () => {
+    beforeEach(() => {
+      mockedExeca.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 } as any);
+    });
+
     it("blocks rm -rf / in adb shell payload", async () => {
       await expect(
         runner.run("adb", ["-s", "emulator-5554", "shell", "rm -rf /"])
@@ -146,73 +160,43 @@ describe("ProcessRunner", () => {
     });
 
     it("allows rm on safe paths like /sdcard", async () => {
-      try {
-        await runner.run("adb", ["-s", "emulator-5554", "shell", "rm /sdcard/ui-dump.xml"]);
-      } catch (error: any) {
-        expect(error.code).not.toBe("COMMAND_BLOCKED");
-      }
+      await runner.run("adb", ["-s", "emulator-5554", "shell", "rm /sdcard/ui-dump.xml"]);
     });
 
     it("allows rm on /data/local/tmp", async () => {
-      try {
-        await runner.run("adb", ["-s", "emulator-5554", "shell", "rm /data/local/tmp/test.txt"]);
-      } catch (error: any) {
-        expect(error.code).not.toBe("COMMAND_BLOCKED");
-      }
+      await runner.run("adb", ["-s", "emulator-5554", "shell", "rm /data/local/tmp/test.txt"]);
     });
 
     it("allows safe shell commands", async () => {
-      // This will fail due to adb not being available, but it should NOT
-      // throw a COMMAND_BLOCKED error - meaning it passed validation
-      try {
-        await runner.run("adb", ["-s", "emulator-5554", "shell", "ls /data"]);
-      } catch (error: any) {
-        expect(error.code).not.toBe("COMMAND_BLOCKED");
-      }
+      await runner.run("adb", ["-s", "emulator-5554", "shell", "ls /data"]);
     });
 
     it("allows safe shell commands like getprop", async () => {
-      try {
-        await runner.run("adb", ["-s", "emulator-5554", "shell", "getprop"]);
-      } catch (error: any) {
-        expect(error.code).not.toBe("COMMAND_BLOCKED");
-      }
+      await runner.run("adb", ["-s", "emulator-5554", "shell", "getprop"]);
     });
 
     it("allows setprop for non-persist properties", async () => {
-      try {
-        await runner.run("adb", ["-s", "emulator-5554", "shell", "setprop debug.test true"]);
-      } catch (error: any) {
-        expect(error.code).not.toBe("COMMAND_BLOCKED");
-      }
+      await runner.run("adb", ["-s", "emulator-5554", "shell", "setprop debug.test true"]);
     });
 
     it("allows pm list packages", async () => {
-      try {
-        await runner.run("adb", ["-s", "emulator-5554", "shell", "pm", "list", "packages"]);
-      } catch (error: any) {
-        expect(error.code).not.toBe("COMMAND_BLOCKED");
-      }
+      await runner.run("adb", ["-s", "emulator-5554", "shell", "pm", "list", "packages"]);
     });
 
     it("skips validation when no shell arg present", async () => {
-      try {
-        await runner.run("adb", ["devices"]);
-      } catch (error: any) {
-        expect(error.code).not.toBe("COMMAND_BLOCKED");
-      }
+      await runner.run("adb", ["devices"]);
     });
 
     it("skips validation when shell is last arg with no payload", async () => {
-      try {
-        await runner.run("adb", ["-s", "emulator-5554", "shell"]);
-      } catch (error: any) {
-        expect(error.code).not.toBe("COMMAND_BLOCKED");
-      }
+      await runner.run("adb", ["-s", "emulator-5554", "shell"]);
     });
   });
 
   describe("shell metacharacter and bypass prevention", () => {
+    beforeEach(() => {
+      mockedExeca.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 } as any);
+    });
+
     it("blocks semicolon command chaining", async () => {
       await expect(
         runner.run("adb", ["-s", "emulator-5554", "shell", "ls; rm -rf /"])
@@ -280,51 +264,27 @@ describe("ProcessRunner", () => {
     });
 
     it("allows input text with quoted strings (no metacharacters)", async () => {
-      try {
-        await runner.run("adb", ["-s", "emulator-5554", "shell", 'input text "hello world"']);
-      } catch (error: any) {
-        expect(error.code).not.toBe("COMMAND_BLOCKED");
-      }
+      await runner.run("adb", ["-s", "emulator-5554", "shell", 'input text "hello world"']);
     });
 
     it("allows screencap commands", async () => {
-      try {
-        await runner.run("adb", ["-s", "emulator-5554", "shell", "screencap -p /sdcard/screenshot.png"]);
-      } catch (error: any) {
-        expect(error.code).not.toBe("COMMAND_BLOCKED");
-      }
+      await runner.run("adb", ["-s", "emulator-5554", "shell", "screencap -p /sdcard/screenshot.png"]);
     });
 
     it("allows uiautomator dump", async () => {
-      try {
-        await runner.run("adb", ["-s", "emulator-5554", "shell", "uiautomator dump /sdcard/ui-dump.xml"]);
-      } catch (error: any) {
-        expect(error.code).not.toBe("COMMAND_BLOCKED");
-      }
+      await runner.run("adb", ["-s", "emulator-5554", "shell", "uiautomator dump /sdcard/ui-dump.xml"]);
     });
 
     it("allows input tap commands", async () => {
-      try {
-        await runner.run("adb", ["-s", "emulator-5554", "shell", "input tap 100 200"]);
-      } catch (error: any) {
-        expect(error.code).not.toBe("COMMAND_BLOCKED");
-      }
+      await runner.run("adb", ["-s", "emulator-5554", "shell", "input tap 100 200"]);
     });
 
     it("allows wm size command", async () => {
-      try {
-        await runner.run("adb", ["-s", "emulator-5554", "shell", "wm size"]);
-      } catch (error: any) {
-        expect(error.code).not.toBe("COMMAND_BLOCKED");
-      }
+      await runner.run("adb", ["-s", "emulator-5554", "shell", "wm size"]);
     });
 
     it("does not apply shell validation to non-adb commands with 'shell' in args", async () => {
-      try {
-        await runner.run("echo", ["shell", "rm -rf /"]);
-      } catch (error: any) {
-        expect(error.code).not.toBe("COMMAND_BLOCKED");
-      }
+      await runner.run("echo", ["shell", "rm -rf /"]);
     });
 
     it("applies shell validation when adb is a full path", async () => {

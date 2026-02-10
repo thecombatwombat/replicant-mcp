@@ -73,13 +73,13 @@ echo ""
 echo -e "${BLUE}=== Unit Tests ===${NC}"
 
 echo -n "Running unit tests... "
-UNIT_OUTPUT=$(npm run test:unit 2>&1)
-if echo "$UNIT_OUTPUT" | grep -q "passed"; then
+if UNIT_OUTPUT=$(npm run test:unit 2>&1); then
     UNIT_RESULT=$(echo "$UNIT_OUTPUT" | grep "Tests" | head -1 | sed 's/\x1b\[[0-9;]*m//g')
     pass
     echo "  $UNIT_RESULT"
 else
     fail "Unit tests failed"
+    echo "$UNIT_OUTPUT" | tail -30
 fi
 
 # ============================================
@@ -89,13 +89,13 @@ echo ""
 echo -e "${BLUE}=== Integration Tests ===${NC}"
 
 echo -n "MCP protocol tests... "
-INT_OUTPUT=$(npm run test:integration 2>&1)
-if echo "$INT_OUTPUT" | grep -q "passed"; then
+if INT_OUTPUT=$(npm run test:integration 2>&1); then
     INT_RESULT=$(echo "$INT_OUTPUT" | grep "Tests" | head -1 | sed 's/\x1b\[[0-9;]*m//g')
     pass
     echo "  $INT_RESULT"
 else
     fail "Integration tests failed"
+    echo "$INT_OUTPUT" | tail -30
 fi
 
 # ============================================

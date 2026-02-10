@@ -318,6 +318,20 @@ describe("ProcessRunner", () => {
         expect(error.code).not.toBe("COMMAND_BLOCKED");
       }
     });
+
+    it("does not apply shell validation to non-adb commands with 'shell' in args", async () => {
+      try {
+        await runner.run("echo", ["shell", "rm -rf /"]);
+      } catch (error: any) {
+        expect(error.code).not.toBe("COMMAND_BLOCKED");
+      }
+    });
+
+    it("applies shell validation when adb is a full path", async () => {
+      await expect(
+        runner.run("/usr/bin/adb", ["-s", "emulator-5554", "shell", "reboot"])
+      ).rejects.toThrow("Shell command 'reboot' is not allowed");
+    });
   });
 
   describe("runAdb", () => {

@@ -133,10 +133,13 @@ export class ProcessRunner {
       }
     }
 
-    this.validateShellPayload(args);
+    this.validateShellPayload(command, args);
   }
 
-  private validateShellPayload(args: string[]): void {
+  private validateShellPayload(command: string, args: string[]): void {
+    // Only validate shell payloads for adb commands
+    const basename = command.split("/").pop() ?? command;
+    if (basename !== "adb") return;
     const shellIndex = args.indexOf("shell");
     if (shellIndex === -1 || shellIndex >= args.length - 1) return;
 

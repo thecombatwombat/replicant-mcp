@@ -140,8 +140,32 @@ export class ProcessRunner {
     const shellIndex = args.indexOf("shell");
     if (shellIndex === -1 || shellIndex >= args.length - 1) return;
 
-    const shellPayload = args.slice(shellIndex + 1).join(" ").trim();
+    let payloadArgs = args.slice(shellIndex + 1);
+    // Strip leading "--" (end-of-options marker)
+    if (payloadArgs[0] === "--") {
+      payloadArgs = payloadArgs.slice(1);
+    }
+
+    const shellPayload = payloadArgs.join(" ").trim();
     if (!shellPayload) return;
+
+    // Block shell metacharacters that enable command chaining/substitution
+    if (/[;&|`$()]/.test(shellPayload)) {
+      throw new ReplicantError(
+        ErrorCode.COMMAND_BLOCKED,
+        "Shell metacharacters are not allowed in shell commands",
+        "Use simple commands without chaining, pipes, or substitution"
+      );
+    }
+
+    // Block shell wrapper commands (sh -c, bash -c)
+    if (/^(sh|bash|dash|zsh)\s+-c\b/.test(shellPayload)) {
+      throw new ReplicantError(
+        ErrorCode.COMMAND_BLOCKED,
+        "Shell interpreters with -c are not allowed",
+        "Run the command directly without a shell wrapper"
+      );
+    }
 
     const shellCommand = shellPayload.split(/\s+/)[0];
     if (BLOCKED_COMMANDS.has(shellCommand)) {

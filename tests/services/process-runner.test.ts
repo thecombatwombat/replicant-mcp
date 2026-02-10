@@ -212,6 +212,114 @@ describe("ProcessRunner", () => {
     });
   });
 
+  describe("shell metacharacter and bypass prevention", () => {
+    it("blocks semicolon command chaining", async () => {
+      await expect(
+        runner.run("adb", ["-s", "emulator-5554", "shell", "ls; rm -rf /"])
+      ).rejects.toThrow("Shell metacharacters are not allowed");
+    });
+
+    it("blocks && command chaining", async () => {
+      await expect(
+        runner.run("adb", ["-s", "emulator-5554", "shell", "echo x && reboot"])
+      ).rejects.toThrow("Shell metacharacters are not allowed");
+    });
+
+    it("blocks || command chaining", async () => {
+      await expect(
+        runner.run("adb", ["-s", "emulator-5554", "shell", "true || dd if=/dev/zero of=/dev/block/mmcblk0"])
+      ).rejects.toThrow("Shell metacharacters are not allowed");
+    });
+
+    it("blocks pipe operator", async () => {
+      await expect(
+        runner.run("adb", ["-s", "emulator-5554", "shell", "cat /dev/null | su"])
+      ).rejects.toThrow("Shell metacharacters are not allowed");
+    });
+
+    it("blocks backtick command substitution", async () => {
+      await expect(
+        runner.run("adb", ["-s", "emulator-5554", "shell", "echo `reboot`"])
+      ).rejects.toThrow("Shell metacharacters are not allowed");
+    });
+
+    it("blocks $() command substitution", async () => {
+      await expect(
+        runner.run("adb", ["-s", "emulator-5554", "shell", "echo $(rm -rf /system)"])
+      ).rejects.toThrow("Shell metacharacters are not allowed");
+    });
+
+    it("blocks $ variable expansion", async () => {
+      await expect(
+        runner.run("adb", ["-s", "emulator-5554", "shell", "echo $PATH"])
+      ).rejects.toThrow("Shell metacharacters are not allowed");
+    });
+
+    it("blocks dangerous commands after -- separator", async () => {
+      await expect(
+        runner.run("adb", ["-s", "emulator-5554", "shell", "--", "reboot"])
+      ).rejects.toThrow("Shell command 'reboot' is not allowed");
+    });
+
+    it("blocks rm -rf / after -- separator", async () => {
+      await expect(
+        runner.run("adb", ["-s", "emulator-5554", "shell", "--", "rm -rf /"])
+      ).rejects.toThrow("Shell command 'rm -rf /' is not allowed");
+    });
+
+    it("blocks sh -c wrapper", async () => {
+      await expect(
+        runner.run("adb", ["-s", "emulator-5554", "shell", "sh -c 'rm -rf /'"])
+      ).rejects.toThrow("Shell interpreters with -c are not allowed");
+    });
+
+    it("blocks bash -c wrapper", async () => {
+      await expect(
+        runner.run("adb", ["-s", "emulator-5554", "shell", "bash -c 'reboot'"])
+      ).rejects.toThrow("Shell interpreters with -c are not allowed");
+    });
+
+    it("allows input text with quoted strings (no metacharacters)", async () => {
+      try {
+        await runner.run("adb", ["-s", "emulator-5554", "shell", 'input text "hello world"']);
+      } catch (error: any) {
+        expect(error.code).not.toBe("COMMAND_BLOCKED");
+      }
+    });
+
+    it("allows screencap commands", async () => {
+      try {
+        await runner.run("adb", ["-s", "emulator-5554", "shell", "screencap -p /sdcard/screenshot.png"]);
+      } catch (error: any) {
+        expect(error.code).not.toBe("COMMAND_BLOCKED");
+      }
+    });
+
+    it("allows uiautomator dump", async () => {
+      try {
+        await runner.run("adb", ["-s", "emulator-5554", "shell", "uiautomator dump /sdcard/ui-dump.xml"]);
+      } catch (error: any) {
+        expect(error.code).not.toBe("COMMAND_BLOCKED");
+      }
+    });
+
+    it("allows input tap commands", async () => {
+      try {
+        await runner.run("adb", ["-s", "emulator-5554", "shell", "input tap 100 200"]);
+      } catch (error: any) {
+        expect(error.code).not.toBe("COMMAND_BLOCKED");
+      }
+    });
+
+    it("allows wm size command", async () => {
+      try {
+        await runner.run("adb", ["-s", "emulator-5554", "shell", "wm size"]);
+      } catch (error: any) {
+        expect(error.code).not.toBe("COMMAND_BLOCKED");
+      }
+    });
+  });
+
   describe("runAdb", () => {
     it("uses environment service to resolve adb path", async () => {
       const mockEnv = {

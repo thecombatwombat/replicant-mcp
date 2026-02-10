@@ -283,6 +283,10 @@ describe("ProcessRunner", () => {
       await runner.run("adb", ["-s", "emulator-5554", "shell", 'input text "hello world"']);
     });
 
+    it("allows dollar sign before digits in text input", async () => {
+      await runner.run("adb", ["-s", "emulator-5554", "shell", "input text '$100'"]);
+    });
+
     it("allows screencap commands", async () => {
       await runner.run("adb", ["-s", "emulator-5554", "shell", "screencap -p /sdcard/screenshot.png"]);
     });

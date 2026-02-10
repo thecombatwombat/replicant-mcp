@@ -152,8 +152,10 @@ export class ProcessRunner {
     const shellPayload = payloadArgs.join(" ").trim();
     if (!shellPayload) return;
 
-    // Block shell metacharacters that enable command chaining/substitution
-    if (/[;&|`$()]/.test(shellPayload)) {
+    // Block shell metacharacters that enable command chaining/substitution.
+    // $letter/$(/$ are blocked (variable expansion, command substitution) but
+    // bare $ before digits is allowed (e.g., input text '$100').
+    if (/[;&|`()]|\$[({a-zA-Z_]/.test(shellPayload)) {
       throw new ReplicantError(
         ErrorCode.COMMAND_BLOCKED,
         "Shell metacharacters are not allowed in shell commands",

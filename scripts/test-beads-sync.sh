@@ -173,6 +173,8 @@ run_with_mocks() {
     cd "$FAKE_PROJECT"
     PATH="$MOCK_DIR:$PATH" bash "$script" "$@" 2>&1
   )
+  # Sync runs in background; mock sleep is instant so it completes fast
+  /bin/sleep 0.2
 }
 
 # Helper: count occurrences of a pattern in calls.log

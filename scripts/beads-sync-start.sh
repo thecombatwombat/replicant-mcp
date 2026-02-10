@@ -18,23 +18,17 @@ set -euo pipefail
 command -v bd >/dev/null || exit 0
 [ -d .beads ] || exit 0
 
-# Detect if running in parallel agent context or single interactive session
-if [ -n "${AGENT_CONTEXT:-}" ]; then
-  # Parallel agents: use jitter to avoid thundering herd
+# Background sync with full jitter — non-blocking for ALL sessions.
+# 0-30s jitter protects against thundering herd with parallel agents.
+# Background means interactive sessions aren't blocked by the wait.
+# Daemon provides correctness; this is best-effort staleness reduction.
+(
   sleep $(( RANDOM % 31 ))
-
-  # Try sync. If another agent holds the lock, wait and retry once.
   if ! bd sync --full 2>&1; then
     sleep $(( 2 + RANDOM % 5 ))
     bd sync --full 2>&1 || true
   fi
-else
-  # Single interactive session: run sync in background, no blocking
-  (
-    sleep $(( RANDOM % 3 ))  # Short jitter for concurrent sessions
-    bd sync --full 2>&1 || bd sync --full 2>&1 || true
-  ) &
-fi
+) &
 
 # Ensure daemon is running with auto-sync flags.
 # "bd daemon start" is a no-op if already running (exits 0), so safe to call.

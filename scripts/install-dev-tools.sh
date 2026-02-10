@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+# Skip on non-Linux (this script is for remote/container environments)
+[[ "$(uname -s)" == "Linux" ]] || { echo "Skipping (not a remote environment)"; exit 0; }
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TOOL_VERSIONS="$REPO_ROOT/.tool-versions"

@@ -118,6 +118,11 @@ describe("replicant doctor", () => {
       expect(adb.status).toBe("fail");
       expect(adb.detail).toBe("not found");
       expect(adb.suggestion).toBeDefined();
+
+      // Devices should also fail when adb is unavailable
+      const devices = checks.find((c) => c.name === "Connected devices")!;
+      expect(devices.status).toBe("fail");
+      expect(devices.detail).toContain("skipped");
     });
 
     it("reports fail when ANDROID_HOME is not set", () => {

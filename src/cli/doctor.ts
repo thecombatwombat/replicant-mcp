@@ -66,8 +66,10 @@ function checkAvdmanager(): CheckResult {
   try {
     exec("avdmanager list avd");
     return { name: "avdmanager", status: "ok", detail: "installed" };
-  } catch {
-    return { name: "avdmanager", status: "fail", detail: "not found", suggestion: "Install Android SDK cmdline-tools and add to PATH" };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    const detail = msg.includes("ENOENT") || msg.includes("not found") ? "not found" : "command failed";
+    return { name: "avdmanager", status: "fail", detail, suggestion: "Install Android SDK cmdline-tools and add to PATH" };
   }
 }
 
@@ -88,13 +90,16 @@ function checkAvds(avdmanagerResult: CheckResult): CheckResult {
   }
 }
 
-function checkDevices(): CheckResult {
+function checkDevices(adbResult: CheckResult): CheckResult {
+  if (adbResult.status === "fail") {
+    return { name: "Connected devices", status: "fail", detail: "skipped (adb unavailable)", suggestion: "Install adb first" };
+  }
   try {
     const out = exec("adb devices");
     const lines = out.split("\n").filter((l) => l.includes("\tdevice"));
     return { name: "Connected devices", status: lines.length > 0 ? "ok" : "warn", detail: `${lines.length} connected` };
   } catch {
-    return { name: "Connected devices", status: "warn", detail: "could not query", suggestion: "adb not available" };
+    return { name: "Connected devices", status: "fail", detail: "could not query", suggestion: "adb command failed" };
   }
 }
 
@@ -109,10 +114,11 @@ function checkGradle(): CheckResult {
 }
 
 export function runChecks(): CheckResult[] {
+  const adbResult = checkAdb();
   const avdmanagerResult = checkAvdmanager();
   return [
-    checkNode(), checkNpm(), checkAndroidHome(), checkAdb(),
-    checkEmulator(), avdmanagerResult, checkAvds(avdmanagerResult), checkDevices(), checkGradle(),
+    checkNode(), checkNpm(), checkAndroidHome(), adbResult,
+    checkEmulator(), avdmanagerResult, checkAvds(avdmanagerResult), checkDevices(adbResult), checkGradle(),
   ];
 }
 

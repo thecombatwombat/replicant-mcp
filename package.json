@@ -5,8 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "replicant-mcp": "dist/index.js",
-    "replicant": "dist/cli.js"
+    "replicant-mcp": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
-import { CACHE_TTLS } from "../types/index.js";
+import { CACHE_TTLS, ReplicantError, ErrorCode } from "../types/index.js";
 
 export const adbAppInputSchema = z.object({
   operation: z.enum(["install", "uninstall", "launch", "stop", "clear-data", "list"]),
@@ -15,31 +15,61 @@ export const adbAppInputSchema = z.object({
 export type AdbAppInput = z.infer<typeof adbAppInputSchema>;
 
 async function handleInstall(input: AdbAppInput, deviceId: string, context: ServerContext): Promise<Record<string, unknown>> {
-  if (!input.apkPath) throw new Error("apkPath is required for install operation");
+  if (!input.apkPath) {
+    throw new ReplicantError(
+      ErrorCode.INPUT_VALIDATION_FAILED,
+      "apkPath is required for install operation",
+      "Provide the path to the APK file to install",
+    );
+  }
   await context.adb.install(deviceId, input.apkPath);
   return { installed: input.apkPath, deviceId };
 }
 
 async function handleUninstall(input: AdbAppInput, deviceId: string, context: ServerContext): Promise<Record<string, unknown>> {
-  if (!input.packageName) throw new Error("packageName is required for uninstall operation");
+  if (!input.packageName) {
+    throw new ReplicantError(
+      ErrorCode.INPUT_VALIDATION_FAILED,
+      "packageName is required for uninstall operation",
+      "Provide the package name to uninstall",
+    );
+  }
   await context.adb.uninstall(deviceId, input.packageName);
   return { uninstalled: input.packageName, deviceId };
 }
 
 async function handleLaunch(input: AdbAppInput, deviceId: string, context: ServerContext): Promise<Record<string, unknown>> {
-  if (!input.packageName) throw new Error("packageName is required for launch operation");
+  if (!input.packageName) {
+    throw new ReplicantError(
+      ErrorCode.INPUT_VALIDATION_FAILED,
+      "packageName is required for launch operation",
+      "Provide the package name to launch",
+    );
+  }
   await context.adb.launch(deviceId, input.packageName);
   return { launched: input.packageName, deviceId };
 }
 
 async function handleStop(input: AdbAppInput, deviceId: string, context: ServerContext): Promise<Record<string, unknown>> {
-  if (!input.packageName) throw new Error("packageName is required for stop operation");
+  if (!input.packageName) {
+    throw new ReplicantError(
+      ErrorCode.INPUT_VALIDATION_FAILED,
+      "packageName is required for stop operation",
+      "Provide the package name to stop",
+    );
+  }
   await context.adb.stop(deviceId, input.packageName);
   return { stopped: input.packageName, deviceId };
 }
 
 async function handleClearData(input: AdbAppInput, deviceId: string, context: ServerContext): Promise<Record<string, unknown>> {
-  if (!input.packageName) throw new Error("packageName is required for clear-data operation");
+  if (!input.packageName) {
+    throw new ReplicantError(
+      ErrorCode.INPUT_VALIDATION_FAILED,
+      "packageName is required for clear-data operation",
+      "Provide the package name to clear data for",
+    );
+  }
   await context.adb.clearData(deviceId, input.packageName);
   return { cleared: input.packageName, deviceId };
 }
@@ -94,7 +124,13 @@ export async function handleAdbAppTool(
 ): Promise<Record<string, unknown>> {
   const device = await context.deviceState.ensureDevice(context.adb);
   const handler = operations[input.operation];
-  if (!handler) throw new Error(`Unknown operation: ${input.operation}`);
+  if (!handler) {
+    throw new ReplicantError(
+      ErrorCode.INVALID_OPERATION,
+      `Unknown operation: ${input.operation}`,
+      "Valid operations: install, uninstall, launch, stop, clear-data, list",
+    );
+  }
   return handler(input, device.id, context);
 }
 

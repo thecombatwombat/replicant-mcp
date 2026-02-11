@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
-import { CACHE_TTLS } from "../types/index.js";
+import { CACHE_TTLS, ReplicantError, ErrorCode } from "../types/index.js";
 
 export const adbDeviceInputSchema = z.object({
   operation: z.enum(["list", "select", "wait", "properties", "health-check"]),
@@ -22,12 +22,20 @@ async function handleList(input: AdbDeviceInput, context: ServerContext): Promis
 
 async function handleSelect(input: AdbDeviceInput, context: ServerContext): Promise<Record<string, unknown>> {
   if (!input.deviceId) {
-    throw new Error("deviceId is required for select operation");
+    throw new ReplicantError(
+      ErrorCode.INPUT_VALIDATION_FAILED,
+      "deviceId is required for select operation",
+      "Use adb-device list to see available devices, then provide a deviceId",
+    );
   }
   const devices = await context.adb.getDevices();
   const device = devices.find((d) => d.id === input.deviceId);
   if (!device) {
-    throw new Error(`Device ${input.deviceId} not found`);
+    throw new ReplicantError(
+      ErrorCode.DEVICE_NOT_FOUND,
+      `Device ${input.deviceId} not found`,
+      "Use adb-device list to see available devices",
+    );
   }
   context.deviceState.setCurrentDevice(device);
   return { selected: device };
@@ -125,7 +133,13 @@ export async function handleAdbDeviceTool(
   context: ServerContext
 ): Promise<Record<string, unknown>> {
   const handler = operations[input.operation];
-  if (!handler) throw new Error(`Unknown operation: ${input.operation}`);
+  if (!handler) {
+    throw new ReplicantError(
+      ErrorCode.INVALID_OPERATION,
+      `Unknown operation: ${input.operation}`,
+      "Valid operations: list, select, wait, properties, health-check",
+    );
+  }
   return handler(input, context);
 }
 

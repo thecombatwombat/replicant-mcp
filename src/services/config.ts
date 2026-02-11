@@ -2,6 +2,7 @@ import { readFile } from "fs/promises";
 import { existsSync } from "fs";
 import { parse as parseYaml } from "yaml";
 import { ReplicantConfig, DEFAULT_CONFIG, UiConfig, BuildConfig } from "../types/config.js";
+import { logger } from "../utils/logger.js";
 
 /**
  * Load configuration from REPLICANT_CONFIG environment variable path
@@ -15,7 +16,7 @@ export async function loadConfig(): Promise<ReplicantConfig> {
   }
 
   if (!existsSync(configPath)) {
-    console.warn(`REPLICANT_CONFIG set but file not found: ${configPath}. Using defaults.`);
+    logger.warn("REPLICANT_CONFIG set but file not found", { path: configPath });
     return DEFAULT_CONFIG;
   }
 
@@ -34,7 +35,7 @@ export async function loadConfig(): Promise<ReplicantConfig> {
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.warn(`Failed to parse REPLICANT_CONFIG at ${configPath}: ${message}. Using defaults.`);
+    logger.warn("Failed to parse REPLICANT_CONFIG", { path: configPath, error: message });
     return DEFAULT_CONFIG;
   }
 }

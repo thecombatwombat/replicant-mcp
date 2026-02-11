@@ -1,7 +1,8 @@
 const LOG_LEVELS = { error: 0, warn: 1, info: 2, debug: 3 } as const;
 type LogLevel = keyof typeof LOG_LEVELS;
 
-const currentLevel: LogLevel = (process.env.REPLICANT_LOG_LEVEL as LogLevel) || "warn";
+const envLevel = process.env.REPLICANT_LOG_LEVEL as string | undefined;
+const currentLevel: LogLevel = envLevel && envLevel in LOG_LEVELS ? (envLevel as LogLevel) : "warn";
 const useJson = process.env.REPLICANT_LOG_FORMAT === "json";
 
 export const logger = {
@@ -18,6 +19,7 @@ function log(level: LogLevel, msg: string, ctx?: Record<string, unknown>) {
       JSON.stringify({ level, msg, ts: new Date().toISOString(), ...ctx }) + "\n",
     );
   } else {
-    process.stderr.write(`[${level.toUpperCase()}] ${msg}\n`);
+    const ctxStr = ctx ? " " + JSON.stringify(ctx) : "";
+    process.stderr.write(`[${level.toUpperCase()}] ${msg}${ctxStr}\n`);
   }
 }

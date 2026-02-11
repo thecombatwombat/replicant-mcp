@@ -109,6 +109,19 @@ describe("logger", () => {
       spy.mockRestore();
     });
 
+    it("includes context in text format", async () => {
+      delete process.env.REPLICANT_LOG_LEVEL;
+      delete process.env.REPLICANT_LOG_FORMAT;
+      vi.resetModules();
+      const { logger } = await import("../../src/utils/logger.js");
+      const spy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+      logger.error("failed", { path: "/tmp/x" });
+
+      expect(spy).toHaveBeenCalledWith('[ERROR] failed {"path":"/tmp/x"}\n');
+      spy.mockRestore();
+    });
+
     it("outputs warn level correctly", async () => {
       delete process.env.REPLICANT_LOG_LEVEL;
       delete process.env.REPLICANT_LOG_FORMAT;
@@ -119,6 +132,23 @@ describe("logger", () => {
       logger.warn("a warning");
 
       expect(spy).toHaveBeenCalledWith("[WARN] a warning\n");
+      spy.mockRestore();
+    });
+  });
+
+  describe("invalid log level", () => {
+    it("falls back to warn for unknown level", async () => {
+      process.env.REPLICANT_LOG_LEVEL = "verbose";
+      delete process.env.REPLICANT_LOG_FORMAT;
+      vi.resetModules();
+      const { logger } = await import("../../src/utils/logger.js");
+      const spy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+      logger.info("should be filtered");
+      expect(spy).not.toHaveBeenCalled();
+
+      logger.warn("should appear");
+      expect(spy).toHaveBeenCalledOnce();
       spy.mockRestore();
     });
   });

@@ -1,0 +1,2187 @@
+{
+  "version": "1.0",
+  "generatedAt": "2026-02-11T12:47:28.326Z",
+  "tools": {
+    "cache": {
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "get-stats",
+              "clear",
+              "get-config",
+              "set-config"
+            ]
+          },
+          "key": {
+            "type": "string",
+            "description": "Specific cache key to clear"
+          },
+          "config": {
+            "type": "object",
+            "properties": {
+              "maxEntries": {
+                "type": "number"
+              },
+              "maxEntrySizeBytes": {
+                "type": "number"
+              },
+              "defaultTtlMs": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "required": [
+          "operation"
+        ]
+      },
+      "outputSchemas": {
+        "CacheGetStatsOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "stats": {
+              "type": "object",
+              "properties": {
+                "entryCount": {
+                  "type": "number"
+                },
+                "totalSizeBytes": {
+                  "type": "number"
+                },
+                "typeBreakdown": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "type": "number"
+                  }
+                },
+                "config": {
+                  "type": "object",
+                  "properties": {
+                    "maxEntries": {
+                      "type": "number"
+                    },
+                    "maxEntrySizeBytes": {
+                      "type": "number"
+                    },
+                    "defaultTtlMs": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "maxEntries",
+                    "maxEntrySizeBytes",
+                    "defaultTtlMs"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "entryCount",
+                "totalSizeBytes",
+                "typeBreakdown",
+                "config"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "stats"
+          ],
+          "additionalProperties": false
+        },
+        "CacheClearKeyOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "cleared": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "cleared"
+          ],
+          "additionalProperties": false
+        },
+        "CacheClearAllOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "cleared": {
+              "type": "string",
+              "const": "all"
+            }
+          },
+          "required": [
+            "cleared"
+          ],
+          "additionalProperties": false
+        },
+        "CacheGetConfigOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "config": {
+              "type": "object",
+              "properties": {
+                "maxEntries": {
+                  "type": "number"
+                },
+                "maxEntrySizeBytes": {
+                  "type": "number"
+                },
+                "defaultTtlMs": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "maxEntries",
+                "maxEntrySizeBytes",
+                "defaultTtlMs"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "config"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "rtfm": {
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "Category: build, adb, emulator, ui"
+          },
+          "tool": {
+            "type": "string",
+            "description": "Tool name for specific docs"
+          }
+        }
+      },
+      "outputSchemas": {
+        "RtfmOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "content"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "adb-device": {
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "list",
+              "select",
+              "wait",
+              "properties",
+              "health-check"
+            ]
+          },
+          "deviceId": {
+            "type": "string",
+            "description": "Device ID for select/wait/properties"
+          }
+        },
+        "required": [
+          "operation"
+        ]
+      },
+      "outputSchemas": {
+        "AdbDeviceListOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "devices": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "emulator",
+                      "physical"
+                    ]
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "online",
+                      "offline",
+                      "booting"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "type",
+                  "name",
+                  "status"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "currentDevice": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "autoSelected": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "devices",
+            "currentDevice",
+            "autoSelected"
+          ],
+          "additionalProperties": false
+        },
+        "AdbDeviceSelectOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "selected": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "emulator",
+                    "physical"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "online",
+                    "offline",
+                    "booting"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "name",
+                "status"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "selected"
+          ],
+          "additionalProperties": false
+        },
+        "AdbDeviceWaitOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "device ready"
+            },
+            "deviceId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "deviceId"
+          ],
+          "additionalProperties": false
+        },
+        "AdbDevicePropertiesOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "deviceId": {
+              "type": "string"
+            },
+            "summary": {
+              "type": "object",
+              "properties": {
+                "model": {
+                  "type": "string"
+                },
+                "manufacturer": {
+                  "type": "string"
+                },
+                "sdkVersion": {
+                  "type": "string"
+                },
+                "androidVersion": {
+                  "type": "string"
+                },
+                "buildId": {
+                  "type": "string"
+                },
+                "device": {
+                  "type": "string"
+                },
+                "product": {
+                  "type": "string"
+                },
+                "hardware": {
+                  "type": "string"
+                },
+                "abiList": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "propertyCount": {
+              "type": "number"
+            },
+            "cacheId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "deviceId",
+            "summary",
+            "propertyCount",
+            "cacheId"
+          ],
+          "additionalProperties": false
+        },
+        "AdbDeviceHealthCheckOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "healthy": {
+              "type": "boolean"
+            },
+            "environment": {
+              "type": "object",
+              "properties": {
+                "sdkPath": {
+                  "type": "string"
+                },
+                "adbPath": {
+                  "type": "string"
+                },
+                "platform": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "adbServerRunning": {
+              "type": "boolean"
+            },
+            "connectedDevices": {
+              "type": "number"
+            },
+            "warnings": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "healthy",
+            "environment",
+            "adbServerRunning",
+            "connectedDevices",
+            "warnings",
+            "errors"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "adb-app": {
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "install",
+              "uninstall",
+              "launch",
+              "stop",
+              "clear-data",
+              "list"
+            ]
+          },
+          "apkPath": {
+            "type": "string",
+            "description": "Path to APK file (for install)"
+          },
+          "packageName": {
+            "type": "string",
+            "description": "Package name (for other operations)"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Max packages to return (default: 20, max: 100). For list operation."
+          },
+          "filter": {
+            "type": "string",
+            "description": "Filter packages by name (case-insensitive contains). For list operation."
+          },
+          "offset": {
+            "type": "number",
+            "description": "Skip first N packages for pagination. For list operation."
+          }
+        },
+        "required": [
+          "operation"
+        ]
+      },
+      "outputSchemas": {
+        "AdbAppInstallOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "installed": {
+              "type": "string"
+            },
+            "deviceId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "installed",
+            "deviceId"
+          ],
+          "additionalProperties": false
+        },
+        "AdbAppUninstallOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "uninstalled": {
+              "type": "string"
+            },
+            "deviceId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "uninstalled",
+            "deviceId"
+          ],
+          "additionalProperties": false
+        },
+        "AdbAppLaunchOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "launched": {
+              "type": "string"
+            },
+            "deviceId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "launched",
+            "deviceId"
+          ],
+          "additionalProperties": false
+        },
+        "AdbAppStopOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "stopped": {
+              "type": "string"
+            },
+            "deviceId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "stopped",
+            "deviceId"
+          ],
+          "additionalProperties": false
+        },
+        "AdbAppClearDataOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "cleared": {
+              "type": "string"
+            },
+            "deviceId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "cleared",
+            "deviceId"
+          ],
+          "additionalProperties": false
+        },
+        "AdbAppListOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "packages": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "count": {
+              "type": "number"
+            },
+            "totalCount": {
+              "type": "number"
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "offset": {
+              "type": "number"
+            },
+            "limit": {
+              "type": "number"
+            },
+            "cacheId": {
+              "type": "string"
+            },
+            "deviceId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "packages",
+            "count",
+            "totalCount",
+            "hasMore",
+            "offset",
+            "limit",
+            "cacheId",
+            "deviceId"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "adb-logcat": {
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "lines": {
+            "type": "number",
+            "description": "Number of lines (default: 100)"
+          },
+          "package": {
+            "type": "string",
+            "description": "Filter by package name"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Filter by log tags"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "verbose",
+              "debug",
+              "info",
+              "warn",
+              "error"
+            ]
+          },
+          "rawFilter": {
+            "type": "string",
+            "description": "Raw logcat filter string"
+          },
+          "since": {
+            "type": "string",
+            "description": "Time filter in adb logcat -T format (e.g., '01-20 15:30:00.000')"
+          }
+        }
+      },
+      "outputSchemas": {
+        "AdbLogcatOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "logId": {
+              "type": "string"
+            },
+            "summary": {
+              "type": "object",
+              "properties": {
+                "lineCount": {
+                  "type": "number"
+                },
+                "errorCount": {
+                  "type": "number"
+                },
+                "warnCount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "lineCount",
+                "errorCount",
+                "warnCount"
+              ],
+              "additionalProperties": false
+            },
+            "preview": {
+              "type": "string"
+            },
+            "deviceId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "logId",
+            "summary",
+            "preview",
+            "deviceId"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "adb-shell": {
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "Shell command to execute"
+          },
+          "timeout": {
+            "type": "number",
+            "description": "Timeout in ms (default: 30s, max: 120s)"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "outputSchemas": {
+        "AdbShellOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "stdout": {
+              "type": "string"
+            },
+            "stderr": {
+              "type": "string"
+            },
+            "exitCode": {
+              "type": "number"
+            },
+            "deviceId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "stdout",
+            "stderr",
+            "exitCode",
+            "deviceId"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "emulator-device": {
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "list",
+              "create",
+              "start",
+              "kill",
+              "wipe",
+              "snapshot-save",
+              "snapshot-load",
+              "snapshot-list",
+              "snapshot-delete"
+            ]
+          },
+          "avdName": {
+            "type": "string",
+            "description": "AVD name"
+          },
+          "device": {
+            "type": "string",
+            "description": "Device profile (e.g., 'pixel_7')"
+          },
+          "systemImage": {
+            "type": "string",
+            "description": "System image"
+          },
+          "snapshotName": {
+            "type": "string",
+            "description": "Snapshot name"
+          },
+          "emulatorId": {
+            "type": "string",
+            "description": "Running emulator ID"
+          }
+        },
+        "required": [
+          "operation"
+        ]
+      },
+      "outputSchemas": {
+        "EmulatorListOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "available": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "running": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "available",
+            "running"
+          ],
+          "additionalProperties": false
+        },
+        "EmulatorCreateOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "created": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "created"
+          ],
+          "additionalProperties": false
+        },
+        "EmulatorStartOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "started": {
+              "type": "string"
+            },
+            "emulatorId": {
+              "type": "string"
+            },
+            "autoSelected": {
+              "type": "boolean",
+              "const": true
+            }
+          },
+          "required": [
+            "started",
+            "emulatorId",
+            "autoSelected"
+          ],
+          "additionalProperties": false
+        },
+        "EmulatorKillOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "killed": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "killed"
+          ],
+          "additionalProperties": false
+        },
+        "EmulatorWipeOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "wiped": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "wiped"
+          ],
+          "additionalProperties": false
+        },
+        "EmulatorSnapshotSaveOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "saved": {
+              "type": "string"
+            },
+            "emulatorId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "saved",
+            "emulatorId"
+          ],
+          "additionalProperties": false
+        },
+        "EmulatorSnapshotLoadOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "loaded": {
+              "type": "string"
+            },
+            "emulatorId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "loaded",
+            "emulatorId"
+          ],
+          "additionalProperties": false
+        },
+        "EmulatorSnapshotListOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "snapshots": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "emulatorId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "snapshots",
+            "emulatorId"
+          ],
+          "additionalProperties": false
+        },
+        "EmulatorSnapshotDeleteOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "deleted": {
+              "type": "string"
+            },
+            "emulatorId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "deleted",
+            "emulatorId"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "gradle-build": {
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "assembleDebug",
+              "assembleRelease",
+              "bundle"
+            ]
+          },
+          "module": {
+            "type": "string",
+            "description": "Module path (e.g., ':app')"
+          },
+          "flavor": {
+            "type": "string",
+            "description": "Product flavor"
+          }
+        },
+        "required": [
+          "operation"
+        ]
+      },
+      "outputSchemas": {
+        "GradleBuildOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "buildId": {
+              "type": "string"
+            },
+            "summary": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "duration": {
+                  "type": "string"
+                },
+                "warnings": {
+                  "type": "number"
+                },
+                "errors": {
+                  "type": "number"
+                },
+                "apkPath": {
+                  "type": "string"
+                },
+                "tasksExecuted": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "success",
+                "warnings",
+                "errors"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "buildId",
+            "summary"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "gradle-test": {
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "unitTest",
+              "connectedTest",
+              "saveBaseline",
+              "clearBaseline"
+            ]
+          },
+          "module": {
+            "type": "string",
+            "description": "Module path"
+          },
+          "filter": {
+            "type": "string",
+            "description": "Test filter (e.g., '*LoginTest*')"
+          },
+          "taskName": {
+            "type": "string",
+            "description": "Task name for baseline operations. Defaults to operation name."
+          }
+        },
+        "required": [
+          "operation"
+        ]
+      },
+      "outputSchemas": {
+        "GradleTestRunOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "testId": {
+              "type": "string"
+            },
+            "summary": {
+              "type": "object",
+              "properties": {
+                "passed": {
+                  "type": "number"
+                },
+                "failed": {
+                  "type": "number"
+                },
+                "skipped": {
+                  "type": "number"
+                },
+                "total": {
+                  "type": "number"
+                },
+                "duration": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "passed",
+                "failed",
+                "skipped",
+                "total"
+              ],
+              "additionalProperties": false
+            },
+            "failures": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "test": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "test",
+                  "message"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "regressions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "test": {
+                    "type": "string"
+                  },
+                  "previousStatus": {
+                    "type": "string"
+                  },
+                  "currentStatus": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "test",
+                  "previousStatus",
+                  "currentStatus"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "testId",
+            "summary",
+            "failures"
+          ],
+          "additionalProperties": false
+        },
+        "GradleTestSaveBaselineOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "testId": {
+              "type": "string"
+            },
+            "summary": {
+              "type": "object",
+              "properties": {
+                "passed": {
+                  "type": "number"
+                },
+                "failed": {
+                  "type": "number"
+                },
+                "skipped": {
+                  "type": "number"
+                },
+                "total": {
+                  "type": "number"
+                },
+                "duration": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "passed",
+                "failed",
+                "skipped",
+                "total"
+              ],
+              "additionalProperties": false
+            },
+            "baselineSaved": {
+              "type": "string"
+            },
+            "baselineTestCount": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "testId",
+            "summary",
+            "baselineSaved",
+            "baselineTestCount"
+          ],
+          "additionalProperties": false
+        },
+        "GradleTestClearBaselineOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "baselineCleared": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "baselineCleared"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "gradle-list": {
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "variants",
+              "modules",
+              "tasks"
+            ]
+          },
+          "module": {
+            "type": "string",
+            "description": "Module path (for variants/tasks)"
+          }
+        },
+        "required": [
+          "operation"
+        ]
+      },
+      "outputSchemas": {
+        "GradleListModulesOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "modules": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "modules"
+          ],
+          "additionalProperties": false
+        },
+        "GradleListVariantsOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "variants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "buildType": {
+                    "type": "string"
+                  },
+                  "flavors": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "buildType",
+                  "flavors"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "module": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "variants",
+            "module"
+          ],
+          "additionalProperties": false
+        },
+        "GradleListTasksOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "listId": {
+              "type": "string"
+            },
+            "summary": {
+              "type": "object",
+              "properties": {
+                "totalTasks": {
+                  "type": "number"
+                },
+                "buildTasks": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "testTasks": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "cleanTasks": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "totalTasks",
+                "buildTasks",
+                "testTasks",
+                "cleanTasks"
+              ],
+              "additionalProperties": false
+            },
+            "module": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "listId",
+            "summary",
+            "module"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "gradle-get-details": {
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Build or test ID from previous operation"
+          },
+          "detailType": {
+            "type": "string",
+            "enum": [
+              "logs",
+              "errors",
+              "tasks",
+              "all"
+            ],
+            "description": "Type of details to retrieve"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "outputSchemas": {
+        "GradleGetDetailsLogsOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "operation": {
+              "type": "string"
+            },
+            "logs": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "operation",
+            "logs"
+          ],
+          "additionalProperties": false
+        },
+        "GradleGetDetailsErrorsOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "operation": {
+              "type": "string"
+            },
+            "errors": {
+              "type": "string"
+            },
+            "errorCount": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "operation",
+            "errors",
+            "errorCount"
+          ],
+          "additionalProperties": false
+        },
+        "GradleGetDetailsTasksOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "operation": {
+              "type": "string"
+            },
+            "tasks": {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "task": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "task",
+                      "status"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "required": [
+            "id",
+            "operation",
+            "tasks"
+          ],
+          "additionalProperties": false
+        },
+        "GradleGetDetailsAllOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "operation": {
+              "type": "string"
+            },
+            "result": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            },
+            "fullOutput": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "operation",
+            "result",
+            "fullOutput"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "ui": {
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "dump",
+              "find",
+              "tap",
+              "input",
+              "scroll",
+              "screenshot",
+              "accessibility-check",
+              "visual-snapshot"
+            ]
+          },
+          "selector": {
+            "type": "object",
+            "properties": {
+              "resourceId": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              },
+              "textContains": {
+                "type": "string"
+              },
+              "className": {
+                "type": "string"
+              },
+              "nearestTo": {
+                "type": "string",
+                "description": "Find elements nearest to this text (spatial proximity)"
+              }
+            },
+            "description": "Element selector (for find)"
+          },
+          "x": {
+            "type": "number",
+            "description": "X coordinate (for tap)"
+          },
+          "y": {
+            "type": "number",
+            "description": "Y coordinate (for tap)"
+          },
+          "elementIndex": {
+            "type": "number",
+            "description": "Element index from last find (for tap)"
+          },
+          "text": {
+            "type": "string",
+            "description": "Text to input"
+          },
+          "localPath": {
+            "type": "string",
+            "description": "Local path for screenshot (default: .replicant/screenshots/screenshot-{timestamp}.png)"
+          },
+          "inline": {
+            "type": "boolean",
+            "description": "Return base64 image data (default: true). Set to false to save to file instead."
+          },
+          "debug": {
+            "type": "boolean",
+            "description": "Include source (accessibility/ocr) and confidence in response"
+          },
+          "gridCell": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 24,
+            "description": "Grid cell number (1-24) for Tier 5 refinement"
+          },
+          "gridPosition": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Position within cell (1=TL, 2=TR, 3=Center, 4=BL, 5=BR)"
+          },
+          "deviceSpace": {
+            "type": "boolean",
+            "description": "For tap: treat x/y as device coordinates (skip image→device scaling). Use when coordinates come from adb shell input tap testing."
+          },
+          "maxDimension": {
+            "type": "number",
+            "description": "Max image dimension in pixels (default: 1000). Higher = better quality, more tokens."
+          },
+          "raw": {
+            "type": "boolean",
+            "description": "Skip scaling, return full device resolution. Warning: may exceed API limits."
+          },
+          "compact": {
+            "type": "boolean",
+            "description": "For dump: return paginated flat list of interactive elements (default: 20, use limit/offset for more)."
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down",
+              "left",
+              "right"
+            ],
+            "description": "Scroll direction (for scroll operation)"
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Scroll amount as fraction of screen (0-1, default: 0.5)"
+          },
+          "limit": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "For dump with compact: max elements to return (default: 20)."
+          },
+          "offset": {
+            "type": "number",
+            "minimum": 0,
+            "description": "For dump with compact: skip first N elements for pagination."
+          }
+        },
+        "required": [
+          "operation"
+        ]
+      },
+      "outputSchemas": {
+        "UiDumpFullOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "dumpId": {
+              "type": "string"
+            },
+            "tree": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema0"
+              }
+            },
+            "deviceId": {
+              "type": "string"
+            },
+            "warning": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "dumpId",
+            "tree",
+            "deviceId"
+          ],
+          "additionalProperties": false,
+          "$defs": {
+            "__schema0": {
+              "type": "object",
+              "properties": {
+                "className": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "resourceId": {
+                  "type": "string"
+                },
+                "bounds": {
+                  "type": "string"
+                },
+                "clickable": {
+                  "type": "boolean"
+                },
+                "children": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                }
+              },
+              "required": [
+                "bounds"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "UiDumpCompactOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "dumpId": {
+              "type": "string"
+            },
+            "elements": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "resourceId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "count": {
+              "type": "number"
+            },
+            "totalCount": {
+              "type": "number"
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "offset": {
+              "type": "number"
+            },
+            "limit": {
+              "type": "number"
+            },
+            "deviceId": {
+              "type": "string"
+            },
+            "hint": {
+              "type": "string"
+            },
+            "warning": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "dumpId",
+            "elements",
+            "count",
+            "totalCount",
+            "hasMore",
+            "offset",
+            "limit",
+            "deviceId"
+          ],
+          "additionalProperties": false
+        },
+        "UiFindOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "elements": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "number"
+                  },
+                  "text": {
+                    "type": "string"
+                  },
+                  "resourceId": {
+                    "type": "string"
+                  },
+                  "className": {
+                    "type": "string"
+                  },
+                  "centerX": {
+                    "type": "number"
+                  },
+                  "centerY": {
+                    "type": "number"
+                  },
+                  "center": {
+                    "type": "object",
+                    "properties": {
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "bounds": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "left": {
+                            "type": "number"
+                          },
+                          "top": {
+                            "type": "number"
+                          },
+                          "right": {
+                            "type": "number"
+                          },
+                          "bottom": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "left",
+                          "top",
+                          "right",
+                          "bottom"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "clickable": {
+                    "type": "boolean"
+                  },
+                  "confidence": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "index"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "count": {
+              "type": "number"
+            },
+            "deviceId": {
+              "type": "string"
+            },
+            "tier": {
+              "type": "number"
+            },
+            "confidence": {
+              "type": "string",
+              "enum": [
+                "high",
+                "medium",
+                "low"
+              ]
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "accessibility",
+                "ocr",
+                "visual",
+                "grid"
+              ]
+            },
+            "fallbackReason": {
+              "type": "string"
+            },
+            "sortedByProximityTo": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string"
+                },
+                "anchor": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    },
+                    "y": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y"
+                  ],
+                  "additionalProperties": false
+                },
+                "method": {
+                  "type": "string",
+                  "enum": [
+                    "containment",
+                    "distance"
+                  ]
+                }
+              },
+              "required": [
+                "query",
+                "anchor",
+                "method"
+              ],
+              "additionalProperties": false
+            },
+            "nearestToWarning": {
+              "type": "string"
+            },
+            "candidates": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "number"
+                  },
+                  "bounds": {
+                    "type": "string"
+                  },
+                  "center": {
+                    "type": "object",
+                    "properties": {
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "image": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "index",
+                  "bounds",
+                  "center",
+                  "image"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "totalCandidates": {
+              "type": "number"
+            },
+            "gridImage": {
+              "type": "string"
+            },
+            "gridPositions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "visualFallback": {
+              "type": "object",
+              "properties": {
+                "screenshotPath": {
+                  "type": "string"
+                },
+                "screenshotBase64": {
+                  "type": "string"
+                },
+                "screen": {
+                  "type": "object",
+                  "properties": {
+                    "width": {
+                      "type": "number"
+                    },
+                    "height": {
+                      "type": "number"
+                    },
+                    "density": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "width",
+                    "height",
+                    "density"
+                  ],
+                  "additionalProperties": false
+                },
+                "app": {
+                  "type": "object",
+                  "properties": {
+                    "packageName": {
+                      "type": "string"
+                    },
+                    "activityName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "packageName",
+                    "activityName"
+                  ],
+                  "additionalProperties": false
+                },
+                "hint": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "screenshotPath",
+                "screen",
+                "app"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "elements",
+            "count",
+            "deviceId"
+          ],
+          "additionalProperties": false
+        },
+        "UiTapOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "tapped": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                },
+                "deviceSpace": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "deviceSpace"
+              ],
+              "additionalProperties": false
+            },
+            "deviceId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "tapped",
+            "deviceId"
+          ],
+          "additionalProperties": false
+        },
+        "UiInputOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "string"
+            },
+            "deviceId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "input",
+            "deviceId"
+          ],
+          "additionalProperties": false
+        },
+        "UiScrollOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "scrolled": {
+              "type": "object",
+              "properties": {
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "up",
+                    "down",
+                    "left",
+                    "right"
+                  ]
+                },
+                "amount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "direction",
+                "amount"
+              ],
+              "additionalProperties": false
+            },
+            "deviceId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "scrolled",
+            "deviceId"
+          ],
+          "additionalProperties": false
+        },
+        "UiScreenshotOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "screenshotPath": {
+              "type": "string"
+            },
+            "base64": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "height": {
+              "type": "number"
+            },
+            "deviceId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "deviceId"
+          ],
+          "additionalProperties": {}
+        },
+        "UiAccessibilityCheckOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "deviceId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "deviceId"
+          ],
+          "additionalProperties": {}
+        },
+        "UiVisualSnapshotOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "screenshotPath": {
+              "type": "string"
+            },
+            "screenshotBase64": {
+              "type": "string"
+            },
+            "screen": {
+              "type": "object",
+              "properties": {
+                "width": {
+                  "type": "number"
+                },
+                "height": {
+                  "type": "number"
+                },
+                "density": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "width",
+                "height",
+                "density"
+              ],
+              "additionalProperties": false
+            },
+            "app": {
+              "type": "object",
+              "properties": {
+                "packageName": {
+                  "type": "string"
+                },
+                "activityName": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "packageName",
+                "activityName"
+              ],
+              "additionalProperties": false
+            },
+            "deviceId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "deviceId"
+          ],
+          "additionalProperties": {}
+        }
+      }
+    }
+  }
+}

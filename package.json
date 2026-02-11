@@ -24,7 +24,10 @@
     "prepublishOnly": "npm run build && npm test -- --run",
     "release": "bash scripts/release.sh",
     "release:minor": "bash scripts/release.sh minor",
-    "release:major": "bash scripts/release.sh major"
+    "release:major": "bash scripts/release.sh major",
+    "generate:contracts": "tsx scripts/generate-contract.ts",
+    "check:contracts": "tsx scripts/check-contracts.ts",
+    "test:contracts": "tsx scripts/contract-test.ts"
   },
   "keywords": [
     "mcp",
@@ -46,6 +49,7 @@
   "files": [
     "dist/",
     "docs/rtfm/",
+    "docs/contracts/",
     "README.md",
     "LICENSE"
   ],

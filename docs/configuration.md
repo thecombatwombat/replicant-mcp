@@ -27,12 +27,40 @@ ui:
 
 Most users won't need a config file—the defaults work well for typical Android apps.
 
+## Configuration Key Reference
+
+All configuration keys, their types, defaults, and descriptions. Source: `src/types/config.ts`.
+
+### `ui` Section
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `ui.visualModePackages` | `string[]` | `[]` | Package names that skip accessibility and always use visual mode. Useful for apps with custom rendering (Flutter, games) where accessibility nodes are unavailable. |
+| `ui.autoFallbackScreenshot` | `boolean` | `true` | Automatically include a screenshot in the response when `ui find` returns no results. Helps diagnose why elements weren't found. |
+| `ui.includeBase64` | `boolean` | `false` | Include base64-encoded image data in tool responses. Enable this if your MCP client supports inline images. Increases response size. |
+| `ui.maxImageDimension` | `number` | `800` | Maximum width or height (in pixels) for captured screenshots. Larger values produce sharper images but increase response size and processing time. |
+
+### `build` Section
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `build.projectRoot` | `string` | *(none)* | Absolute path to the Android project root containing `gradlew`. Required when running replicant-mcp outside the project directory (e.g., as an MCP server). |
+
 ## Environment Variables
 
 | Variable | Description |
 |----------|-------------|
-| `REPLICANT_CONFIG` | Path to the YAML config file |
-| `REPLICANT_PROJECT_ROOT` | Absolute path to the Android project root containing `gradlew`. Takes precedence over `build.projectRoot` in config. |
+| `REPLICANT_CONFIG` | Path to the YAML config file. |
+| `REPLICANT_PROJECT_ROOT` | Absolute path to the Android project root containing `gradlew`. Takes precedence over `build.projectRoot` in the config file. |
+| `ANDROID_HOME` | Android SDK location. Used by replicant-mcp to locate `adb`, `emulator`, and other SDK tools. |
+| `ANDROID_SDK_ROOT` | Alternative to `ANDROID_HOME`. If both are set, `ANDROID_HOME` takes precedence (per Android tooling conventions). |
+
+### Precedence
+
+Environment variables override config file values:
+
+1. `REPLICANT_PROJECT_ROOT` overrides `build.projectRoot`
+2. If neither is set, the current working directory is used for Gradle commands
 
 ## Gradle Setup
 

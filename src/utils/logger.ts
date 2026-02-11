@@ -12,14 +12,28 @@ export const logger = {
   debug: (msg: string, ctx?: Record<string, unknown>) => log("debug", msg, ctx),
 };
 
+function safeStringify(obj: Record<string, unknown>): string {
+  try {
+    return JSON.stringify(obj);
+  } catch {
+    return "[unserializable]";
+  }
+}
+
 function log(level: LogLevel, msg: string, ctx?: Record<string, unknown>) {
   if (LOG_LEVELS[level] > LOG_LEVELS[currentLevel]) return;
   if (useJson) {
-    process.stderr.write(
-      JSON.stringify({ level, msg, ts: new Date().toISOString(), ...ctx }) + "\n",
-    );
+    try {
+      process.stderr.write(
+        JSON.stringify({ level, msg, ts: new Date().toISOString(), ...ctx }) + "\n",
+      );
+    } catch {
+      process.stderr.write(
+        JSON.stringify({ level, msg, ts: new Date().toISOString(), ctx: "[unserializable]" }) + "\n",
+      );
+    }
   } else {
-    const ctxStr = ctx ? " " + JSON.stringify(ctx) : "";
+    const ctxStr = ctx ? " " + safeStringify(ctx) : "";
     process.stderr.write(`[${level.toUpperCase()}] ${msg}${ctxStr}\n`);
   }
 }

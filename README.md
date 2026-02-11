@@ -31,12 +31,13 @@ replicant-mcp is a [Model Context Protocol](https://modelcontextprotocol.io/) se
 
 | Category | Capabilities |
 |----------|-------------|
-| **Build & Test** | Build APKs/bundles, run unit and instrumented tests, list modules/variants/tasks |
+| **Build & Test** | Build APKs/bundles, run unit and instrumented tests, list modules/variants/tasks, test regression detection with baseline comparison |
 | **Emulator** | Create, start, stop, wipe emulators; save/load/delete snapshots |
 | **Device Control** | List connected devices, select active device, query device properties |
 | **App Management** | Install, uninstall, launch, stop apps; clear app data |
 | **Log Analysis** | Filter logcat by package, tag, level, time |
 | **UI Automation** | Accessibility-first element finding, spatial proximity search, tap, text input, screenshots |
+| **Diagnostics** | Environment health checks via `replicant doctor`; structured logging with configurable level and format |
 
 ---
 
@@ -44,7 +45,6 @@ replicant-mcp is a [Model Context Protocol](https://modelcontextprotocol.io/) se
 
 - Custom build commands (project-specific overrides, auto-detect gradlew)
 - Video capture (start/stop recording, duration-based capture)
-- Raw screenshot mode for external context management
 
 ---
 
@@ -60,6 +60,12 @@ replicant-mcp is a [Model Context Protocol](https://modelcontextprotocol.io/) se
 node --version      # Should be 18+
 adb --version       # Should show Android Debug Bridge version
 emulator -version   # Should show Android emulator version
+```
+
+Or run the built-in diagnostics command after installation to check everything at once:
+
+```bash
+npx replicant-mcp doctor
 ```
 
 ### Installation
@@ -181,8 +187,28 @@ replicant-mcp uses progressive disclosure (summaries first, details on demand) t
 ## More Info
 
 - **Configuration:** Set `REPLICANT_CONFIG` for advanced options. See [docs/configuration.md](docs/configuration.md).
+- **Logging:** Set `REPLICANT_LOG_LEVEL` (`error`, `warn`, `info`, `debug`) and `REPLICANT_LOG_FORMAT` (`json` for structured output) to control server logging. Logs are written to stderr.
 - **Troubleshooting:** Common issues and solutions in [docs/troubleshooting.md](docs/troubleshooting.md).
 - **Tool documentation:** Ask Claude to call `rtfm` with a category like "build", "adb", "emulator", or "ui".
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/architecture.md) | Design overview and progressive disclosure pattern |
+| [Configuration](docs/configuration.md) | Config file reference, environment variables, Gradle setup |
+| [API Stability](docs/api-stability.md) | Tool API versioning policy and deprecation process |
+| [Security Model](docs/security.md) | adb-shell safety model, command denylist, threat boundaries |
+| [Support Matrix](docs/support-matrix.md) | Tested OS, Node.js, Android SDK, and emulator versions |
+| [Known Limitations](docs/known-limitations.md) | Accessibility gaps, timeouts, single-device focus, and more |
+| [Artifacts](docs/artifacts.md) | `.replicant/` directory contents and privacy considerations |
+| [Troubleshooting](docs/troubleshooting.md) | Common issues and solutions |
+| [Changelog](CHANGELOG.md) | Version history |
+| [Security Policy](SECURITY.md) | Vulnerability reporting process |
+| [Support / Getting Help](SUPPORT.md) | How to report bugs and ask questions |
+| [Contributing](CONTRIBUTING.md) | Development setup and guidelines |
 
 ---
 

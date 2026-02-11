@@ -63,3 +63,25 @@ mappings:
       - docs/plans/*screenshot-scaling*
     roadmapItem: Auto-resize screenshots to prevent API context limits
     category: Screenshot Scaling
+
+  # Diagnostics
+  - patterns:
+      - src/cli/doctor*
+    roadmapItem: Environment diagnostics CLI command
+    category: Diagnostics
+    status: completed
+
+  # Structured Logging
+  - patterns:
+      - src/utils/logger*
+    roadmapItem: Structured logging with configurable level and format
+    category: Developer Experience
+    status: completed
+
+  # Test Regression Detection
+  - patterns:
+      - src/services/test-baseline*
+      - src/tools/gradle-test*
+    roadmapItem: Test regression detection with baseline comparison
+    category: Build & Test
+    status: completed

@@ -54,6 +54,8 @@ All configuration keys, their types, defaults, and descriptions. Source: `src/ty
 | `REPLICANT_PROJECT_ROOT` | Absolute path to the Android project root containing `gradlew`. Takes precedence over `build.projectRoot` in the config file. |
 | `ANDROID_HOME` | Android SDK location. Used by replicant-mcp to locate `adb`, `emulator`, and other SDK tools. |
 | `ANDROID_SDK_ROOT` | Alternative to `ANDROID_HOME`. If both are set, `ANDROID_HOME` takes precedence (per Android tooling conventions). |
+| `REPLICANT_LOG_LEVEL` | Logging verbosity: `error`, `warn` (default), `info`, or `debug`. Logs are written to stderr. |
+| `REPLICANT_LOG_FORMAT` | Set to `json` for structured JSON log output. Default is human-readable plain text. |
 
 ### Precedence
 

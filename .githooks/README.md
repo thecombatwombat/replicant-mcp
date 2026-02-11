@@ -1,6 +1,6 @@
 # Git Hooks
 
-Custom git hooks for enforcing workflow standards.
+Custom git hooks for enforcing workflow standards and syncing issue tracking.
 
 ## Setup
 
@@ -21,7 +21,7 @@ git config --get core.hooksPath
 
 ### pre-push
 
-Blocks direct pushes to master/main branches and warns about non-standard branch names.
+Blocks direct pushes to master/main branches and warns about non-standard branch names. Also runs beads sync if `bd` is installed.
 
 **Blocked:**
 - Pushing to master/main (except release commits matching `chore: release v*`)
@@ -31,6 +31,10 @@ Blocks direct pushes to master/main branches and warns about non-standard branch
 
 **Release exception:**
 Commits with message `chore: release v1.2.3` (or similar version) are allowed to push to master. This supports the automated release workflow.
+
+### pre-commit, post-checkout, post-merge, prepare-commit-msg
+
+Thin shims that delegate to [beads](https://github.com/anthropics/beads) (`bd`) for issue tracking sync. If `bd` is not installed, these hooks silently skip.
 
 ## Testing
 

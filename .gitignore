@@ -31,3 +31,8 @@ coverage/
 !.claude/settings.json
 .beads/
 .replicant/
+.serena/
+
+# Large binary files (downloaded on demand)
+eng.traineddata
+*.backup

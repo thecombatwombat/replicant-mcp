@@ -41,6 +41,8 @@
   ],
   "author": "Archit Joshi",
   "license": "MIT",
+  "homepage": "https://github.com/thecombatwombat/replicant-mcp",
+  "bugs": "https://github.com/thecombatwombat/replicant-mcp/issues",
   "repository": {
     "type": "git",
     "url": "https://github.com/thecombatwombat/replicant-mcp.git"

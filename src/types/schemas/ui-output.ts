@@ -202,7 +202,8 @@ export const UiOutput = z.union([
   UiInputOutput,
   UiScrollOutput,
   UiScreenshotOutput,
-  // accessibility-check and visual-snapshot use passthrough
+  UiAccessibilityCheckOutput,
+  UiVisualSnapshotOutput,
 ]);
 
 export type UiDumpFullOutputType = z.infer<typeof UiDumpFullOutput>;

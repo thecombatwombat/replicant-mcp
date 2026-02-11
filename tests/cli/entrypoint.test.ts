@@ -5,10 +5,11 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const entrypoint = resolve(__dirname, "../../dist/index.js");
+const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 
 describe("unified entrypoint routing", () => {
   beforeAll(() => {
-    execFileSync("npm", ["run", "build"], {
+    execFileSync(npm, ["run", "build"], {
       cwd: resolve(__dirname, "../.."),
       timeout: 30000,
     });

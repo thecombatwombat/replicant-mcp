@@ -59,6 +59,14 @@ jobs:
         if: matrix.node-version == '20.x' && steps.src-changed.outputs.changed != 'true'
         run: npm test -- --run
 
+      - name: Check contracts are fresh
+        if: matrix.node-version == '20.x'
+        run: npm run check:contracts
+
+      - name: Run contract tests
+        if: matrix.node-version == '20.x'
+        run: npm run test:contracts
+
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         if: matrix.node-version == '20.x'

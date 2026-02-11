@@ -152,14 +152,12 @@ describe("Error Standardization", () => {
   });
 
   describe("adb-app", () => {
-    it("throws INPUT_VALIDATION_FAILED for missing apkPath on install", async () => {
-      // Mock device list for ensureDevice
-      mockedExeca.mockResolvedValueOnce({
-        stdout: "List of devices attached\nemulator-5554\tdevice\n",
-        stderr: "",
-        exitCode: 0,
-      } as any);
+    // Pre-set device to bypass ensureDevice's adb path resolution (fails on Windows)
+    beforeEach(() => {
+      context.deviceState.setCurrentDevice({ id: "emulator-5554", type: "emulator", status: "online" });
+    });
 
+    it("throws INPUT_VALIDATION_FAILED for missing apkPath on install", async () => {
       try {
         await handleAdbAppTool({ operation: "install" }, context);
         expect.fail("should have thrown");
@@ -169,12 +167,6 @@ describe("Error Standardization", () => {
     });
 
     it("throws INPUT_VALIDATION_FAILED for missing packageName on uninstall", async () => {
-      mockedExeca.mockResolvedValueOnce({
-        stdout: "List of devices attached\nemulator-5554\tdevice\n",
-        stderr: "",
-        exitCode: 0,
-      } as any);
-
       try {
         await handleAdbAppTool({ operation: "uninstall" }, context);
         expect.fail("should have thrown");
@@ -184,12 +176,6 @@ describe("Error Standardization", () => {
     });
 
     it("throws INPUT_VALIDATION_FAILED for missing packageName on launch", async () => {
-      mockedExeca.mockResolvedValueOnce({
-        stdout: "List of devices attached\nemulator-5554\tdevice\n",
-        stderr: "",
-        exitCode: 0,
-      } as any);
-
       try {
         await handleAdbAppTool({ operation: "launch" }, context);
         expect.fail("should have thrown");
@@ -199,12 +185,6 @@ describe("Error Standardization", () => {
     });
 
     it("throws INPUT_VALIDATION_FAILED for missing packageName on stop", async () => {
-      mockedExeca.mockResolvedValueOnce({
-        stdout: "List of devices attached\nemulator-5554\tdevice\n",
-        stderr: "",
-        exitCode: 0,
-      } as any);
-
       try {
         await handleAdbAppTool({ operation: "stop" }, context);
         expect.fail("should have thrown");
@@ -214,12 +194,6 @@ describe("Error Standardization", () => {
     });
 
     it("throws INPUT_VALIDATION_FAILED for missing packageName on clear-data", async () => {
-      mockedExeca.mockResolvedValueOnce({
-        stdout: "List of devices attached\nemulator-5554\tdevice\n",
-        stderr: "",
-        exitCode: 0,
-      } as any);
-
       try {
         await handleAdbAppTool({ operation: "clear-data" }, context);
         expect.fail("should have thrown");
@@ -240,6 +214,7 @@ describe("Error Standardization", () => {
     });
 
     it("throws DEVICE_NOT_FOUND for non-existent device on select", async () => {
+      // Mock adb devices to return a known device list (select calls getDevices directly)
       mockedExeca.mockResolvedValueOnce({
         stdout: "List of devices attached\nemulator-5554\tdevice\n",
         stderr: "",
@@ -256,13 +231,12 @@ describe("Error Standardization", () => {
   });
 
   describe("ui", () => {
-    it("throws INPUT_VALIDATION_FAILED for missing text on input", async () => {
-      mockedExeca.mockResolvedValueOnce({
-        stdout: "List of devices attached\nemulator-5554\tdevice\n",
-        stderr: "",
-        exitCode: 0,
-      } as any);
+    // Pre-set device to bypass ensureDevice's adb path resolution (fails on Windows)
+    beforeEach(() => {
+      context.deviceState.setCurrentDevice({ id: "emulator-5554", type: "emulator", status: "online" });
+    });
 
+    it("throws INPUT_VALIDATION_FAILED for missing text on input", async () => {
       try {
         await handleUiTool({ operation: "input" }, context);
         expect.fail("should have thrown");
@@ -272,12 +246,6 @@ describe("Error Standardization", () => {
     });
 
     it("throws INPUT_VALIDATION_FAILED for missing direction on scroll", async () => {
-      mockedExeca.mockResolvedValueOnce({
-        stdout: "List of devices attached\nemulator-5554\tdevice\n",
-        stderr: "",
-        exitCode: 0,
-      } as any);
-
       try {
         await handleUiTool({ operation: "scroll" }, context);
         expect.fail("should have thrown");
@@ -287,12 +255,6 @@ describe("Error Standardization", () => {
     });
 
     it("throws INPUT_VALIDATION_FAILED for missing coordinates and elementIndex on tap", async () => {
-      mockedExeca.mockResolvedValueOnce({
-        stdout: "List of devices attached\nemulator-5554\tdevice\n",
-        stderr: "",
-        exitCode: 0,
-      } as any);
-
       try {
         await handleUiTool({ operation: "tap" }, context);
         expect.fail("should have thrown");
@@ -302,12 +264,6 @@ describe("Error Standardization", () => {
     });
 
     it("throws ELEMENT_NOT_FOUND for invalid elementIndex on tap", async () => {
-      mockedExeca.mockResolvedValueOnce({
-        stdout: "List of devices attached\nemulator-5554\tdevice\n",
-        stderr: "",
-        exitCode: 0,
-      } as any);
-
       try {
         await handleUiTool({ operation: "tap", elementIndex: 99 }, context);
         expect.fail("should have thrown");

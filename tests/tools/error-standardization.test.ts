@@ -214,12 +214,10 @@ describe("Error Standardization", () => {
     });
 
     it("throws DEVICE_NOT_FOUND for non-existent device on select", async () => {
-      // Mock adb devices to return a known device list (select calls getDevices directly)
-      mockedExeca.mockResolvedValueOnce({
-        stdout: "List of devices attached\nemulator-5554\tdevice\n",
-        stderr: "",
-        exitCode: 0,
-      } as any);
+      // Mock getDevices directly to bypass adb path resolution (fails on Windows)
+      context.adb.getDevices = vi.fn().mockResolvedValue([
+        { id: "emulator-5554", status: "device" },
+      ]);
 
       try {
         await handleAdbDeviceTool({ operation: "select", deviceId: "nonexistent-device" }, context);

@@ -29,4 +29,4 @@ This is a community-maintained open-source project. We do our best to respond to
 
 ## Security Issues
 
-If you discover a security vulnerability, please do **not** open a public issue. Instead, file a [GitHub Issue](https://github.com/thecombatwombat/replicant-mcp/issues) with `[SECURITY]` in the title, and we will triage it promptly.
+If you discover a security vulnerability, please do **not** open a public issue. Instead, use [GitHub's private vulnerability reporting](https://github.com/thecombatwombat/replicant-mcp/security/advisories/new) to report it responsibly.

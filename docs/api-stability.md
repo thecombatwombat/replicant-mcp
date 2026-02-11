@@ -64,6 +64,6 @@ Cache IDs returned by progressive disclosure (e.g., `cache-get-details`) are eph
 
 ## How to Track Changes
 
-- All breaking changes are documented in [GitHub Releases](https://github.com/ABresting/replicant-mcp/releases).
+- All breaking changes are documented in [GitHub Releases](https://github.com/thecombatwombat/replicant-mcp/releases).
 - The `CHANGELOG` section of each release describes what changed, what was added, and what was removed.
 - Subscribe to releases on GitHub to be notified of new versions.

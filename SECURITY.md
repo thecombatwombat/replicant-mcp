@@ -13,7 +13,7 @@ We take security issues seriously. If you discover a vulnerability in replicant-
 
 ### Preferred: GitHub Security Advisories
 
-Use [GitHub Security Advisories](https://github.com/ABresting/replicant-mcp/security/advisories/new) to report vulnerabilities privately. This is the fastest way to reach us and keeps the report confidential until a fix is available.
+Use [GitHub Security Advisories](https://github.com/thecombatwombat/replicant-mcp/security/advisories/new) to report vulnerabilities privately. This is the fastest way to reach us and keeps the report confidential until a fix is available.
 
 ### Alternative: Email
 

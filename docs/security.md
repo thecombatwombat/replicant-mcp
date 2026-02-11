@@ -87,7 +87,7 @@ These errors are surfaced to the AI client through the standard MCP error respon
    - Tests the full payload against the blocked shell patterns
 5. Only if all checks pass does the command execute.
 
-This validation was strengthened in [PR #68](https://github.com/ABresting/replicant-mcp/pull/68), which added payload-level validation for shell commands to close a gap where previously only top-level command validation was performed.
+This validation was strengthened in [PR #68](https://github.com/thecombatwombat/replicant-mcp/pull/68), which added payload-level validation for shell commands to close a gap where previously only top-level command validation was performed.
 
 ## Threat Boundaries
 

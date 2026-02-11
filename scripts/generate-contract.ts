@@ -241,11 +241,11 @@ export function generateContract(): Record<string, unknown> {
   };
 }
 
-// Run when executed directly
-const contract = generateContract();
-
-mkdirSync(dirname(CONTRACT_PATH), { recursive: true });
-writeFileSync(CONTRACT_PATH, JSON.stringify(contract, null, 2) + "\n");
-
-console.log(`Contract generated: ${CONTRACT_PATH}`);
-console.log(`Tools: ${Object.keys(contract.tools as Record<string, unknown>).length}`);
+// Only write when executed directly (not when imported by check-contracts)
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  const contract = generateContract();
+  mkdirSync(dirname(CONTRACT_PATH), { recursive: true });
+  writeFileSync(CONTRACT_PATH, JSON.stringify(contract, null, 2) + "\n");
+  console.log(`Contract generated: ${CONTRACT_PATH}`);
+  console.log(`Tools: ${Object.keys(contract.tools as Record<string, unknown>).length}`);
+}

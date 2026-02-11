@@ -125,6 +125,10 @@ com.example.MyTest > testFailing FAILED
       expect(result.passed).toBe(2);
       expect(result.failed).toBe(1);
       expect(result.total).toBe(3);
+      expect(result.passedTests).toEqual([
+        "com.example.MyTest.testSomething",
+        "com.example.MyTest.testAnother",
+      ]);
     });
   });
 

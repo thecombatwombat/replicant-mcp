@@ -21,12 +21,15 @@ export type GradleTestInput = z.infer<typeof gradleTestInputSchema>;
 
 /**
  * Convert gradle TestResult into BaselineTestResult[] for baseline storage/comparison.
- * We only have individual test names for failures; passed/skipped counts are aggregate.
+ * Captures both passed and failed test names for accurate regression detection.
  */
 export function convertToBaselineResults(result: TestResult): BaselineTestResult[] {
   const results: BaselineTestResult[] = [];
 
-  // Add individual failures (we have their names)
+  for (const testName of result.passedTests) {
+    results.push({ test: testName, status: "pass" });
+  }
+
   for (const failure of result.failures) {
     results.push({ test: failure.test, status: "fail" });
   }

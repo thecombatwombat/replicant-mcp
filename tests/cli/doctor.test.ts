@@ -44,7 +44,7 @@ describe("replicant doctor", () => {
   });
 
   afterEach(() => {
-    process.env = originalEnv;
+    process.env = { ...originalEnv };
     Object.defineProperty(process, "version", { value: originalVersion, configurable: true });
   });
 

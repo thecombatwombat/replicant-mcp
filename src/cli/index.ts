@@ -3,4 +3,5 @@ export { createAdbCommand } from "./adb.js";
 export { createEmulatorCommand } from "./emulator.js";
 export { createUiCommand } from "./ui.js";
 export { createCacheCommand } from "./cache.js";
+export { createDoctorCommand } from "./doctor.js";
 export * from "./formatter.js";

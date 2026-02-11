@@ -8,3 +8,4 @@ export * from "./icon-patterns.js";
 export * from "./grid.js";
 export * from "./visual-candidates.js";
 export * from "./scaling.js";
+export * from "./test-baseline.js";

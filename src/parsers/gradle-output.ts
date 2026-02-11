@@ -15,6 +15,7 @@ export interface TestResult {
   total: number;
   duration?: string;
   failures: Array<{ test: string; message: string }>;
+  passedTests: string[];
 }
 
 export function parseBuildOutput(output: string): BuildResult {
@@ -57,6 +58,13 @@ export function parseTestOutput(output: string): TestResult {
     failures.push({ test: `${match[1]}.${match[2]}`, message: "" });
   }
 
+  // Extract passed test names
+  const passedTests: string[] = [];
+  const passedRegex = /(\S+) > (\S+) PASSED/g;
+  while ((match = passedRegex.exec(output)) !== null) {
+    passedTests.push(`${match[1]}.${match[2]}`);
+  }
+
   return {
     passed,
     failed,
@@ -64,6 +72,7 @@ export function parseTestOutput(output: string): TestResult {
     total,
     duration: durationMatch?.[1],
     failures,
+    passedTests,
   };
 }
 

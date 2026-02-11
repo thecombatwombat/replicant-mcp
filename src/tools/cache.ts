@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CacheManager } from "../services/index.js";
+import { ReplicantError, ErrorCode } from "../types/index.js";
 
 export const cacheInputSchema = z.object({
   operation: z.enum(["get-stats", "clear", "get-config", "set-config"]),
@@ -40,7 +41,11 @@ export async function handleCacheTool(
       return { config: cache.getConfig() };
 
     default:
-      throw new Error(`Unknown operation: ${input.operation}`);
+      throw new ReplicantError(
+        ErrorCode.INVALID_OPERATION,
+        `Unknown operation: ${input.operation}`,
+        "Valid operations: get-stats, clear, get-config, set-config",
+      );
   }
 }
 

@@ -1,5 +1,5 @@
 import { ServerContext } from "../server.js";
-import { OcrElement, UiConfig } from "../types/index.js";
+import { OcrElement, UiConfig, ReplicantError, ErrorCode } from "../types/index.js";
 import { AccessibilityNode, flattenTree } from "../parsers/ui-dump.js";
 import { FindElement, GridElement } from "../types/icon-recognition.js";
 import { UiInput } from "./ui.js";
@@ -134,7 +134,11 @@ export async function handleFind(
   deviceId: string
 ): Promise<Record<string, unknown>> {
   if (!input.selector) {
-    throw new Error("selector is required for find operation");
+    throw new ReplicantError(
+      ErrorCode.INPUT_VALIDATION_FAILED,
+      "selector is required for find operation",
+      "Provide a selector with text, textContains, resourceId, or className",
+    );
   }
 
   const debug = input.debug ?? false;

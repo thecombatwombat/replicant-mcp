@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
-import { CACHE_TTLS, UiConfig } from "../types/index.js";
+import { CACHE_TTLS, UiConfig, ReplicantError, ErrorCode } from "../types/index.js";
 import { AccessibilityNode, flattenTree } from "../parsers/ui-dump.js";
 import { handleFind, getElementCenter } from "./ui-find.js";
 
@@ -68,7 +68,13 @@ export async function handleUiTool(
   const config = uiConfig ?? DEFAULT_CONFIG;
 
   const handler = uiOperations[input.operation];
-  if (!handler) throw new Error(`Unknown operation: ${input.operation}`);
+  if (!handler) {
+    throw new ReplicantError(
+      ErrorCode.INVALID_OPERATION,
+      `Unknown operation: ${input.operation}`,
+      "Valid operations: dump, find, tap, input, scroll, screenshot, accessibility-check, visual-snapshot",
+    );
+  }
   return handler(input, context, config, device.id);
 }
 
@@ -173,7 +179,11 @@ async function handleTap(
 
   if (input.elementIndex !== undefined) {
     if (!context.lastFindResults[input.elementIndex]) {
-      throw new Error(`Element at index ${input.elementIndex} not found. Run 'find' first.`);
+      throw new ReplicantError(
+        ErrorCode.ELEMENT_NOT_FOUND,
+        `Element at index ${input.elementIndex} not found. Run 'find' first.`,
+        "Use 'ui find' to locate elements, then reference them by index",
+      );
     }
     const element = context.lastFindResults[input.elementIndex];
     const center = getElementCenter(element);
@@ -183,7 +193,11 @@ async function handleTap(
     x = input.x;
     y = input.y;
   } else {
-    throw new Error("Either x/y coordinates or elementIndex is required for tap");
+    throw new ReplicantError(
+      ErrorCode.INPUT_VALIDATION_FAILED,
+      "Either x/y coordinates or elementIndex is required for tap",
+      "Provide x and y coordinates, or use elementIndex from a previous 'ui find' result",
+    );
   }
 
   await context.ui.tap(deviceId, x, y, input.deviceSpace);
@@ -197,7 +211,11 @@ async function handleInput(
   deviceId: string
 ): Promise<Record<string, unknown>> {
   if (!input.text) {
-    throw new Error("text is required for input operation");
+    throw new ReplicantError(
+      ErrorCode.INPUT_VALIDATION_FAILED,
+      "text is required for input operation",
+      "Provide the text string to input",
+    );
   }
   await context.ui.input(deviceId, input.text);
   return { input: input.text, deviceId };
@@ -210,7 +228,11 @@ async function handleScroll(
   deviceId: string
 ): Promise<Record<string, unknown>> {
   if (!input.direction) {
-    throw new Error("direction is required for scroll operation");
+    throw new ReplicantError(
+      ErrorCode.INPUT_VALIDATION_FAILED,
+      "direction is required for scroll operation",
+      "Provide a direction: up, down, left, or right",
+    );
   }
   const amount = input.amount ?? 0.5;
   await context.ui.scroll(deviceId, input.direction, amount);

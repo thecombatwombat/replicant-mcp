@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
-import { CACHE_TTLS } from "../types/index.js";
+import { CACHE_TTLS, ReplicantError, ErrorCode } from "../types/index.js";
 
 export const gradleListInputSchema = z.object({
   operation: z.enum(["variants", "modules", "tasks"]),
@@ -49,7 +49,11 @@ export async function handleGradleListTool(
     }
 
     default:
-      throw new Error(`Unknown operation: ${input.operation}`);
+      throw new ReplicantError(
+        ErrorCode.INVALID_OPERATION,
+        `Unknown operation: ${input.operation}`,
+        "Valid operations: variants, modules, tasks",
+      );
   }
 }
 

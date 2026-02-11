@@ -44,6 +44,8 @@ export async function handleAdbLogcatTool(
   const output = await context.adb.logcat(deviceId, {
     lines: input.lines,
     filter: filter || undefined,
+    since: input.since,
+    package: input.package,
   });
 
   // Cache the full output and return a summary
@@ -78,7 +80,7 @@ export const adbLogcatToolDefinition = {
       tags: { type: "array", items: { type: "string" }, description: "Filter by log tags" },
       level: { type: "string", enum: ["verbose", "debug", "info", "warn", "error"] },
       rawFilter: { type: "string", description: "Raw logcat filter string" },
-      since: { type: "string", description: "Time filter (e.g., '5m' or ISO timestamp)" },
+      since: { type: "string", description: "Time filter in adb logcat -T format (e.g., '01-20 15:30:00.000')" },
     },
   },
 };

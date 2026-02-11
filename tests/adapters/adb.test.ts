@@ -67,6 +67,65 @@ describe("AdbAdapter", () => {
     adapter = new AdbAdapter(mockRunner as any);
   });
 
+  describe("logcat", () => {
+    it("adds -T flag when since is provided", async () => {
+      mockRunner.runAdb.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      await adapter.logcat("emulator-5554", { since: "01-20 15:30:00.000" });
+      expect(mockRunner.runAdb).toHaveBeenCalledWith(
+        expect.arrayContaining(["-T", "01-20 15:30:00.000"]),
+        expect.anything()
+      );
+    });
+
+    it("filters output lines by package name", async () => {
+      mockRunner.runAdb.mockResolvedValue({
+        stdout: "line1 com.example.app foo\nline2 com.other bar\nline3 com.example.app baz",
+        stderr: "",
+        exitCode: 0,
+      });
+
+      const output = await adapter.logcat("emulator-5554", { package: "com.example.app" });
+      const lines = output.split("\n").filter(Boolean);
+      expect(lines).toHaveLength(2);
+      expect(lines.every((l) => l.includes("com.example.app"))).toBe(true);
+    });
+
+    it("returns empty string when no lines match package", async () => {
+      mockRunner.runAdb.mockResolvedValue({
+        stdout: "line1 com.other.app foo",
+        stderr: "",
+        exitCode: 0,
+      });
+
+      const output = await adapter.logcat("emulator-5554", { package: "com.example.app" });
+      expect(output.trim()).toBe("");
+    });
+
+    it("passes -T before -t in args", async () => {
+      mockRunner.runAdb.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+      await adapter.logcat("emulator-5554", { lines: 100, since: "01-20 15:30:00.000" });
+      const args = mockRunner.runAdb.mock.calls[0][0];
+      const tUpperIdx = args.indexOf("-T");
+      const tLowerIdx = args.indexOf("-t");
+      expect(tUpperIdx).toBeLessThan(tLowerIdx);
+    });
+
+    it("works without since or package", async () => {
+      mockRunner.runAdb.mockResolvedValue({
+        stdout: "some log output",
+        stderr: "",
+        exitCode: 0,
+      });
+
+      const output = await adapter.logcat("emulator-5554", { lines: 50 });
+      expect(output).toBe("some log output");
+      expect(mockRunner.runAdb).toHaveBeenCalledWith(
+        ["-s", "emulator-5554", "logcat", "-d", "-t", "50"],
+        expect.anything()
+      );
+    });
+  });
+
   describe("pull", () => {
     it("pulls file from device to local path", async () => {
       mockRunner.runAdb.mockResolvedValue({ stdout: "1 file pulled", stderr: "", exitCode: 0 });

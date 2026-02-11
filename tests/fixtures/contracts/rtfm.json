@@ -1,0 +1,30 @@
+{
+  "tool": "rtfm",
+  "cases": [
+    {
+      "name": "no args returns index content",
+      "input": {},
+      "expectedShape": "RtfmOutput"
+    },
+    {
+      "name": "category returns category content",
+      "input": { "category": "build" },
+      "expectedShape": "RtfmOutput"
+    },
+    {
+      "name": "tool returns tool-specific content",
+      "input": { "tool": "cache" },
+      "expectedShape": "RtfmOutput"
+    },
+    {
+      "name": "unknown category returns not found message",
+      "input": { "category": "nonexistent" },
+      "expectedShape": "RtfmOutput"
+    },
+    {
+      "name": "unknown tool returns not found message",
+      "input": { "tool": "nonexistent" },
+      "expectedShape": "RtfmOutput"
+    }
+  ]
+}

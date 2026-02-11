@@ -1,0 +1,30 @@
+{
+  "tool": "cache",
+  "cases": [
+    {
+      "name": "get-stats returns stats shape",
+      "input": { "operation": "get-stats" },
+      "expectedShape": "CacheGetStatsOutput"
+    },
+    {
+      "name": "get-config returns config shape",
+      "input": { "operation": "get-config" },
+      "expectedShape": "CacheGetConfigOutput"
+    },
+    {
+      "name": "clear all returns cleared all",
+      "input": { "operation": "clear" },
+      "expectedShape": "CacheClearAllOutput"
+    },
+    {
+      "name": "clear specific key returns cleared key",
+      "input": { "operation": "clear", "key": "test-key" },
+      "expectedShape": "CacheClearKeyOutput"
+    },
+    {
+      "name": "set-config returns updated config",
+      "input": { "operation": "set-config", "config": { "maxEntries": 50 } },
+      "expectedShape": "CacheGetConfigOutput"
+    }
+  ]
+}

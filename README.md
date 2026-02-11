@@ -37,14 +37,19 @@ replicant-mcp is a [Model Context Protocol](https://modelcontextprotocol.io/) se
 | **App Management** | Install, uninstall, launch, stop apps; clear app data |
 | **Log Analysis** | Filter logcat by package, tag, level, time |
 | **UI Automation** | Accessibility-first element finding, spatial proximity search, tap, text input, screenshots |
-| **Diagnostics** | Environment health checks via `replicant doctor`; structured logging with configurable level and format |
+| **Diagnostics** | Environment health checks via `replicant-mcp doctor`; structured logging with configurable level and format |
 
 ---
 
-## Coming Soon
+## Roadmap
 
-- Custom build commands (project-specific overrides, auto-detect gradlew)
-- Video capture (start/stop recording, duration-based capture)
+| Feature | Status |
+|---------|--------|
+| Custom build commands | Planned |
+| Video capture | Planned |
+| OCR text enrichment | Planned |
+
+[Request a feature](https://github.com/thecombatwombat/replicant-mcp/issues/new)
 
 ---
 
@@ -71,7 +76,7 @@ npm install -g replicant-mcp
 After installation, run the built-in diagnostics to verify your environment:
 
 ```bash
-replicant doctor
+replicant-mcp doctor
 ```
 
 ### Updating

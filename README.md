@@ -65,7 +65,7 @@ emulator -version   # Should show Android emulator version
 Or run the built-in diagnostics command after installation to check everything at once:
 
 ```bash
-npx replicant-mcp doctor
+npx replicant doctor
 ```
 
 ### Installation

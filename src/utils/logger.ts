@@ -25,7 +25,7 @@ function log(level: LogLevel, msg: string, ctx?: Record<string, unknown>) {
   if (useJson) {
     try {
       process.stderr.write(
-        JSON.stringify({ level, msg, ts: new Date().toISOString(), ...ctx }) + "\n",
+        JSON.stringify({ ...ctx, level, msg, ts: new Date().toISOString() }) + "\n",
       );
     } catch {
       process.stderr.write(

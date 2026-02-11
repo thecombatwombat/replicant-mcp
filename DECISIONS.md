@@ -176,3 +176,10 @@ Context: External tools (MCP clients, test frameworks, documentation generators)
 Decision: Generate machine-readable JSON Schema contracts from Zod output schemas using Zod 4's `toJSONSchema()`. Contract file (`docs/contracts/replicant-mcp.contract.json`) ships with npm package. CI staleness check (`check-contracts.ts`) prevents drift between schemas and generated contract. Contract test harness (`contract-test.ts`) validates actual tool responses against Zod output schemas using fixture-based tests (deterministic tools first: cache, rtfm). Generate script guarded with ESM main-module check to prevent side effects on import.
 Alternatives: Manual contract maintenance (rejected: drift risk), OpenAPI/Swagger (rejected: doesn't fit MCP model), no machine-readable format (rejected: limits external tooling), runtime-only validation without fixtures (rejected: harder to test exhaustively).
 Refs: PR#82, scripts/generate-contract.ts, scripts/check-contracts.ts, scripts/contract-test.ts, docs/contracts/replicant-mcp.contract.json
+
+## [2026-02-11] Unified CLI/MCP entrypoint via smart routing
+Tags: architecture, cli, distribution, devex
+Context: Package is `replicant-mcp` but the CLI bin was `replicant` (pointing to `dist/cli.js`). Users naturally tried `npx replicant-mcp doctor` which started the MCP server instead of the CLI, causing hangs. Two separate entrypoints (`index.ts` for server, `cli.ts` for CLI) meant the package name and CLI name were mismatched.
+Decision: Make `src/index.ts` a smart router — `process.argv.length > 2` (has args) dynamically imports `cli.js`, otherwise starts the MCP server. Both bin entries (`replicant-mcp` and `replicant`) point to `dist/index.js`. Commander `.name()` updated to `replicant-mcp`. Dynamic imports prevent loading CLI dependencies when running as MCP server and vice versa.
+Alternatives: Separate bins with both pointing to CLI (breaks MCP server usage), wrapper shell script (adds complexity), require users to use `replicant` for CLI (confusing package name mismatch).
+Refs: src/index.ts, src/cli.ts, package.json

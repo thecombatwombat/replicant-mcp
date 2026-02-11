@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "bin": {
     "replicant-mcp": "dist/index.js",
-    "replicant": "dist/cli.js"
+    "replicant": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",

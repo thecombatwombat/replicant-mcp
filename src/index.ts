@@ -1,8 +1,16 @@
 #!/usr/bin/env node
-import { runServer } from "./server.js";
-import { logger } from "./utils/logger.js";
 
-runServer().catch((error) => {
-  logger.error("Server error", { error: String(error) });
-  process.exit(1);
-});
+if (process.argv.length > 2) {
+  // CLI mode: has arguments (e.g., --version, doctor, adb, etc.)
+  import("./cli.js");
+} else {
+  // MCP server mode: no arguments, start the server
+  Promise.all([import("./server.js"), import("./utils/logger.js")]).then(
+    ([{ runServer }, { logger }]) => {
+      runServer().catch((error) => {
+        logger.error("Server error", { error: String(error) });
+        process.exit(1);
+      });
+    },
+  );
+}

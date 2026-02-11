@@ -13,7 +13,7 @@ import { VERSION } from "./version.js";
 const program = new Command();
 
 program
-  .name("replicant")
+  .name("replicant-mcp")
   .description("Android development CLI")
   .version(VERSION);
 

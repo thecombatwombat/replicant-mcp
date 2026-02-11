@@ -77,9 +77,13 @@ export class AdbAdapter {
 
   async logcat(
     deviceId: string,
-    options: { lines?: number; filter?: string }
+    options: { lines?: number; filter?: string; since?: string; package?: string }
   ): Promise<string> {
     const args = ["-s", deviceId, "logcat", "-d"];
+
+    if (options.since) {
+      args.push("-T", options.since);
+    }
 
     if (options.lines) {
       args.push("-t", options.lines.toString());
@@ -90,7 +94,17 @@ export class AdbAdapter {
     }
 
     const result = await this.adb(args);
-    return result.stdout;
+    let output = result.stdout;
+
+    // Package filtering: filter output lines containing the package name
+    // We use string matching on output lines rather than --pid (requires pidof)
+    // or -e regex (varies across adb versions)
+    if (options.package) {
+      const lines = output.split("\n");
+      output = lines.filter((line) => line.includes(options.package!)).join("\n");
+    }
+
+    return output;
   }
 
   async waitForDevice(deviceId: string, timeoutMs = 30000): Promise<void> {

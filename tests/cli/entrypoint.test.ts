@@ -1,10 +1,19 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import { execFileSync } from "child_process";
-import { resolve } from "path";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const entrypoint = resolve(__dirname, "../../dist/index.js");
 
 describe("unified entrypoint routing", () => {
+  beforeAll(() => {
+    execFileSync("npm", ["run", "build"], {
+      cwd: resolve(__dirname, "../.."),
+      timeout: 30000,
+    });
+  });
+
   it("routes to CLI when args are present (--version)", () => {
     const output = execFileSync("node", [entrypoint, "--version"], {
       encoding: "utf-8",

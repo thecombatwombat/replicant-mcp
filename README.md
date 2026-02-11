@@ -62,16 +62,16 @@ adb --version       # Should show Android Debug Bridge version
 emulator -version   # Should show Android emulator version
 ```
 
-Or run the built-in diagnostics command after installation to check everything at once:
-
-```bash
-npx replicant doctor
-```
-
 ### Installation
 
 ```bash
 npm install -g replicant-mcp
+```
+
+After installation, run the built-in diagnostics to verify your environment:
+
+```bash
+replicant doctor
 ```
 
 ### Updating

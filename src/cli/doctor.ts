@@ -71,7 +71,10 @@ function checkAvdmanager(): CheckResult {
   }
 }
 
-function checkAvds(): CheckResult {
+function checkAvds(avdmanagerResult: CheckResult): CheckResult {
+  if (avdmanagerResult.status === "fail") {
+    return { name: "AVDs", status: "fail", detail: "skipped (avdmanager unavailable)", suggestion: "Install avdmanager first" };
+  }
   try {
     const out = exec("avdmanager list avd");
     const matches = out.match(/Name:/g);
@@ -81,7 +84,7 @@ function checkAvds(): CheckResult {
     }
     return { name: "AVDs", status: "ok", detail: `${count} available` };
   } catch {
-    return { name: "AVDs", status: "warn", detail: "could not list", suggestion: "avdmanager not available" };
+    return { name: "AVDs", status: "fail", detail: "could not list", suggestion: "avdmanager command failed" };
   }
 }
 
@@ -106,9 +109,10 @@ function checkGradle(): CheckResult {
 }
 
 export function runChecks(): CheckResult[] {
+  const avdmanagerResult = checkAvdmanager();
   return [
     checkNode(), checkNpm(), checkAndroidHome(), checkAdb(),
-    checkEmulator(), checkAvdmanager(), checkAvds(), checkDevices(), checkGradle(),
+    checkEmulator(), avdmanagerResult, checkAvds(avdmanagerResult), checkDevices(), checkGradle(),
   ];
 }
 

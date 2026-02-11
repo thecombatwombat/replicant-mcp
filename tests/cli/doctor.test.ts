@@ -17,7 +17,6 @@ const mockedExistsSync = vi.mocked(existsSync);
 import { runChecks, formatJson, type CheckResult } from "../../src/cli/doctor.js";
 
 function setupAllPass(): void {
-  const originalVersion = process.version;
   Object.defineProperty(process, "version", { value: "v20.10.0", configurable: true });
 
   process.env.ANDROID_HOME = "/usr/local/android-sdk";
@@ -33,15 +32,11 @@ function setupAllPass(): void {
     if (command === "gradle --version") return "Gradle 8.4\n";
     return "";
   });
-
-  // Restore version after test via cleanup
-  return void afterEach(() => {
-    Object.defineProperty(process, "version", { value: originalVersion, configurable: true });
-  });
 }
 
 describe("replicant doctor", () => {
   const originalEnv = { ...process.env };
+  const originalVersion = process.version;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -50,6 +45,7 @@ describe("replicant doctor", () => {
 
   afterEach(() => {
     process.env = originalEnv;
+    Object.defineProperty(process, "version", { value: originalVersion, configurable: true });
   });
 
   describe("all-pass scenario", () => {

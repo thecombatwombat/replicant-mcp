@@ -7,6 +7,7 @@ import {
 import { CacheManager, DeviceStateManager, ProcessRunner, EnvironmentService, ConfigManager } from "./services/index.js";
 import { AdbAdapter, EmulatorAdapter, GradleAdapter, UiAutomatorAdapter } from "./adapters/index.js";
 import { ReplicantError, FindElement } from "./types/index.js";
+import { VERSION } from "./version.js";
 import {
   cacheToolDefinition,
   handleCacheTool,
@@ -120,7 +121,7 @@ export async function createServer(context: ServerContext): Promise<Server> {
   const server = new Server(
     {
       name: "replicant-mcp",
-      version: "1.0.0",
+      version: VERSION,
     },
     {
       capabilities: {

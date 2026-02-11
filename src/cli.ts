@@ -7,13 +7,14 @@ import {
   createUiCommand,
   createCacheCommand,
 } from "./cli/index.js";
+import { VERSION } from "./version.js";
 
 const program = new Command();
 
 program
   .name("replicant")
   .description("Android development CLI")
-  .version("1.0.0");
+  .version(VERSION);
 
 program.addCommand(createGradleCommand());
 program.addCommand(createAdbCommand());

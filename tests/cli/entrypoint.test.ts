@@ -1,20 +1,16 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { execFileSync } from "child_process";
+import { existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const entrypoint = resolve(__dirname, "../../dist/index.js");
-const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 
-describe("unified entrypoint routing", () => {
-  beforeAll(() => {
-    execFileSync(npm, ["run", "build"], {
-      cwd: resolve(__dirname, "../.."),
-      timeout: 30000,
-    });
-  });
+// CI always runs `npm run build` before tests. Skip locally if dist/ is missing.
+const hasBuild = existsSync(entrypoint);
 
+describe.skipIf(!hasBuild)("unified entrypoint routing", () => {
   it("routes to CLI when args are present (--version)", () => {
     const output = execFileSync("node", [entrypoint, "--version"], {
       encoding: "utf-8",

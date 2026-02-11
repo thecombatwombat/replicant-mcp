@@ -180,6 +180,6 @@ Refs: PR#82, scripts/generate-contract.ts, scripts/check-contracts.ts, scripts/c
 ## [2026-02-11] Unified CLI/MCP entrypoint via smart routing
 Tags: architecture, cli, distribution, devex
 Context: Package is `replicant-mcp` but the CLI bin was `replicant` (pointing to `dist/cli.js`). Users naturally tried `npx replicant-mcp doctor` which started the MCP server instead of the CLI, causing hangs. Two separate entrypoints (`index.ts` for server, `cli.ts` for CLI) meant the package name and CLI name were mismatched.
-Decision: Make `src/index.ts` a smart router — `process.argv.length > 2` (has args) dynamically imports `cli.js`, otherwise starts the MCP server. Both bin entries (`replicant-mcp` and `replicant`) point to `dist/index.js`. Commander `.name()` updated to `replicant-mcp`. Dynamic imports prevent loading CLI dependencies when running as MCP server and vice versa.
-Alternatives: Separate bins with both pointing to CLI (breaks MCP server usage), wrapper shell script (adds complexity), require users to use `replicant` for CLI (confusing package name mismatch).
+Decision: Make `src/index.ts` a smart router — `process.argv.length > 2` (has args) dynamically imports `cli.js`, otherwise starts the MCP server. Single bin entry `replicant-mcp` points to `dist/index.js`. Commander `.name()` updated to `replicant-mcp`. Dynamic imports prevent loading CLI dependencies when running as MCP server and vice versa.
+Alternatives: Separate bins with both pointing to CLI (breaks MCP server usage), wrapper shell script (adds complexity), keeping mismatched `replicant` bin name (confusing package name mismatch).
 Refs: src/index.ts, src/cli.ts, package.json

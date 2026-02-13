@@ -1,5 +1,6 @@
 // src/services/grid.ts
 import sharp from "sharp";
+import { ReplicantError, ErrorCode } from "../types/index.js";
 
 export const GRID_COLS = 4;
 export const GRID_ROWS = 6;
@@ -22,7 +23,11 @@ export function calculateGridCellBounds(
   screenHeight: number
 ): CellBounds {
   if (cell < 1 || cell > TOTAL_CELLS) {
-    throw new Error(`Invalid cell number: ${cell}. Must be 1-${TOTAL_CELLS}`);
+    throw new ReplicantError(
+      ErrorCode.INPUT_VALIDATION_FAILED,
+      `Invalid cell number: ${cell}. Must be 1-${TOTAL_CELLS}`,
+      "Provide a cell number between 1 and 24",
+    );
   }
 
   const cellWidth = screenWidth / GRID_COLS;

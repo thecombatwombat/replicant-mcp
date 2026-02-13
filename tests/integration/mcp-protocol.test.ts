@@ -186,6 +186,17 @@ describe("MCP Protocol Compliance", () => {
       const data = JSON.parse(result.content[0].text as string);
       expect(data.content).toContain("logcat");
     });
+
+    it("should reject path traversal in category", async () => {
+      const result = await client.callTool({
+        name: "rtfm",
+        arguments: { category: "../../package" },
+      });
+
+      expect(result.isError).toBe(true);
+      const data = JSON.parse(result.content[0].text as string);
+      expect(data.error).toBe("INPUT_VALIDATION_FAILED");
+    });
   });
 
   describe("tools/call - error handling", () => {

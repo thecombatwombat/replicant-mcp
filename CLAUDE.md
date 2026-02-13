@@ -57,7 +57,7 @@ ui { operation: "tap", elementIndex: 0 }
 ## Current Status
 
 - **MCP server**: Complete and working. Published to npm as `replicant-mcp`.
-- **CI**: Passing (237 tests).
+- **CI**: Passing (464 tests).
 - **Distribution**: npm + git clone. Claude Desktop and Claude Code instructions in README.
 
 ## Releasing

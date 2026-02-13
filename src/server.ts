@@ -6,7 +6,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { CacheManager, DeviceStateManager, ProcessRunner, EnvironmentService, ConfigManager } from "./services/index.js";
 import { AdbAdapter, EmulatorAdapter, GradleAdapter, UiAutomatorAdapter } from "./adapters/index.js";
-import { ReplicantError, FindElement } from "./types/index.js";
+import { ReplicantError, ErrorCode, FindElement } from "./types/index.js";
 import { VERSION } from "./version.js";
 import {
   cacheToolDefinition,
@@ -113,7 +113,11 @@ async function dispatchToolCall(
     case "ui":
       return handleUiTool(args as Parameters<typeof handleUiTool>[0], context, context.config.getUiConfig());
     default:
-      throw new Error(`Unknown tool: ${name}`);
+      throw new ReplicantError(
+        ErrorCode.INVALID_OPERATION,
+        `Unknown tool: ${name}`,
+        `Valid tools: ${toolDefinitions.map((t) => t.name).join(", ")}`,
+      );
   }
 }
 

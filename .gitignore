@@ -25,6 +25,9 @@ dist/
 # Coverage
 coverage/
 
+# OCR model data (downloaded on demand by tesseract.js)
+eng.traineddata
+
 # Claude Code (local settings ignored, but commands/ and settings are tracked)
 .claude/*
 !.claude/commands/

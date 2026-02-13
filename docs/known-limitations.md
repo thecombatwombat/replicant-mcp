@@ -18,9 +18,9 @@ CI runs use Android emulators on Linux (Ubuntu). Real physical device testing re
 
 Gradle commands require `gradlew` (the Gradle wrapper script) to be present in the project root. Projects without a Gradle wrapper are not supported. Set the project root via `REPLICANT_PROJECT_ROOT` or `build.projectRoot` in your config file (see [configuration.md](configuration.md)).
 
-## 5-Minute Timeout Default
+## Command Timeout
 
-Long-running operations (Gradle builds, large APK installs, emulator boot) have a default timeout of 5 minutes. Very large projects or slow machines may hit this limit. There is currently no user-facing configuration to override the timeout.
+Long-running operations (Gradle builds, large APK installs, emulator boot) have a default timeout of 30 seconds and a maximum of 2 minutes. Very large projects or slow machines may hit this limit. There is currently no user-facing configuration to override the timeout.
 
 ## OCR Accuracy
 

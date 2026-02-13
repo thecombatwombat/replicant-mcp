@@ -36,7 +36,7 @@ replicant-mcp is a [Model Context Protocol](https://modelcontextprotocol.io/) se
 | **Device Control** | List connected devices, select active device, query device properties |
 | **App Management** | Install, uninstall, launch, stop apps; clear app data |
 | **Log Analysis** | Filter logcat by package, tag, level, time |
-| **UI Automation** | Accessibility-first element finding, spatial proximity search, tap, text input, screenshots |
+| **UI Automation** | Accessibility-first element finding, spatial proximity search, tap, text input, scrolling, screenshots, accessibility checks, visual snapshots with OCR fallback |
 | **Diagnostics** | Environment health checks via `replicant doctor`; structured logging with configurable level and format |
 
 ---

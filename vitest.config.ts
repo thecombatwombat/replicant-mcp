@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    exclude: ['**/node_modules/**', '**/dist/**', '.worktrees/**'],
     coverage: {
       provider: 'v8',
       enabled: false, // Only enable with --coverage flag

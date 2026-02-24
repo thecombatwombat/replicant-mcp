@@ -1,7 +1,13 @@
 import { ServerContext } from "../server.js";
 import { OcrElement, UiConfig, ReplicantError, ErrorCode } from "../types/index.js";
 import { AccessibilityNode, flattenTree } from "../parsers/ui-dump.js";
-import { FindElement, GridElement } from "../types/icon-recognition.js";
+import {
+  FindElement,
+  FindOptions,
+  FindTier,
+  FindWithFallbacksResult,
+  GridElement,
+} from "../types/icon-recognition.js";
 import { UiInput } from "./ui.js";
 
 // Type guards for different element types
@@ -127,6 +133,91 @@ function sortByProximity(
   return false;
 }
 
+async function resolveAnchorCenter(
+  context: ServerContext,
+  deviceId: string,
+  nearestTo: string,
+  maxTier: FindTier | undefined
+): Promise<{ x: number; y: number } | null> {
+  const anchorOptions: FindOptions = {
+    debug: false,
+    includeVisualFallback: false,
+  };
+  if (maxTier !== undefined) {
+    anchorOptions.maxTier = maxTier;
+  }
+
+  const anchorResult = await context.ui.findWithFallbacks(deviceId, { text: nearestTo }, anchorOptions);
+  if (anchorResult.elements.length > 0) {
+    return getElementCenter(anchorResult.elements[0]);
+  }
+  return null;
+}
+
+function buildFindOptions(input: UiInput, debug: boolean, config: UiConfig): FindOptions {
+  const maxTier = input.maxTier as FindTier | undefined;
+  const options: FindOptions = {
+    debug,
+    includeVisualFallback: config.autoFallbackScreenshot,
+    includeBase64: config.includeBase64,
+    maxTier,
+  };
+
+  if (input.gridCell !== undefined) {
+    options.gridCell = input.gridCell;
+  }
+  if (input.gridPosition !== undefined) {
+    options.gridPosition = input.gridPosition as 1 | 2 | 3 | 4 | 5;
+  }
+  return options;
+}
+
+function appendResultMetadata(
+  response: Record<string, unknown>,
+  result: FindWithFallbacksResult,
+  debug: boolean
+): void {
+  if (result.tier !== undefined) response.tier = result.tier;
+  if (result.confidence) response.confidence = result.confidence;
+  if (result.stoppedEarly !== undefined) response.stoppedEarly = result.stoppedEarly;
+  if (result.stoppedAtTier !== undefined) response.stoppedAtTier = result.stoppedAtTier;
+  if (result.nextTierAvailable !== undefined) response.nextTierAvailable = result.nextTierAvailable;
+  if (result.stopReason) response.stopReason = result.stopReason;
+
+  if (debug) {
+    response.source = result.source;
+    if (result.fallbackReason) response.fallbackReason = result.fallbackReason;
+  }
+}
+
+function appendFallbackPayload(response: Record<string, unknown>, result: FindWithFallbacksResult): void {
+  if (result.candidates) {
+    response.candidates = result.candidates;
+    if (result.truncated) response.truncated = result.truncated;
+    if (result.totalCandidates) response.totalCandidates = result.totalCandidates;
+  }
+  if (result.gridImage) response.gridImage = result.gridImage;
+  if (result.gridPositions) response.gridPositions = result.gridPositions;
+  if (result.visualFallback) response.visualFallback = result.visualFallback;
+}
+
+function appendNearestToMetadata(
+  response: Record<string, unknown>,
+  nearestTo: string | undefined,
+  anchorCenter: { x: number; y: number } | null,
+  usedContainment: boolean
+): void {
+  if (nearestTo && anchorCenter) {
+    response.sortedByProximityTo = {
+      query: nearestTo,
+      anchor: anchorCenter,
+      method: usedContainment ? "containment" : "distance",
+    };
+  } else if (nearestTo && !anchorCenter) {
+    response.nearestToWarning = `Could not find anchor element: "${nearestTo}"`;
+  }
+}
+
 export async function handleFind(
   input: UiInput,
   context: ServerContext,
@@ -159,24 +250,13 @@ async function handleTextFind(
   debug: boolean,
   nearestTo: string | undefined
 ): Promise<Record<string, unknown>> {
-  let anchorCenter: { x: number; y: number } | null = null;
-  if (nearestTo) {
-    const anchorResult = await context.ui.findWithFallbacks(deviceId, { text: nearestTo }, {
-      debug: false,
-      includeVisualFallback: false,
-    });
-    if (anchorResult.elements.length > 0) {
-      anchorCenter = getElementCenter(anchorResult.elements[0]);
-    }
-  }
+  const maxTier = input.maxTier as FindTier | undefined;
+  const anchorCenter = nearestTo
+    ? await resolveAnchorCenter(context, deviceId, nearestTo, maxTier)
+    : null;
+  const findOptions = buildFindOptions(input, debug, config);
 
-  const result = await context.ui.findWithFallbacks(deviceId, input.selector!, {
-    debug,
-    includeVisualFallback: config.autoFallbackScreenshot,
-    includeBase64: config.includeBase64,
-    gridCell: input.gridCell,
-    gridPosition: input.gridPosition as 1 | 2 | 3 | 4 | 5 | undefined,
-  });
+  const result = await context.ui.findWithFallbacks(deviceId, input.selector!, findOptions);
 
   let usedContainment = false;
   if (anchorCenter && result.elements.length > 0) {
@@ -200,33 +280,9 @@ async function handleTextFind(
     deviceId,
   };
 
-  if (result.tier !== undefined) response.tier = result.tier;
-  if (result.confidence) response.confidence = result.confidence;
-
-  if (debug) {
-    response.source = result.source;
-    if (result.fallbackReason) response.fallbackReason = result.fallbackReason;
-  }
-
-  if (nearestTo && anchorCenter) {
-    response.sortedByProximityTo = {
-      query: nearestTo,
-      anchor: anchorCenter,
-      method: usedContainment ? "containment" : "distance",
-    };
-  } else if (nearestTo && !anchorCenter) {
-    response.nearestToWarning = `Could not find anchor element: "${nearestTo}"`;
-  }
-
-  if (result.candidates) {
-    response.candidates = result.candidates;
-    if (result.truncated) response.truncated = result.truncated;
-    if (result.totalCandidates) response.totalCandidates = result.totalCandidates;
-  }
-
-  if (result.gridImage) response.gridImage = result.gridImage;
-  if (result.gridPositions) response.gridPositions = result.gridPositions;
-  if (result.visualFallback) response.visualFallback = result.visualFallback;
+  appendResultMetadata(response, result, debug);
+  appendNearestToMetadata(response, nearestTo, anchorCenter, usedContainment);
+  appendFallbackPayload(response, result);
 
   return response;
 }

@@ -90,6 +90,10 @@ export const UiFindOutput = z.object({
   deviceId: z.string(),
   tier: z.number().optional(),
   confidence: z.enum(["high", "medium", "low"]).optional(),
+  stoppedEarly: z.boolean().optional(),
+  stoppedAtTier: z.number().optional(),
+  nextTierAvailable: z.number().optional(),
+  stopReason: z.string().optional(),
   source: z.enum(["accessibility", "ocr", "visual", "grid"]).optional(),
   fallbackReason: z.string().optional(),
   sortedByProximityTo: z.object({

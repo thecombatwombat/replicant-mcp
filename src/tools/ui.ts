@@ -20,6 +20,7 @@ export const uiInputSchema = z.object({
   localPath: z.string().optional(),
   inline: z.boolean().optional(),
   debug: z.boolean().optional(),
+  maxTier: z.number().min(1).max(5).optional(),
   gridCell: z.number().min(1).max(24).optional(),
   gridPosition: z.number().min(1).max(5).optional(),
   deviceSpace: z.boolean().optional(),
@@ -304,6 +305,12 @@ export const uiToolDefinition = {
       localPath: { type: "string", description: "Local path for screenshot (default: .replicant/screenshots/screenshot-{timestamp}.png)" },
       inline: { type: "boolean", description: "Return base64 image data (default: false). Set to true to inline image content." },
       debug: { type: "boolean", description: "Include source (accessibility/ocr) and confidence in response" },
+      maxTier: {
+        type: "number",
+        minimum: 1,
+        maximum: 5,
+        description: "For find: maximum fallback tier to attempt (1-5). Use 3 to stop before visual/grid payloads.",
+      },
       gridCell: { type: "number", minimum: 1, maximum: 24, description: "Grid cell number (1-24) for Tier 5 refinement" },
       gridPosition: { type: "number", minimum: 1, maximum: 5, description: "Position within cell (1=TL, 2=TR, 3=Center, 4=BL, 5=BR)" },
       deviceSpace: {

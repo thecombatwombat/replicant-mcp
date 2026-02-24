@@ -35,6 +35,10 @@ export interface FindWithFallbacksResult {
   tier?: FindTier;
   confidence?: ConfidenceLevel;
   fallbackReason?: string;
+  stoppedEarly?: boolean;
+  stoppedAtTier?: FindTier;
+  nextTierAvailable?: FindTier;
+  stopReason?: string;
 
   // Tier 4: Visual candidates
   candidates?: VisualCandidate[];
@@ -42,7 +46,7 @@ export interface FindWithFallbacksResult {
   totalCandidates?: number;
 
   // Tier 5: Grid fallback
-  gridImage?: string; // base64 PNG with overlay
+  gridImage?: string; // base64 JPEG with overlay
   gridCell?: number;
   gridPositions?: string[];
 
@@ -54,6 +58,7 @@ export interface FindOptions {
   debug?: boolean;
   includeVisualFallback?: boolean;
   includeBase64?: boolean;
+  maxTier?: FindTier;
   gridCell?: number; // For Tier 5 refinement
   gridPosition?: 1 | 2 | 3 | 4 | 5; // For Tier 5 final selection
 }

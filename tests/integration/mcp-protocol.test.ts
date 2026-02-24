@@ -390,6 +390,16 @@ describe("Tool Input Schema Validation", () => {
       expect(selectorProps?.className).toBeDefined();
     });
 
+    it("should expose maxTier control for find fallback depth", async () => {
+      const tools = await client.listTools();
+      const tool = tools.tools.find((t) => t.name === "ui");
+
+      const maxTier = tool?.inputSchema.properties?.maxTier;
+      expect(maxTier).toBeDefined();
+      expect(maxTier?.minimum).toBe(1);
+      expect(maxTier?.maximum).toBe(5);
+      expect(maxTier?.description).toContain("maximum fallback tier");
+    });
   });
 
   describe("adb-logcat schema", () => {

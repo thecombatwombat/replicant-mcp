@@ -1,0 +1,33 @@
+review PR #87. do just that. no code changes
+
+---
+
+go ahead and post this as a review comments on the PR. add comments to lines or files where applicable, rather than as one large single block
+
+---
+
+take the mcp out for a drive on the emulator. tell me how you like it
+
+---
+
+take the Pinterest app out for a spin. that one has a practically non-existent accessibility tree. see how it performs there
+
+---
+
+file a ticket for the tier 5 fallback token bomb issue :-) you read my mind
+
+---
+
+[Request interrupted by user for tool use]
+
+---
+
+what is the problem with beads?
+
+---
+
+in a worktree.. checkout the branch replicant-mcp-b0v and see how good the fix is for the issue
+
+---
+
+test drive it. don't just look at the code

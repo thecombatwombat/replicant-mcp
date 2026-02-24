@@ -18,8 +18,10 @@
     "smoke-test": "bash scripts/smoke-test.sh",
     "test:device": "tsx scripts/real-device-test.ts",
     "start": "npm run build && node dist/index.js",
+    "lint": "eslint src/ tests/",
+    "lint:fix": "eslint src/ tests/ --fix",
     "check-complexity": "bash scripts/check-complexity.sh",
-    "validate": "npm run build && npm run check-complexity && npm run test -- --run",
+    "validate": "npm run build && npm run lint && npm run check-complexity && npm run test -- --run",
     "prepublishOnly": "npm run build && npm test -- --run",
     "release": "bash scripts/release.sh",
     "release:minor": "bash scripts/release.sh minor",
@@ -65,11 +67,14 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^25.0.9",
     "@types/sharp": "^0.31.1",
     "@vitest/coverage-v8": "^4.0.17",
+    "eslint": "^10.0.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1",
     "vitest": "^4.0.17"
   }
 }

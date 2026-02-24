@@ -121,7 +121,7 @@ describe("UiAutomatorAdapter", () => {
       const result = await adapter.screenshot("emulator-5554", {});
 
       expect(result.mode).toBe("file");
-      expect(result.path).toMatch(/\.replicant[\/\\]screenshots[\/\\]screenshot-\d+-[a-z0-9]+\.png$/);
+      expect(result.path).toMatch(/\.replicant[/\\]screenshots[/\\]screenshot-\d+-[a-z0-9]+\.png$/);
     });
 
     it("returns base64 when inline mode requested", async () => {
@@ -674,7 +674,7 @@ describe("UiAutomatorAdapter", () => {
 
       const result = await adapter.visualSnapshot("emulator-5554");
 
-      expect(result.screenshotPath).toMatch(/\.replicant[\/\\]screenshots[\/\\]screenshot-\d+-[a-z0-9]+\.png$/);
+      expect(result.screenshotPath).toMatch(/\.replicant[/\\]screenshots[/\\]screenshot-\d+-[a-z0-9]+\.png$/);
       expect(result.screen).toEqual({ width: 1080, height: 2400, density: 2.75 });
       expect(result.app.packageName).toBe("com.example");
       expect(result.app.activityName).toBe(".Main");
@@ -837,7 +837,7 @@ describe("UiAutomatorAdapter", () => {
 
         // Mock pattern matching
         vi.mocked(matchIconPattern).mockReturnValue(["overflow", "more", "options"]);
-        vi.mocked(matchesResourceId).mockImplementation((resourceId: string, patterns: string[]) => {
+        vi.mocked(matchesResourceId).mockImplementation((resourceId: string, _patterns: string[]) => {
           return resourceId.toLowerCase().includes("overflow");
         });
 
@@ -887,7 +887,7 @@ describe("UiAutomatorAdapter", () => {
         vi.mocked(filterIconCandidates).mockReturnValue([]);
         vi.mocked(createGridOverlay).mockResolvedValue("base64GridImage");
 
-        const result = await adapter.findWithFallbacks("emulator-5554", { text: "random text" });
+        await adapter.findWithFallbacks("emulator-5554", { text: "random text" });
 
         expect(matchIconPattern).toHaveBeenCalledWith("random text");
         // Should skip to Tier 3 OCR, not Tier 2

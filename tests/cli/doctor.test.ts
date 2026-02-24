@@ -14,7 +14,7 @@ const mockedExecSync = vi.mocked(execSync);
 const mockedExistsSync = vi.mocked(existsSync);
 
 // Import after mocking
-import { runChecks, formatJson, type CheckResult } from "../../src/cli/doctor.js";
+import { runChecks, formatJson } from "../../src/cli/doctor.js";
 
 function setupAllPass(): void {
   Object.defineProperty(process, "version", { value: "v20.10.0", configurable: true });

@@ -91,7 +91,7 @@ describe("UI Tool - OCR Fallback", () => {
       // Now tap should work
       mockContext.ui.tap.mockResolvedValue(undefined);
 
-      const tapResult = await handleUiTool(
+      await handleUiTool(
         { operation: "tap", elementIndex: 0 },
         mockContext
       );

@@ -50,7 +50,7 @@ export async function handleAdbLogcatTool(
 
   // Cache the full output and return a summary
   const logId = context.cache.generateId("logcat");
-  context.cache.set(logId, { output, deviceId, filter }, "logcat", CACHE_TTLS.UI_TREE);
+  context.cache.set(logId, { output, deviceId, filter }, "logcat", CACHE_TTLS.LOGCAT);
 
   // Parse log lines
   const lines = output.split("\n").filter(Boolean);

@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { handleAdbLogcatTool, AdbLogcatInput } from "../../src/tools/adb-logcat.js";
 import { ServerContext } from "../../src/server.js";
 import { CacheManager, DeviceStateManager } from "../../src/services/index.js";
+import { CACHE_TTLS } from "../../src/types/index.js";
 
 function createMockContext(logOutput: string = ""): ServerContext {
   const cache = new CacheManager();
@@ -75,6 +76,20 @@ describe("adb-logcat", () => {
           package: undefined,
           since: undefined,
         })
+      );
+    });
+
+    it("stores log output with LOGCAT cache TTL", async () => {
+      const context = createMockContext("I/Test: hello");
+      const cacheSetSpy = vi.spyOn(context.cache, "set");
+
+      await handleAdbLogcatTool({ lines: 10 } as AdbLogcatInput, context);
+
+      expect(cacheSetSpy).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(Object),
+        "logcat",
+        CACHE_TTLS.LOGCAT,
       );
     });
   });

@@ -93,7 +93,7 @@ async function handleDump(
     ? "No accessibility nodes found. Possible causes: (1) UI still loading - wait and retry, (2) App uses custom rendering (Flutter, games, video players) - use screenshot instead, (3) App blocks accessibility services."
     : undefined;
 
-  if (input.compact) {
+  if (input.compact !== false) {
     return handleCompactDump(tree, input, dumpId, deviceId, emptyWarning);
   }
 
@@ -247,7 +247,7 @@ async function handleScreenshot(
 ): Promise<Record<string, unknown>> {
   const result = await context.ui.screenshot(deviceId, {
     localPath: input.localPath,
-    inline: input.inline ?? true,
+    inline: input.inline ?? false,
     maxDimension: input.maxDimension ?? config.maxImageDimension,
     raw: input.raw,
   });
@@ -302,7 +302,7 @@ export const uiToolDefinition = {
       elementIndex: { type: "number", description: "Element index from last find (for tap)" },
       text: { type: "string", description: "Text to input" },
       localPath: { type: "string", description: "Local path for screenshot (default: .replicant/screenshots/screenshot-{timestamp}.png)" },
-      inline: { type: "boolean", description: "Return base64 image data (default: true). Set to false to save to file instead." },
+      inline: { type: "boolean", description: "Return base64 image data (default: false). Set to true to inline image content." },
       debug: { type: "boolean", description: "Include source (accessibility/ocr) and confidence in response" },
       gridCell: { type: "number", minimum: 1, maximum: 24, description: "Grid cell number (1-24) for Tier 5 refinement" },
       gridPosition: { type: "number", minimum: 1, maximum: 5, description: "Position within cell (1=TL, 2=TR, 3=Center, 4=BL, 5=BR)" },
@@ -312,7 +312,7 @@ export const uiToolDefinition = {
       },
       maxDimension: {
         type: "number",
-        description: "Max image dimension in pixels (default: 1000). Higher = better quality, more tokens.",
+        description: "Max image dimension in pixels (default: 800). Higher = better quality, more tokens.",
       },
       raw: {
         type: "boolean",
@@ -320,7 +320,7 @@ export const uiToolDefinition = {
       },
       compact: {
         type: "boolean",
-        description: "For dump: return paginated flat list of interactive elements (default: 20, use limit/offset for more).",
+        description: "For dump: return paginated flat list of interactive elements (default: true). Set to false for full tree.",
       },
       direction: {
         type: "string",

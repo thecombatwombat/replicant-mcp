@@ -8,6 +8,12 @@ export const AdbShellOutput = z.object({
   stderr: z.string(),
   exitCode: z.number(),
   deviceId: z.string(),
+  truncated: z.boolean().optional(),
+  summarized: z.boolean().optional(),
+  stdoutPreview: z.string().optional(),
+  stderrPreview: z.string().optional(),
+  originalStdoutChars: z.number().optional(),
+  originalStderrChars: z.number().optional(),
 });
 
 export type AdbShellOutputType = z.infer<typeof AdbShellOutput>;

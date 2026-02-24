@@ -65,7 +65,7 @@ async function runTests() {
     // Capture the first device for subsequent tests
     deviceId = data.devices[0].id;
     console.log(`\n   Found ${data.devices.length} device(s)`);
-    console.log(`   Using: ${deviceId} (${data.devices[0].state || "unknown"})`);
+    console.log(`   Using: ${deviceId} (${data.devices[0].status || "unknown"})`);
   });
 
   // Test 2: adb-device select
@@ -89,33 +89,33 @@ async function runTests() {
       arguments: { operation: "properties" },
     });
     const data = JSON.parse(result.content[0].text as string);
-    if (!data.properties) {
-      throw new Error("Expected properties object");
+    if (!data.summary || typeof data.propertyCount !== "number") {
+      throw new Error("Expected summarized properties payload");
     }
-    console.log(`\n   SDK: ${data.properties.sdkVersion || "unknown"}`);
-    console.log(`   Model: ${data.properties.model || "unknown"}`);
+    console.log(`\n   SDK: ${data.summary.sdkVersion || "unknown"}`);
+    console.log(`   Model: ${data.summary.model || "unknown"}`);
   });
 
   // Test 4: emulator-device list (may fail if cmdline-tools not installed)
   await test("emulator-device list", async () => {
-    try {
-      const result = await client.callTool({
-        name: "emulator-device",
-        arguments: { operation: "list" },
-      });
-      const data = JSON.parse(result.content[0].text as string);
-      if (!data.avds || !Array.isArray(data.avds)) {
-        throw new Error("Expected avds array");
-      }
-      console.log(`\n   Found ${data.avds.length} AVD(s): ${data.avds.join(", ")}`);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      if (msg.includes("ENOENT") || msg.includes("avdmanager")) {
+    const result = await client.callTool({
+      name: "emulator-device",
+      arguments: { operation: "list" },
+    });
+    const data = JSON.parse(result.content[0].text as string);
+
+    if (result.isError === true) {
+      if (data?.error === "SDK_NOT_FOUND") {
         console.log("\n   ⚠️  Skipped (cmdline-tools not installed)");
         return; // Don't fail - avdmanager is optional
       }
-      throw e;
+      throw new Error(`Expected list response, got error: ${JSON.stringify(data)}`);
     }
+
+    if (!data.avds || !Array.isArray(data.avds)) {
+      throw new Error("Expected avds array");
+    }
+    console.log(`\n   Found ${data.avds.length} AVD(s): ${data.avds.join(", ")}`);
   });
 
   // Test 5: adb-logcat
@@ -132,17 +132,16 @@ async function runTests() {
   });
 
   // Test 6: ui dump
-  await test("ui dump (accessibility tree)", async () => {
+  await test("ui dump (compact by default)", async () => {
     const result = await client.callTool({
       name: "ui",
       arguments: { operation: "dump" },
     });
     const data = JSON.parse(result.content[0].text as string);
-    if (!data.tree) {
-      throw new Error("Expected tree in response");
+    if (!Array.isArray(data.elements)) {
+      throw new Error("Expected compact elements array in response");
     }
-    const nodeCount = JSON.stringify(data.tree).split("className").length - 1;
-    console.log(`\n   Got accessibility tree (~${nodeCount} nodes)`);
+    console.log(`\n   Got ${data.count} interactive elements (of ${data.totalCount})`);
   });
 
   // Test 7: ui find
@@ -151,7 +150,7 @@ async function runTests() {
       name: "ui",
       arguments: {
         operation: "find",
-        selector: { clickable: "true" }
+        selector: { className: "android.widget.TextView" },
       },
     });
     const data = JSON.parse(result.content[0].text as string);

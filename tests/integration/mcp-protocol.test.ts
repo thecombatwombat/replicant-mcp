@@ -5,7 +5,7 @@
  * the Model Context Protocol specification.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -155,6 +155,32 @@ describe("MCP Protocol Compliance", () => {
     });
   });
 
+  describe("tools/call - runtime defaults", () => {
+    it("should apply adb-logcat default lines when omitted", async () => {
+      context.deviceState.setCurrentDevice({
+        id: "emulator-5554",
+        type: "emulator",
+        name: "Test Device",
+        status: "online",
+      });
+
+      const logcatSpy = vi.spyOn(context.adb, "logcat").mockResolvedValue("I/MyApp(123): hello");
+
+      const result = await client.callTool({
+        name: "adb-logcat",
+        arguments: {},
+      });
+
+      expect(result.isError).not.toBe(true);
+      expect(logcatSpy).toHaveBeenCalledWith(
+        "emulator-5554",
+        expect.objectContaining({ lines: 100 }),
+      );
+
+      logcatSpy.mockRestore();
+    });
+  });
+
   describe("tools/call - rtfm tool", () => {
     it("should return index when no params", async () => {
       const result = await client.callTool({
@@ -212,6 +238,21 @@ describe("MCP Protocol Compliance", () => {
         expect(error).toBeDefined();
       }
     });
+
+    it("should return error for invalid parameter types", async () => {
+      try {
+        await client.callTool({
+          name: "cache",
+          arguments: {
+            operation: "set-config",
+            config: { maxEntries: "bad-type" },
+          },
+        });
+        expect.fail("Should have thrown");
+      } catch (error) {
+        expect(error).toBeDefined();
+      }
+    });
   });
 
   describe("Response Format", () => {
@@ -235,6 +276,16 @@ describe("MCP Protocol Compliance", () => {
 
       const parseAttempt = () => JSON.parse(result.content[0].text as string);
       expect(parseAttempt).not.toThrow();
+    });
+
+    it("should return compact JSON text without pretty indentation", async () => {
+      const result = await client.callTool({
+        name: "cache",
+        arguments: { operation: "get-stats" },
+      });
+
+      const text = result.content[0].text as string;
+      expect(text).not.toContain("\n  ");
     });
   });
 
@@ -346,4 +397,15 @@ describe("Tool Input Schema Validation", () => {
       expect(props?.since).toBeDefined();
     });
   });
-});
+
+    describe("gradle-get-details schema", () => {
+      it("should document summaryOnly and previewChars semantics", async () => {
+        const tools = await client.listTools();
+        const tool = tools.tools.find((t) => t.name === "gradle-get-details");
+
+        const props = tool?.inputSchema.properties;
+        expect(props?.summaryOnly?.description).toContain("ignored for errors");
+        expect(props?.previewChars?.description).toContain("detailType logs/all");
+      });
+    });
+  });

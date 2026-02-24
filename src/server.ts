@@ -4,33 +4,46 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { ZodError } from "zod";
 import { CacheManager, DeviceStateManager, ProcessRunner, EnvironmentService, ConfigManager } from "./services/index.js";
 import { AdbAdapter, EmulatorAdapter, GradleAdapter, UiAutomatorAdapter } from "./adapters/index.js";
-import { ReplicantError, FindElement } from "./types/index.js";
+import { ReplicantError, FindElement, ErrorCode } from "./types/index.js";
 import { VERSION } from "./version.js";
 import {
+  cacheInputSchema,
   cacheToolDefinition,
   handleCacheTool,
+  rtfmInputSchema,
   rtfmToolDefinition,
   handleRtfmTool,
+  adbDeviceInputSchema,
   adbDeviceToolDefinition,
   handleAdbDeviceTool,
+  adbAppInputSchema,
   adbAppToolDefinition,
   handleAdbAppTool,
+  adbLogcatInputSchema,
   adbLogcatToolDefinition,
   handleAdbLogcatTool,
+  adbShellInputSchema,
   adbShellToolDefinition,
   handleAdbShellTool,
+  emulatorDeviceInputSchema,
   emulatorDeviceToolDefinition,
   handleEmulatorDeviceTool,
+  gradleBuildInputSchema,
   gradleBuildToolDefinition,
   handleGradleBuildTool,
+  gradleTestInputSchema,
   gradleTestToolDefinition,
   handleGradleTestTool,
+  gradleListInputSchema,
   gradleListToolDefinition,
   handleGradleListTool,
+  gradleGetDetailsInputSchema,
   gradleGetDetailsToolDefinition,
   handleGradleGetDetailsTool,
+  uiInputSchema,
   uiToolDefinition,
   handleUiTool,
 } from "./tools/index.js";
@@ -84,34 +97,59 @@ const toolDefinitions = [
 
 async function dispatchToolCall(
   name: string,
-  args: Record<string, unknown>,
+  args: Record<string, unknown> | undefined,
   context: ServerContext
 ): Promise<Record<string, unknown>> {
+  const rawArgs = args ?? {};
+
+  const parseOrThrow = <T>(toolName: string, parser: { parse: (data: unknown) => T }): T => {
+    try {
+      return parser.parse(rawArgs);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const message = error.issues
+          .map((issue) => {
+            const path = issue.path.length > 0 ? issue.path.join(".") : "input";
+            return `${path}: ${issue.message}`;
+          })
+          .join("; ");
+
+        throw new ReplicantError(
+          ErrorCode.INPUT_VALIDATION_FAILED,
+          `Invalid input for ${toolName}: ${message}`,
+          "Check the tool input schema and provide valid arguments",
+        );
+      }
+
+      throw error;
+    }
+  };
+
   switch (name) {
     case "cache":
-      return handleCacheTool(args as Parameters<typeof handleCacheTool>[0], context.cache);
+      return handleCacheTool(parseOrThrow("cache", cacheInputSchema), context.cache);
     case "rtfm":
-      return handleRtfmTool(args as Parameters<typeof handleRtfmTool>[0]);
+      return handleRtfmTool(parseOrThrow("rtfm", rtfmInputSchema));
     case "adb-device":
-      return handleAdbDeviceTool(args as Parameters<typeof handleAdbDeviceTool>[0], context);
+      return handleAdbDeviceTool(parseOrThrow("adb-device", adbDeviceInputSchema), context);
     case "adb-app":
-      return handleAdbAppTool(args as Parameters<typeof handleAdbAppTool>[0], context);
+      return handleAdbAppTool(parseOrThrow("adb-app", adbAppInputSchema), context);
     case "adb-logcat":
-      return handleAdbLogcatTool(args as Parameters<typeof handleAdbLogcatTool>[0], context);
+      return handleAdbLogcatTool(parseOrThrow("adb-logcat", adbLogcatInputSchema), context);
     case "adb-shell":
-      return handleAdbShellTool(args as Parameters<typeof handleAdbShellTool>[0], context);
+      return handleAdbShellTool(parseOrThrow("adb-shell", adbShellInputSchema), context);
     case "emulator-device":
-      return handleEmulatorDeviceTool(args as Parameters<typeof handleEmulatorDeviceTool>[0], context);
+      return handleEmulatorDeviceTool(parseOrThrow("emulator-device", emulatorDeviceInputSchema), context);
     case "gradle-build":
-      return handleGradleBuildTool(args as Parameters<typeof handleGradleBuildTool>[0], context);
+      return handleGradleBuildTool(parseOrThrow("gradle-build", gradleBuildInputSchema), context);
     case "gradle-test":
-      return handleGradleTestTool(args as Parameters<typeof handleGradleTestTool>[0], context);
+      return handleGradleTestTool(parseOrThrow("gradle-test", gradleTestInputSchema), context);
     case "gradle-list":
-      return handleGradleListTool(args as Parameters<typeof handleGradleListTool>[0], context);
+      return handleGradleListTool(parseOrThrow("gradle-list", gradleListInputSchema), context);
     case "gradle-get-details":
-      return handleGradleGetDetailsTool(args as Parameters<typeof handleGradleGetDetailsTool>[0], context);
+      return handleGradleGetDetailsTool(parseOrThrow("gradle-get-details", gradleGetDetailsInputSchema), context);
     case "ui":
-      return handleUiTool(args as Parameters<typeof handleUiTool>[0], context, context.config.getUiConfig());
+      return handleUiTool(parseOrThrow("ui", uiInputSchema), context, context.config.getUiConfig());
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -138,7 +176,7 @@ Tool mapping:
 - Emulator control → emulator-device (not \`emulator\` CLI)
 - Builds → gradle-build (not \`./gradlew\`)
 - Tests → gradle-test (not \`./gradlew test\`)
-- UI automation → ui (accessibility-first, screenshots auto-scaled to 1000px)
+- UI automation → ui (accessibility-first, screenshots auto-scaled to configured max dimension, default 800px)
 
 Start with \`adb-device list\` to see connected devices.
 Use \`rtfm\` for detailed documentation on any tool.`,
@@ -153,25 +191,25 @@ Use \`rtfm\` for detailed documentation on any tool.`,
     const { name, arguments: args } = request.params;
 
     try {
-      const result = await dispatchToolCall(name, args as Record<string, unknown>, context);
+      const result = await dispatchToolCall(name, args as Record<string, unknown> | undefined, context);
 
       if (result && typeof result === "object" && "base64" in result && "mimeType" in result) {
         const { base64, mimeType, ...metadata } = result as Record<string, unknown> & { base64: string; mimeType: string };
         return {
           content: [
             { type: "image", data: base64, mimeType },
-            { type: "text", text: JSON.stringify(metadata, null, 2) },
+            { type: "text", text: JSON.stringify(metadata) },
           ],
         };
       }
 
       return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        content: [{ type: "text", text: JSON.stringify(result) }],
       };
     } catch (error) {
       if (error instanceof ReplicantError) {
         return {
-          content: [{ type: "text", text: JSON.stringify(error.toToolError(), null, 2) }],
+          content: [{ type: "text", text: JSON.stringify(error.toToolError()) }],
           isError: true,
         };
       }

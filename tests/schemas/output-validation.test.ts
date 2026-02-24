@@ -41,6 +41,7 @@ import {
   GradleGetDetailsErrorsOutput,
   GradleGetDetailsTasksOutput,
   GradleGetDetailsAllOutput,
+  GradleGetDetailsOutput,
   UiDumpFullOutput,
   UiDumpCompactOutput,
   UiFindOutput,
@@ -413,6 +414,7 @@ describe("gradle-get-details output schema validation", () => {
   it("logs detail output matches schema", () => {
     const mockOutput = {
       id: "build-abc123-1234567890",
+      detailType: "logs",
       operation: "assembleDebug",
       logs: "> Task :app:compileDebugKotlin\nBUILD SUCCESSFUL in 45s",
     };
@@ -422,6 +424,7 @@ describe("gradle-get-details output schema validation", () => {
   it("errors detail output matches schema", () => {
     const mockOutput = {
       id: "build-abc123-1234567890",
+      detailType: "errors",
       operation: "assembleDebug",
       errors: "e: error: Unresolved reference: foo",
       errorCount: 1,
@@ -432,6 +435,7 @@ describe("gradle-get-details output schema validation", () => {
   it("tasks detail output matches schema", () => {
     const mockOutput = {
       id: "build-abc123-1234567890",
+      detailType: "tasks",
       operation: "assembleDebug",
       tasks: [
         { task: ":app:compileDebugKotlin", status: "executed" },
@@ -444,11 +448,24 @@ describe("gradle-get-details output schema validation", () => {
   it("all detail output matches schema", () => {
     const mockOutput = {
       id: "build-abc123-1234567890",
+      detailType: "all",
       operation: "assembleDebug",
       result: { success: true, duration: "45s" },
       fullOutput: "> Task :app:compileDebugKotlin\nBUILD SUCCESSFUL in 45s",
     };
     expect(() => GradleGetDetailsAllOutput.parse(mockOutput)).not.toThrow();
+  });
+
+  it("rejects mismatched discriminator and payload shape", () => {
+    const mismatchedOutput = {
+      id: "build-abc123-1234567890",
+      detailType: "logs",
+      operation: "assembleDebug",
+      errors: "e: error: Unresolved reference: foo",
+      errorCount: 1,
+    };
+
+    expect(() => GradleGetDetailsOutput.parse(mismatchedOutput)).toThrow();
   });
 });
 

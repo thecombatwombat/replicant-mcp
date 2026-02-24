@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-02-11T12:47:28.326Z",
+  "generatedAt": "2026-02-24T13:15:00.609Z",
   "tools": {
     "cache": {
       "inputSchema": {
@@ -706,6 +706,18 @@
           "timeout": {
             "type": "number",
             "description": "Timeout in ms (default: 30s, max: 120s)"
+          },
+          "maxChars": {
+            "type": "number",
+            "description": "Truncate stdout/stderr to at most this many characters"
+          },
+          "summaryOnly": {
+            "type": "boolean",
+            "description": "Return only compact previews and counts, omitting full stdout/stderr"
+          },
+          "previewChars": {
+            "type": "number",
+            "description": "For summaryOnly: preview length in characters (default: 200)"
           }
         },
         "required": [
@@ -728,11 +740,27 @@
             },
             "deviceId": {
               "type": "string"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "summarized": {
+              "type": "boolean"
+            },
+            "stdoutPreview": {
+              "type": "string"
+            },
+            "stderrPreview": {
+              "type": "string"
+            },
+            "originalStdoutChars": {
+              "type": "number"
+            },
+            "originalStderrChars": {
+              "type": "number"
             }
           },
           "required": [
-            "stdout",
-            "stderr",
             "exitCode",
             "deviceId"
           ],
@@ -1339,6 +1367,18 @@
               "all"
             ],
             "description": "Type of details to retrieve"
+          },
+          "maxChars": {
+            "type": "number",
+            "description": "Truncate large text fields to at most this many characters"
+          },
+          "summaryOnly": {
+            "type": "boolean",
+            "description": "Return compact summary payload for logs/tasks/all detail types (ignored for errors)"
+          },
+          "previewChars": {
+            "type": "number",
+            "description": "For summaryOnly with detailType logs/all: preview length in characters (default: 400)"
           }
         },
         "required": [
@@ -1353,17 +1393,57 @@
             "id": {
               "type": "string"
             },
+            "detailType": {
+              "type": "string",
+              "const": "logs"
+            },
             "operation": {
               "type": "string"
             },
             "logs": {
               "type": "string"
+            },
+            "summarized": {
+              "type": "boolean"
+            },
+            "summary": {
+              "type": "object",
+              "properties": {
+                "lineCount": {
+                  "type": "number"
+                },
+                "warnCount": {
+                  "type": "number"
+                },
+                "errorCount": {
+                  "type": "number"
+                },
+                "charCount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "lineCount",
+                "warnCount",
+                "errorCount",
+                "charCount"
+              ],
+              "additionalProperties": false
+            },
+            "preview": {
+              "type": "string"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "originalChars": {
+              "type": "number"
             }
           },
           "required": [
             "id",
-            "operation",
-            "logs"
+            "detailType",
+            "operation"
           ],
           "additionalProperties": false
         },
@@ -1374,6 +1454,10 @@
             "id": {
               "type": "string"
             },
+            "detailType": {
+              "type": "string",
+              "const": "errors"
+            },
             "operation": {
               "type": "string"
             },
@@ -1382,10 +1466,20 @@
             },
             "errorCount": {
               "type": "number"
+            },
+            "summarized": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "originalChars": {
+              "type": "number"
             }
           },
           "required": [
             "id",
+            "detailType",
             "operation",
             "errors",
             "errorCount"
@@ -1398,6 +1492,10 @@
           "properties": {
             "id": {
               "type": "string"
+            },
+            "detailType": {
+              "type": "string",
+              "const": "tasks"
             },
             "operation": {
               "type": "string"
@@ -1427,12 +1525,24 @@
                   }
                 ]
               }
+            },
+            "summarized": {
+              "type": "boolean"
+            },
+            "taskCount": {
+              "type": "number"
+            },
+            "tasksPreview": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           },
           "required": [
             "id",
-            "operation",
-            "tasks"
+            "detailType",
+            "operation"
           ],
           "additionalProperties": false
         },
@@ -1442,6 +1552,10 @@
           "properties": {
             "id": {
               "type": "string"
+            },
+            "detailType": {
+              "type": "string",
+              "const": "all"
             },
             "operation": {
               "type": "string"
@@ -1455,13 +1569,55 @@
             },
             "fullOutput": {
               "type": "string"
+            },
+            "summarized": {
+              "type": "boolean"
+            },
+            "summary": {
+              "type": "object",
+              "properties": {
+                "lineCount": {
+                  "type": "number"
+                },
+                "warnCount": {
+                  "type": "number"
+                },
+                "errorCount": {
+                  "type": "number"
+                },
+                "charCount": {
+                  "type": "number"
+                },
+                "resultKeys": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "lineCount",
+                "warnCount",
+                "errorCount",
+                "charCount",
+                "resultKeys"
+              ],
+              "additionalProperties": false
+            },
+            "preview": {
+              "type": "string"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "originalChars": {
+              "type": "number"
             }
           },
           "required": [
             "id",
-            "operation",
-            "result",
-            "fullOutput"
+            "detailType",
+            "operation"
           ],
           "additionalProperties": false
         }
@@ -1528,7 +1684,7 @@
           },
           "inline": {
             "type": "boolean",
-            "description": "Return base64 image data (default: true). Set to false to save to file instead."
+            "description": "Return base64 image data (default: false). Set to true to inline image content."
           },
           "debug": {
             "type": "boolean",
@@ -1552,7 +1708,7 @@
           },
           "maxDimension": {
             "type": "number",
-            "description": "Max image dimension in pixels (default: 1000). Higher = better quality, more tokens."
+            "description": "Max image dimension in pixels (default: 800). Higher = better quality, more tokens."
           },
           "raw": {
             "type": "boolean",
@@ -1560,7 +1716,7 @@
           },
           "compact": {
             "type": "boolean",
-            "description": "For dump: return paginated flat list of interactive elements (default: 20, use limit/offset for more)."
+            "description": "For dump: return paginated flat list of interactive elements (default: true). Set to false for full tree."
           },
           "direction": {
             "type": "string",

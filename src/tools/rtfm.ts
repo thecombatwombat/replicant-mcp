@@ -25,7 +25,7 @@ export async function handleRtfmTool(input: RtfmInput): Promise<{ content: strin
       const content = await readFile(join(RTFM_DIR, `${input.category}.md`), "utf-8");
       return { content };
     } catch {
-      return { content: `Category '${input.category}' not found. Available: build, adb, emulator, ui` };
+      return { content: `Category '${input.category}' not found. Available: build, adb, emulator, ui, cache` };
     }
   }
 
@@ -42,8 +42,8 @@ export async function handleRtfmTool(input: RtfmInput): Promise<{ content: strin
       "adb-shell": "adb",
       "emulator-device": "emulator",
       "ui": "ui",
-      "cache": "build",
-      "rtfm": "build",
+      "cache": "cache",
+      "rtfm": "index",
     };
 
     const category = toolToCategory[input.tool] || "index";
@@ -73,7 +73,7 @@ export const rtfmToolDefinition = {
   inputSchema: {
     type: "object",
     properties: {
-      category: { type: "string", description: "Category: build, adb, emulator, ui" },
+      category: { type: "string", description: "Category: build, adb, emulator, ui, cache" },
       tool: { type: "string", description: "Tool name for specific docs" },
     },
   },

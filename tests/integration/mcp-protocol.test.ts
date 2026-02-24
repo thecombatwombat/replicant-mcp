@@ -212,6 +212,17 @@ describe("MCP Protocol Compliance", () => {
       const data = JSON.parse(result.content[0].text as string);
       expect(data.content).toContain("logcat");
     });
+
+    it("should return cache category docs", async () => {
+      const result = await client.callTool({
+        name: "rtfm",
+        arguments: { category: "cache" },
+      });
+
+      const data = JSON.parse(result.content[0].text as string);
+      expect(data.content).toContain("Cache Tools");
+      expect(data.content).toContain("get-stats");
+    });
   });
 
   describe("tools/call - error handling", () => {
@@ -378,6 +389,7 @@ describe("Tool Input Schema Validation", () => {
       expect(selectorProps?.textContains).toBeDefined();
       expect(selectorProps?.className).toBeDefined();
     });
+
   });
 
   describe("adb-logcat schema", () => {

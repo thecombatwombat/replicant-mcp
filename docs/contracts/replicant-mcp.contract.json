@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-02-24T13:15:00.609Z",
+  "generatedAt": "2026-02-24T13:51:37.584Z",
   "tools": {
     "cache": {
       "inputSchema": {
@@ -161,7 +161,7 @@
         "properties": {
           "category": {
             "type": "string",
-            "description": "Category: build, adb, emulator, ui"
+            "description": "Category: build, adb, emulator, ui, cache"
           },
           "tool": {
             "type": "string",

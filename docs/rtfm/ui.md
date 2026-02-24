@@ -30,6 +30,7 @@ Interact with app UI via accessibility tree with intelligent fallback.
 - `debug`: Include source (accessibility/ocr) and confidence scores
 - `inline`: Return base64 screenshot in response (for screenshot op)
 - `localPath`: Custom path for screenshot output
+- `maxTier`: For `find`, maximum fallback tier to attempt (1-5). Use `3` to avoid visual/grid image payloads.
 
 **Fallback chain:**
 1. Accessibility tree (fast, reliable)
@@ -37,6 +38,12 @@ Interact with app UI via accessibility tree with intelligent fallback.
 3. OCR via Tesseract
 4. Visual candidates (cropped unlabeled clickables)
 5. Grid fallback (large payload; use only when needed)
+
+**Recommended caller pattern:**
+```json
+{ "operation": "find", "selector": { "text": "Login" }, "maxTier": 3 }
+```
+This keeps routine searches text-first and avoids tier 4/5 visual payloads unless you explicitly opt in.
 
 **Example - Find and tap:**
 ```json

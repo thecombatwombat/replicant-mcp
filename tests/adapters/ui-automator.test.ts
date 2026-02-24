@@ -1004,6 +1004,49 @@ describe("UiAutomatorAdapter", () => {
         expect(result.gridPositions).toEqual(["Top-left", "Top-right", "Center", "Bottom-left", "Bottom-right"]);
       });
 
+      it("stops at maxTier 4 and does not generate grid image", async () => {
+        mockAdb.shell.mockImplementation(async (_deviceId: string, cmd: string) => {
+          if (cmd.includes("uiautomator dump")) {
+            return { stdout: "", stderr: "", exitCode: 0 };
+          }
+          if (cmd.includes("cat /sdcard/ui-dump.xml")) {
+            return {
+              stdout: `<?xml version="1.0"?><hierarchy><node text="" bounds="[0,0][100,100]" class="View" resource-id="" clickable="false" /></hierarchy>`,
+              stderr: "",
+              exitCode: 0,
+            };
+          }
+          if (cmd.includes("rm")) {
+            return { stdout: "", stderr: "", exitCode: 0 };
+          }
+          if (cmd.includes("screencap")) {
+            return { stdout: "", stderr: "", exitCode: 0 };
+          }
+          return { stdout: "", stderr: "", exitCode: 0 };
+        });
+
+        mockAdb.pull.mockResolvedValue(undefined);
+        vi.mocked(matchIconPattern).mockReturnValue(null);
+        vi.mocked(extractText).mockResolvedValue([]);
+        vi.mocked(searchText).mockReturnValue([]);
+        vi.mocked(filterIconCandidates).mockReturnValue([]);
+
+        const result = await adapter.findWithFallbacks(
+          "emulator-5554",
+          { text: "invisible element" },
+          { maxTier: 4 }
+        );
+
+        expect(result.elements).toHaveLength(0);
+        expect(result.source).toBe("visual");
+        expect(result.tier).toBe(4);
+        expect(result.stoppedEarly).toBe(true);
+        expect(result.stoppedAtTier).toBe(4);
+        expect(result.nextTierAvailable).toBe(5);
+        expect(result.gridImage).toBeUndefined();
+        expect(createGridOverlay).not.toHaveBeenCalled();
+      });
+
       it("handles grid refinement when gridCell and gridPosition provided (no scaling)", async () => {
         // Mock screen metadata - used when no scaling state exists
         mockAdb.shell

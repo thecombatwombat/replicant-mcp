@@ -11,6 +11,7 @@ import {
 import {
   FindWithFallbacksResult,
   FindOptions,
+  FindTier,
   VisualCandidate,
 } from "../types/icon-recognition.js";
 import type { ScreenMetadata, ScalingState, ScreenshotResult } from "./ui-automator.js";
@@ -25,6 +26,22 @@ export interface FallbackFindDeps {
   getScalingState(): ScalingState | null;
 }
 
+function createEarlyStopResult(
+  tier: FindTier,
+  source: "accessibility" | "ocr" | "visual"
+): FindWithFallbacksResult {
+  return {
+    elements: [],
+    source,
+    tier,
+    confidence: "low",
+    stoppedEarly: true,
+    stoppedAtTier: tier,
+    nextTierAvailable: tier < 5 ? ((tier + 1) as FindTier) : undefined,
+    stopReason: "maxTier limit reached",
+  };
+}
+
 export async function findWithFallbacks(
   deps: FallbackFindDeps,
   deviceId: string,
@@ -36,6 +53,8 @@ export async function findWithFallbacks(
   },
   options: FindOptions = {}
 ): Promise<FindWithFallbacksResult> {
+  const maxTier = options.maxTier ?? 5;
+
   // Handle Tier 5 grid refinement FIRST (when gridCell and gridPosition are provided)
   if (options.gridCell !== undefined && options.gridPosition !== undefined) {
     let width: number, height: number;
@@ -77,6 +96,10 @@ export async function findWithFallbacks(
     };
   }
 
+  if (maxTier === 1) {
+    return createEarlyStopResult(1, "accessibility");
+  }
+
   // Tier 2: ResourceId pattern match (for text-based queries)
   if (selector.text || selector.textContains) {
     const query = selector.text || selector.textContains!;
@@ -101,10 +124,14 @@ export async function findWithFallbacks(
         };
       }
     }
+
+    if (maxTier === 2) {
+      return createEarlyStopResult(2, "accessibility");
+    }
   }
 
   // Tier 3: OCR
-  if (selector.text || selector.textContains) {
+  if ((selector.text || selector.textContains) && maxTier >= 3) {
     const searchTerm = selector.text || selector.textContains!;
     const screenshotResult = await deps.screenshot(deviceId, {});
 
@@ -122,6 +149,10 @@ export async function findWithFallbacks(
             ? "no accessibility or pattern match, found via OCR"
             : undefined,
         };
+      }
+
+      if (maxTier === 3) {
+        return createEarlyStopResult(3, "ocr");
       }
 
       // Tier 4: Visual candidates (unlabeled clickables)
@@ -153,6 +184,10 @@ export async function findWithFallbacks(
             ? "no text/pattern/OCR match, showing visual candidates"
             : undefined,
         };
+      }
+
+      if (maxTier === 4) {
+        return createEarlyStopResult(4, "visual");
       }
 
       // Tier 5: Grid fallback

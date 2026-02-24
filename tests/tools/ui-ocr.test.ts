@@ -75,6 +75,34 @@ describe("UI Tool - OCR Fallback", () => {
       expect(result.source).toBeUndefined();
     });
 
+    it("passes maxTier to findWithFallbacks for early-stop control", async () => {
+      mockContext.ui.findWithFallbacks.mockResolvedValue({
+        elements: [],
+        source: "ocr",
+        tier: 3,
+        confidence: "low",
+        stoppedEarly: true,
+        stoppedAtTier: 3,
+        nextTierAvailable: 4,
+        stopReason: "maxTier limit reached",
+      });
+
+      const result = await handleUiTool(
+        { operation: "find", selector: { text: "NotFound" }, maxTier: 3 },
+        mockContext
+      );
+
+      expect(mockContext.ui.findWithFallbacks).toHaveBeenCalledWith(
+        "emulator-5554",
+        { text: "NotFound" },
+        { debug: false, includeVisualFallback: true, includeBase64: false, maxTier: 3 }
+      );
+      expect(result.stoppedEarly).toBe(true);
+      expect(result.stoppedAtTier).toBe(3);
+      expect(result.nextTierAvailable).toBe(4);
+      expect(result.stopReason).toBe("maxTier limit reached");
+    });
+
     it("stores OCR elements in lastFindResults for tapping", async () => {
       mockContext.ui.findWithFallbacks.mockResolvedValue({
         elements: [

@@ -1,7 +1,7 @@
 import { ServerContext } from "../server.js";
 import { OcrElement, UiConfig, ReplicantError, ErrorCode } from "../types/index.js";
 import { AccessibilityNode, flattenTree } from "../parsers/ui-dump.js";
-import { FindElement, GridElement } from "../types/icon-recognition.js";
+import { FindElement, FindOptions, FindTier, GridElement } from "../types/icon-recognition.js";
 import { UiInput } from "./ui.js";
 
 // Type guards for different element types
@@ -159,24 +159,39 @@ async function handleTextFind(
   debug: boolean,
   nearestTo: string | undefined
 ): Promise<Record<string, unknown>> {
+  const maxTier = input.maxTier as FindTier | undefined;
   let anchorCenter: { x: number; y: number } | null = null;
   if (nearestTo) {
-    const anchorResult = await context.ui.findWithFallbacks(deviceId, { text: nearestTo }, {
+    const anchorOptions: FindOptions = {
       debug: false,
       includeVisualFallback: false,
-    });
+    };
+    if (maxTier !== undefined) {
+      anchorOptions.maxTier = maxTier;
+    }
+
+    const anchorResult = await context.ui.findWithFallbacks(deviceId, { text: nearestTo }, anchorOptions);
     if (anchorResult.elements.length > 0) {
       anchorCenter = getElementCenter(anchorResult.elements[0]);
     }
   }
 
-  const result = await context.ui.findWithFallbacks(deviceId, input.selector!, {
+  const findOptions: FindOptions = {
     debug,
     includeVisualFallback: config.autoFallbackScreenshot,
     includeBase64: config.includeBase64,
-    gridCell: input.gridCell,
-    gridPosition: input.gridPosition as 1 | 2 | 3 | 4 | 5 | undefined,
-  });
+  };
+  if (maxTier !== undefined) {
+    findOptions.maxTier = maxTier;
+  }
+  if (input.gridCell !== undefined) {
+    findOptions.gridCell = input.gridCell;
+  }
+  if (input.gridPosition !== undefined) {
+    findOptions.gridPosition = input.gridPosition as 1 | 2 | 3 | 4 | 5;
+  }
+
+  const result = await context.ui.findWithFallbacks(deviceId, input.selector!, findOptions);
 
   let usedContainment = false;
   if (anchorCenter && result.elements.length > 0) {
@@ -202,6 +217,10 @@ async function handleTextFind(
 
   if (result.tier !== undefined) response.tier = result.tier;
   if (result.confidence) response.confidence = result.confidence;
+  if (result.stoppedEarly !== undefined) response.stoppedEarly = result.stoppedEarly;
+  if (result.stoppedAtTier !== undefined) response.stoppedAtTier = result.stoppedAtTier;
+  if (result.nextTierAvailable !== undefined) response.nextTierAvailable = result.nextTierAvailable;
+  if (result.stopReason) response.stopReason = result.stopReason;
 
   if (debug) {
     response.source = result.source;

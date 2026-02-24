@@ -1,35 +1,21 @@
 {
   "hooks": {
-    "SessionStart": [
+    "PostToolUse": [
       {
-        "matcher": "",
+        "matcher": "Task",
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/install-dev-tools.sh 2>&1",
-            "_comment": "Install bd and gh at versions pinned in .tool-versions"
-          },
-          {
-            "type": "command",
-            "command": "bash scripts/check-env.sh --quick 2>&1 || true",
-            "_comment": "Quick env health check: tool versions, git state, plugin sync"
-          },
-          {
-            "type": "command",
-            "command": "bash scripts/beads-sync-start.sh 2>&1 || true",
-            "_comment": "Pull latest beads from remote + ensure daemon has auto-sync enabled"
+            "command": "entire hooks claude-code post-task"
           }
         ]
-      }
-    ],
-    "SessionEnd": [
+      },
       {
-        "matcher": "",
+        "matcher": "TodoWrite",
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/beads-sync-end.sh 2>&1 || true",
-            "_comment": "Push pending beads changes to remote for next session"
+            "command": "entire hooks claude-code post-todo"
           }
         ]
       }
@@ -40,11 +26,84 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/pre-pr-gate.sh",
-            "_comment": "Block gh pr create if complexity violations exist"
+            "command": "bash scripts/pre-pr-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "entire hooks claude-code pre-task"
           }
         ]
       }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/beads-sync-end.sh 2\u003e\u00261 || true"
+          },
+          {
+            "type": "command",
+            "command": "entire hooks claude-code session-end"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/install-dev-tools.sh 2\u003e\u00261"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/check-env.sh --quick 2\u003e\u00261 || true"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/beads-sync-start.sh 2\u003e\u00261 || true"
+          },
+          {
+            "type": "command",
+            "command": "entire hooks claude-code session-start"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "entire hooks claude-code stop"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "entire hooks claude-code user-prompt-submit"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "deny": [
+      "Read(./.entire/metadata/**)"
     ]
   }
 }

@@ -7,13 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-02-24
+
 ### Added
 
+- ESLint with typescript-eslint and fix all lint errors
+- Machine-readable tool contracts and contract test harness
+- Output schemas and deterministic test fixtures
+- `replicant doctor` CLI health-check command
+- Test regression detection with baseline comparison
+- Structured logging with configurable levels
+- MCP runtime validation, output shaping, and device harness
 - Pre-push hook to block direct pushes to master
 - Enforce test coverage thresholds in CI
+- Claude Code GitHub Workflow
+- CHANGELOG.md backfilled from git tags
+- Security policy, safety model, and API stability docs
+- Support guidance, limitations, artifacts, support matrix, and config reference
+- DECISIONS.md entry for contract testing infrastructure
+- Production readiness dispatch plan and design docs
+
+### Changed
+
+- Align tool docs and cache category routing
+- Refactor gradle-get-details handler to satisfy complexity gate
+- Regenerate MCP contract after review-driven schema updates
+- Integrate CLI hooks and update tooling configs
 
 ### Fixed
 
+- UI `maxTier` control to stop ui find fallback before grid payloads
+- Standardize tool errors to ReplicantError with typed error codes
+- Implement adb-logcat package and `since` filtering
+- Read version from package.json instead of hardcoded 1.0.0
+- Unify CLI bin and fix SUPPORT.md
+- Guard generate-contract.ts against import side effects
+- Include accessibility-check and visual-snapshot in UiOutput union
+- Correct doctor CLI invocation in README
+- Restore cloned env in afterEach to prevent shared mutation
+- Prevent context from overwriting core log fields
+- Cascade adb/avdmanager failures to dependent checks
+- Handle circular references in logger context
+- Consistent avd check behavior and eliminate accumulating hooks
+- Capture passed test names for accurate baseline regression detection
+- Validate log level and include context in text format
+- Correct GitHub org URLs
 - Validate adb shell payloads against blocked commands
 - Eliminate SessionStart hook errors from sync lock contention
 - Prevent SessionStart hook timeout in interactive sessions
@@ -178,7 +216,8 @@ Release infrastructure fixes.
 - Emulator adapter with AVD and snapshot management
 - ADB adapter with device and app management
 
-[Unreleased]: https://github.com/thecombatwombat/replicant-mcp/compare/v1.4.8...HEAD
+[Unreleased]: https://github.com/thecombatwombat/replicant-mcp/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/thecombatwombat/replicant-mcp/compare/v1.4.8...v1.5.0
 [1.4.8]: https://github.com/thecombatwombat/replicant-mcp/compare/v1.4.7...v1.4.8
 [1.4.7]: https://github.com/thecombatwombat/replicant-mcp/compare/v1.4.6...v1.4.7
 [1.4.6]: https://github.com/thecombatwombat/replicant-mcp/compare/v1.4.5...v1.4.6

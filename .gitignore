@@ -19,6 +19,10 @@ dist/
 # OS
 .DS_Store
 
+# Entire CLI (session logs and local data)
+.entire/
+.githooks/*.backup
+
 # Worktrees
 .worktrees/
 

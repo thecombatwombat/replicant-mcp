@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "dbebd6c99b89",
+  "session_id": "69b0538f-7c6e-43f4-8fa9-9dc19c15677a",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-24T14:43:16.641229Z",
+  "branch": "docs/changelog-v1.5.0",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "CHANGELOG.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "ba128988f261",
+  "token_usage": {
+    "input_tokens": 30,
+    "cache_creation_tokens": 38843,
+    "cache_read_tokens": 1041017,
+    "output_tokens": 946,
+    "api_call_count": 26
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-24T14:43:16.599783Z",
+    "agent_lines": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 0,
+    "agent_percentage": 0
+  },
+  "transcript_path": ".claude/projects/-Users-architjoshi-code-claude-replicant-mcp/69b0538f-7c6e-43f4-8fa9-9dc19c15677a.jsonl"
+}

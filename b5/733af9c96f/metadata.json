@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "b5733af9c96f",
+  "strategy": "manual-commit",
+  "branch": "feat/mcp-token-efficiency-runtime-validation",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/contracts/replicant-mcp.contract.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/b5/733af9c96f/0/metadata.json",
+      "transcript": "/b5/733af9c96f/0/full.jsonl",
+      "context": "/b5/733af9c96f/0/context.md",
+      "content_hash": "/b5/733af9c96f/0/content_hash.txt",
+      "prompt": "/b5/733af9c96f/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 45,
+    "cache_creation_tokens": 82153,
+    "cache_read_tokens": 2123984,
+    "output_tokens": 682,
+    "api_call_count": 33
+  }
+}

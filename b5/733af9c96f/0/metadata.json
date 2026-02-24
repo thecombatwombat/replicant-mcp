@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "b5733af9c96f",
+  "session_id": "75b7b61e-37fc-431b-a806-67f1a103f084",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-24T13:15:06.82002Z",
+  "branch": "feat/mcp-token-efficiency-runtime-validation",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/contracts/replicant-mcp.contract.json"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "da132c006afd",
+  "token_usage": {
+    "input_tokens": 45,
+    "cache_creation_tokens": 82153,
+    "cache_read_tokens": 2123984,
+    "output_tokens": 682,
+    "api_call_count": 33
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-24T13:15:06.639325Z",
+    "agent_lines": 0,
+    "human_added": 0,
+    "human_modified": 1,
+    "human_removed": 2,
+    "total_committed": 0,
+    "agent_percentage": 0
+  },
+  "transcript_path": ".claude/projects/-Users-architjoshi-code-claude-replicant-mcp/75b7b61e-37fc-431b-a806-67f1a103f084.jsonl"
+}

@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "aaba7e2df192",
+  "session_id": "69b0538f-7c6e-43f4-8fa9-9dc19c15677a",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-24T14:52:47.451099Z",
+  "branch": "fix/vitest-exclude-worktrees",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "vitest.config.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "ba128988f261",
+  "token_usage": {
+    "input_tokens": 62,
+    "cache_creation_tokens": 56548,
+    "cache_read_tokens": 2875627,
+    "output_tokens": 2078,
+    "api_call_count": 58
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-24T14:52:47.368758Z",
+    "agent_lines": 0,
+    "human_added": 1,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1,
+    "agent_percentage": 0
+  },
+  "transcript_path": ".claude/projects/-Users-architjoshi-code-claude-replicant-mcp/69b0538f-7c6e-43f4-8fa9-9dc19c15677a.jsonl"
+}

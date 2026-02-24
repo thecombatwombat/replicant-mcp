@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "aaba7e2df192",
+  "strategy": "manual-commit",
+  "branch": "fix/vitest-exclude-worktrees",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "vitest.config.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/aa/ba7e2df192/0/metadata.json",
+      "transcript": "/aa/ba7e2df192/0/full.jsonl",
+      "context": "/aa/ba7e2df192/0/context.md",
+      "content_hash": "/aa/ba7e2df192/0/content_hash.txt",
+      "prompt": "/aa/ba7e2df192/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 62,
+    "cache_creation_tokens": 56548,
+    "cache_read_tokens": 2875627,
+    "output_tokens": 2078,
+    "api_call_count": 58
+  }
+}

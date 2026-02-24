@@ -13,7 +13,6 @@ import { handleAdbAppTool } from "../../src/tools/adb-app.js";
 import { handleAdbDeviceTool } from "../../src/tools/adb-device.js";
 import { handleUiTool } from "../../src/tools/ui.js";
 import { handleCacheTool } from "../../src/tools/cache.js";
-import { handleGradleListTool } from "../../src/tools/gradle-list.js";
 import { CacheManager } from "../../src/services/index.js";
 
 // Mock execa to control CLI output
@@ -45,7 +44,7 @@ vi.mock("fs", async () => {
 });
 
 import { execa } from "execa";
-const mockedExeca = vi.mocked(execa);
+vi.mocked(execa);
 
 function expectReplicantError(error: unknown, expectedCode: string): void {
   expect(error).toBeInstanceOf(ReplicantError);

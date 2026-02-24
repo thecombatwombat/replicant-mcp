@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { AdbAdapter } from "../adapters/index.js";
 import { DeviceStateManager, CacheManager } from "../services/index.js";
 import { formatDeviceList, formatLogcat, DeviceInfo } from "./formatter.js";
-import { CACHE_TTLS, ReplicantError } from "../types/index.js";
+import { CACHE_TTLS } from "../types/index.js";
 
 const adapter = new AdbAdapter();
 const deviceState = new DeviceStateManager();

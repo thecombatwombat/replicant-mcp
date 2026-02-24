@@ -101,7 +101,7 @@ async function handleHealthCheck(input: AdbDeviceInput, context: ServerContext):
       if (devices.length === 0) {
         warnings.push("No devices connected. Start an emulator or connect a USB device.");
       }
-    } catch (e) {
+    } catch {
       errors.push("adb server not responding. Run 'adb kill-server && adb start-server'");
     }
   }

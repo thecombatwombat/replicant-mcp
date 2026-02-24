@@ -139,7 +139,7 @@ export function createEmulatorCommand(): Command {
             }
             break;
 
-          case "list":
+          case "list": {
             const snapshots = await adapter.snapshotList(deviceId);
             if (options.json) {
               console.log(JSON.stringify({ deviceId, snapshots }, null, 2));
@@ -154,6 +154,7 @@ export function createEmulatorCommand(): Command {
               }
             }
             break;
+          }
 
           case "delete":
             if (!snapshotName) {

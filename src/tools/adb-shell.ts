@@ -23,8 +23,6 @@ export async function handleAdbShellTool(
   if (input.summaryOnly) {
     const previewChars = input.previewChars ?? 200;
     return {
-      stdout: "",
-      stderr: "",
       exitCode: result.exitCode,
       deviceId,
       summarized: true,
@@ -40,15 +38,20 @@ export async function handleAdbShellTool(
   const stderr = maxChars ? result.stderr.slice(0, maxChars) : result.stderr;
   const truncated = !!maxChars && (result.stdout.length > maxChars || result.stderr.length > maxChars);
 
-  return {
+  const response: Record<string, unknown> = {
     stdout,
     stderr,
     exitCode: result.exitCode,
     deviceId,
     truncated,
-    originalStdoutChars: result.stdout.length,
-    originalStderrChars: result.stderr.length,
   };
+
+  if (maxChars !== undefined) {
+    response.originalStdoutChars = result.stdout.length;
+    response.originalStderrChars = result.stderr.length;
+  }
+
+  return response;
 }
 
 export const adbShellToolDefinition = {

@@ -35,8 +35,8 @@ function truncateText(text: string, maxChars?: number): TruncateResult {
 function summaryFromText(text: string): { lineCount: number; warnCount: number; errorCount: number; charCount: number } {
   return {
     lineCount: text.split("\n").filter(Boolean).length,
-    warnCount: (text.match(/\bW\b|^w:/gm) || []).length,
-    errorCount: (text.match(/\bE\b|^e:|error:|Error:|FAILED/gm) || []).length,
+    warnCount: (text.match(/^w:|\bwarning:\b|\bWARNING:\b/gm) || []).length,
+    errorCount: (text.match(/^e:|\berror:\b|\bError:\b|\bFAILED\b/gm) || []).length,
     charCount: text.length,
   };
 }

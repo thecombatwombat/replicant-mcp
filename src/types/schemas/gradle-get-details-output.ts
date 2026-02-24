@@ -81,7 +81,9 @@ export const GradleGetDetailsAllOutput = z.object({
 /**
  * Union of all gradle-get-details tool outputs
  */
-export const GradleGetDetailsOutput = z.union([
+// Discriminator is explicit on each variant for clearer validation errors and runtime narrowing.
+// Keep per-variant refine guards because they enforce summary-vs-full payload requirements.
+export const GradleGetDetailsOutput = z.discriminatedUnion("detailType", [
   GradleGetDetailsLogsOutput,
   GradleGetDetailsErrorsOutput,
   GradleGetDetailsTasksOutput,

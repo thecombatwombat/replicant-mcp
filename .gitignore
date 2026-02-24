@@ -22,7 +22,6 @@ dist/
 # Entire CLI (session logs and local data)
 .entire/
 .githooks/*.backup
-.githooks/*.pre-entire
 
 # Worktrees
 .worktrees/

@@ -28,11 +28,14 @@ Run tests.
 **Operations:**
 - `unitTest` - Run unit tests
 - `connectedTest` - Run instrumented tests on device
+- `saveBaseline` - Run tests and save current results as baseline
+- `clearBaseline` - Remove a saved baseline
 
 **Parameters:**
 - `operation` (required): Test type
 - `module`: Module path
 - `filter`: Test filter (e.g., "com.example.MyTest", "*LoginTest*")
+- `taskName`: Baseline key override (default: operation name)
 
 ## gradle-list
 
@@ -49,4 +52,7 @@ Fetch full output for a previous build/test.
 
 **Parameters:**
 - `id` (required): Build or test ID from previous operation
-- `detailType`: "logs" | "errors" | "tasks"
+- `detailType`: "logs" | "errors" | "tasks" | "all" (default: "all")
+- `maxChars`: Truncate large text fields
+- `summaryOnly`: Return compact summary payload for logs/tasks/all
+- `previewChars`: Preview length for summary mode (logs/all, default: 400)

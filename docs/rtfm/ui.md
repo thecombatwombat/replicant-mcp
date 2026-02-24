@@ -33,8 +33,10 @@ Interact with app UI via accessibility tree with intelligent fallback.
 
 **Fallback chain:**
 1. Accessibility tree (fast, reliable)
-2. OCR via Tesseract (when accessibility fails)
-3. Visual snapshot (screenshot + metadata for AI vision)
+2. ResourceId pattern match (icon/button patterns)
+3. OCR via Tesseract
+4. Visual candidates (cropped unlabeled clickables)
+5. Grid fallback (large payload; use only when needed)
 
 **Example - Find and tap:**
 ```json
@@ -58,7 +60,7 @@ Interact with app UI via accessibility tree with intelligent fallback.
 
 ## Screenshot Scaling
 
-Screenshots are automatically scaled to fit within 1000px (longest side) by default.
+Screenshots are automatically scaled to fit within 800px (longest side) by default.
 This prevents API context limits and reduces token usage.
 
 **All coordinates are in image space.** Tap coordinates are automatically converted
@@ -68,7 +70,7 @@ to device coordinates. You don't need to do any math.
 
 | Mode | Parameter | Behavior |
 |------|-----------|----------|
-| Default | (none) | Scale to 1000px max |
+| Default | (none) | Scale to 800px max |
 | Custom | `maxDimension: 1500` | Scale to specified size |
 | Raw | `raw: true` | No scaling (may exceed API limits) |
 
@@ -87,8 +89,8 @@ Screenshot responses now include scaling metadata:
   "mode": "file",
   "path": ".replicant/screenshots/screenshot-1234.png",
   "device": { "width": 1080, "height": 2400 },
-  "image": { "width": 450, "height": 1000 },
-  "scaleFactor": 2.4
+  "image": { "width": 360, "height": 800 },
+  "scaleFactor": 3
 }
 ```
 

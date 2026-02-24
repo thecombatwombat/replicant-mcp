@@ -9,6 +9,7 @@ Manage device connections.
 - `select` - Select active device
 - `wait` - Wait for device to connect
 - `properties` - Get device properties
+- `health-check` - Validate Android SDK/adb setup and device connectivity
 
 ## adb-app
 
@@ -20,6 +21,12 @@ Manage applications.
 - `launch` - Launch app
 - `stop` - Force stop app
 - `clear-data` - Clear app data
+- `list` - List installed packages (paginated)
+
+**List options:**
+- `limit`: Max packages to return (default: 20, max: 100)
+- `offset`: Skip first N packages (pagination)
+- `filter`: Case-insensitive package-name substring filter
 
 ## adb-logcat
 
@@ -43,6 +50,9 @@ Execute shell commands with safety guards.
 
 **Parameters:**
 - `command` (required): Shell command
-- `timeout`: Max execution time (default: 30s, max: 120s)
+- `timeout`: Max execution time in milliseconds
+- `maxChars`: Truncate stdout/stderr to at most this many characters
+- `summaryOnly`: Return compact previews and counts (omit full stdout/stderr)
+- `previewChars`: Preview length when `summaryOnly: true` (default: 200)
 
 **Blocked commands:** rm -rf /, reboot, shutdown, su, sudo

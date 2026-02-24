@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-02-24T12:25:47.190Z",
+  "generatedAt": "2026-02-24T13:15:00.609Z",
   "tools": {
     "cache": {
       "inputSchema": {
@@ -761,8 +761,6 @@
             }
           },
           "required": [
-            "stdout",
-            "stderr",
             "exitCode",
             "deviceId"
           ],

@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "1fd19364dcd4",
+  "strategy": "manual-commit",
+  "branch": "fix/offline-device-filter",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "src/parsers/adb-output.ts",
+    "src/services/device-state.ts",
+    "src/types/device.ts",
+    "tests/adapters/adb.test.ts",
+    "tests/services/device-state.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/1f/d19364dcd4/0/metadata.json",
+      "transcript": "/1f/d19364dcd4/0/full.jsonl",
+      "context": "/1f/d19364dcd4/0/context.md",
+      "content_hash": "/1f/d19364dcd4/0/content_hash.txt",
+      "prompt": "/1f/d19364dcd4/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 1,
+    "cache_creation_tokens": 465,
+    "cache_read_tokens": 74660,
+    "output_tokens": 1,
+    "api_call_count": 1
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "49f446177efe",
+  "strategy": "manual-commit",
+  "branch": "fix/offline-device-filter",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/contracts/replicant-mcp.contract.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/49/f446177efe/0/metadata.json",
+      "transcript": "/49/f446177efe/0/full.jsonl",
+      "context": "/49/f446177efe/0/context.md",
+      "content_hash": "/49/f446177efe/0/content_hash.txt",
+      "prompt": "/49/f446177efe/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 10,
+    "cache_creation_tokens": 39090,
+    "cache_read_tokens": 303401,
+    "output_tokens": 117,
+    "api_call_count": 8
+  }
+}

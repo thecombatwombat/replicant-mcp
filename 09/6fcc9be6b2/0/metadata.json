@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "096fcc9be6b2",
+  "session_id": "4e14ca7f-f636-497b-960d-8a72a007e117",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-26T14:34:20.435618Z",
+  "branch": "docs/product-spec-v1.5",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/plans/2026-02-26-product-specification-v1.5.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "69534954107c",
+  "token_usage": {
+    "input_tokens": 17,
+    "cache_creation_tokens": 54105,
+    "cache_read_tokens": 650941,
+    "output_tokens": 158,
+    "api_call_count": 13
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-26T14:34:20.382574Z",
+    "agent_lines": 343,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 343,
+    "agent_percentage": 100
+  },
+  "transcript_path": ".claude/projects/-Users-architjoshi-intent-workspaces-inspect-current-replicant-mcp/4e14ca7f-f636-497b-960d-8a72a007e117.jsonl"
+}

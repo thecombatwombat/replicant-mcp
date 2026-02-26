@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "79ca6afcbd15",
+  "session_id": "93a97a59-6526-4faf-be10-b7c4128f9bf9",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-26T14:59:22.172441Z",
+  "branch": "fix/offline-device-filter",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "src/types/schemas/adb-device-output.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "d14628a208c7",
+  "token_usage": {
+    "input_tokens": 17,
+    "cache_creation_tokens": 62633,
+    "cache_read_tokens": 766100,
+    "output_tokens": 136,
+    "api_call_count": 15
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-26T14:59:22.127314Z",
+    "agent_lines": 1,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1,
+    "agent_percentage": 100
+  },
+  "transcript_path": ".claude/projects/-Users-architjoshi-intent-workspaces-inspect-current-replicant-mcp/93a97a59-6526-4faf-be10-b7c4128f9bf9.jsonl"
+}

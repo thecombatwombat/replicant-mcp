@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "3193ae71a16f",
+  "strategy": "manual-commit",
+  "branch": "fix/offline-device-filter",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "src/services/process-runner.ts",
+    "src/tools/adb-shell.ts",
+    "tests/adapters/gradle.test.ts",
+    "tests/services/process-runner.test.ts",
+    "tests/tools/adb-shell.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/31/93ae71a16f/0/metadata.json",
+      "transcript": "/31/93ae71a16f/0/full.jsonl",
+      "context": "/31/93ae71a16f/0/context.md",
+      "content_hash": "/31/93ae71a16f/0/content_hash.txt",
+      "prompt": "/31/93ae71a16f/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 28,
+    "cache_creation_tokens": 57213,
+    "cache_read_tokens": 1327823,
+    "output_tokens": 174,
+    "api_call_count": 26
+  }
+}

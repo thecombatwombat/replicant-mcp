@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "dbcb7c643f9e",
+  "strategy": "manual-commit",
+  "branch": "fix/gradle-timeout",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/services/process-runner.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/db/cb7c643f9e/0/metadata.json",
+      "transcript": "/db/cb7c643f9e/0/full.jsonl",
+      "context": "/db/cb7c643f9e/0/context.md",
+      "content_hash": "/db/cb7c643f9e/0/content_hash.txt",
+      "prompt": "/db/cb7c643f9e/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 50,
+    "cache_creation_tokens": 68134,
+    "cache_read_tokens": 2827628,
+    "output_tokens": 363,
+    "api_call_count": 48
+  }
+}

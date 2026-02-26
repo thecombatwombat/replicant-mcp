@@ -33,6 +33,14 @@ emulator-5554\toffline
       expect(devices[0].status).toBe("offline");
     });
 
+    it("handles unauthorized devices", () => {
+      const output = `List of devices attached
+emulator-5554\tunauthorized
+`;
+      const devices = parseDeviceList(output);
+      expect(devices[0].status).toBe("unauthorized");
+    });
+
     it("handles empty device list", () => {
       const output = `List of devices attached
 

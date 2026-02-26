@@ -1,5 +1,5 @@
 export type DeviceType = "emulator" | "physical";
-export type DeviceStatus = "online" | "offline" | "booting";
+export type DeviceStatus = "online" | "offline" | "unauthorized" | "booting";
 
 export interface Device {
   id: string;

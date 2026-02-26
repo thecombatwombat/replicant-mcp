@@ -12,7 +12,12 @@ export function parseDeviceList(output: string): Device[] {
     if (!id) continue;
 
     const type: DeviceType = id.startsWith("emulator") ? "emulator" : "physical";
-    const status: DeviceStatus = statusStr === "device" ? "online" : "offline";
+    const status: DeviceStatus =
+      statusStr === "device"
+        ? "online"
+        : statusStr === "unauthorized"
+          ? "unauthorized"
+          : "offline";
 
     devices.push({
       id,

@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-02-24T14:17:52.256Z",
+  "generatedAt": "2026-02-26T15:01:57.702Z",
   "tools": {
     "cache": {
       "inputSchema": {
@@ -236,6 +236,7 @@
                     "enum": [
                       "online",
                       "offline",
+                      "unauthorized",
                       "booting"
                     ]
                   }
@@ -295,6 +296,7 @@
                   "enum": [
                     "online",
                     "offline",
+                    "unauthorized",
                     "booting"
                   ]
                 }

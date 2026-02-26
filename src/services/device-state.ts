@@ -34,9 +34,10 @@ export class DeviceStateManager {
     }
 
     // Try to auto-select
-    const devices = await adb.getDevices();
+    const allDevices = await adb.getDevices();
+    const onlineDevices = allDevices.filter((d) => d.status === "online");
 
-    if (devices.length === 0) {
+    if (allDevices.length === 0) {
       throw new ReplicantError(
         ErrorCode.NO_DEVICES,
         "No devices connected",
@@ -44,23 +45,36 @@ export class DeviceStateManager {
       );
     }
 
-    if (devices.length === 1) {
-      this.currentDevice = devices[0];
+    if (onlineDevices.length === 0) {
+      const statuses = allDevices.map((d) => `${d.id} (${d.status})`).join(", ");
+      const suggestion = allDevices.some((d) => d.status === "unauthorized")
+        ? "Check the USB debugging authorization prompt on the device and tap 'Allow'"
+        : "Wait for the device to come online or restart it with 'adb reconnect'";
+      throw new ReplicantError(
+        ErrorCode.DEVICE_OFFLINE,
+        `No online devices available. Found: ${statuses}`,
+        suggestion
+      );
+    }
+
+    if (onlineDevices.length === 1) {
+      this.currentDevice = onlineDevices[0];
       return this.currentDevice;
     }
 
-    // Multiple devices - user must choose
-    const deviceList = devices.map((d) => d.id).join(", ");
+    // Multiple online devices - user must choose
+    const deviceList = onlineDevices.map((d) => d.id).join(", ");
     throw new ReplicantError(
       ErrorCode.MULTIPLE_DEVICES,
-      `${devices.length} devices connected: ${deviceList}`,
+      `${onlineDevices.length} devices connected: ${deviceList}`,
       `Call adb-device({ operation: 'select', deviceId: '...' }) to choose one`
     );
   }
 
   autoSelectIfSingle(devices: Device[]): boolean {
-    if (devices.length === 1 && !this.currentDevice) {
-      this.currentDevice = devices[0];
+    const onlineDevices = devices.filter((d) => d.status === "online");
+    if (onlineDevices.length === 1 && !this.currentDevice) {
+      this.currentDevice = onlineDevices[0];
       return true;
     }
     return false;

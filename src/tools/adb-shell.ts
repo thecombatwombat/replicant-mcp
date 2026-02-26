@@ -18,7 +18,9 @@ export async function handleAdbShellTool(
   const device = await context.deviceState.ensureDevice(context.adb);
   const deviceId = device.id;
 
-  const result = await context.adb.shell(deviceId, input.command, input.timeout);
+  const ADB_SHELL_MAX_TIMEOUT = 120_000;
+  const timeout = input.timeout ? Math.min(input.timeout, ADB_SHELL_MAX_TIMEOUT) : undefined;
+  const result = await context.adb.shell(deviceId, input.command, timeout);
 
   if (input.summaryOnly) {
     const previewChars = input.previewChars ?? 200;

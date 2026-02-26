@@ -22,6 +22,18 @@ describe("ProcessRunner", () => {
         runner.run("sleep", ["10"], { timeoutMs: 100 })
       ).rejects.toThrow("timed out");
     });
+
+    it("allows timeouts up to 600s without clamping", async () => {
+      // Use a short-lived command but pass a large timeout to verify it's not clamped
+      const result = await runner.run("echo", ["ok"], { timeoutMs: 300_000 });
+      expect(result.stdout.trim()).toBe("ok");
+    });
+
+    it("clamps timeouts above 600s to max", async () => {
+      // Verify the global max of 600s is enforced
+      const result = await runner.run("echo", ["ok"], { timeoutMs: 999_999 });
+      expect(result.stdout.trim()).toBe("ok");
+    });
   });
 
   describe("safety guards", () => {

@@ -45,6 +45,9 @@ export class EmulatorAdapter {
   }
 
   async start(avdName: string): Promise<string> {
+    // Snapshot existing emulators before starting a new one
+    const existingIds = await this.getRunningEmulatorIds();
+
     // Start emulator in background - don't wait for it
     // Returns immediately, emulator boots in background
     this.runner.runEmulator([
@@ -58,19 +61,47 @@ export class EmulatorAdapter {
     // Give it a moment to register
     await new Promise((r) => setTimeout(r, 2000));
 
-    // Find the new emulator ID
-    const result = await this.runner.runAdb(["devices"]);
-    const match = result.stdout.match(/emulator-\d+/);
+    // Find the NEW emulator by diffing against pre-existing ones
+    const currentIds = await this.getRunningEmulatorIds();
+    const newIds = currentIds.filter((id) => !existingIds.includes(id));
 
-    if (!match) {
-      throw new ReplicantError(
-        ErrorCode.EMULATOR_START_FAILED,
-        `Emulator ${avdName} failed to start`,
-        "Check the AVD name and try again"
-      );
+    if (newIds.length === 1) {
+      return newIds[0];
     }
 
-    return match[0];
+    // Ambiguous or no new emulator — fall back to matching by AVD name
+    for (const id of currentIds) {
+      if (existingIds.includes(id)) continue;
+      const name = await this.getAvdName(id);
+      if (name === avdName) return id;
+    }
+
+    // Last resort: check all current emulators by AVD name
+    for (const id of currentIds) {
+      const name = await this.getAvdName(id);
+      if (name === avdName) return id;
+    }
+
+    throw new ReplicantError(
+      ErrorCode.EMULATOR_START_FAILED,
+      `Emulator ${avdName} failed to start`,
+      "Check the AVD name and try again"
+    );
+  }
+
+  private async getRunningEmulatorIds(): Promise<string[]> {
+    const result = await this.runner.runAdb(["devices"]);
+    const matches = result.stdout.match(/emulator-\d+/g);
+    return matches ?? [];
+  }
+
+  private async getAvdName(emulatorId: string): Promise<string> {
+    try {
+      const result = await this.runner.runAdb(["-s", emulatorId, "emu", "avd", "name"]);
+      return result.stdout.trim().split("\n")[0].trim();
+    } catch {
+      return "";
+    }
   }
 
   async kill(emulatorId: string): Promise<void> {

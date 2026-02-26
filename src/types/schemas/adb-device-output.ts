@@ -4,7 +4,7 @@ const DeviceSchema = z.object({
   id: z.string(),
   type: z.enum(["emulator", "physical"]),
   name: z.string(),
-  status: z.enum(["online", "offline", "booting"]),
+  status: z.enum(["online", "offline", "unauthorized", "booting"]),
 });
 
 /**

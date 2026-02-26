@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "3193ae71a16f",
+  "session_id": "88e5ef83-2c06-485f-b13b-1ccb034962ac",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-26T14:44:45.370452Z",
+  "branch": "fix/offline-device-filter",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "src/adapters/emulator.ts",
+    "tests/adapters/emulator.test.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "601130d70c9b",
+  "token_usage": {
+    "input_tokens": 24,
+    "cache_creation_tokens": 55450,
+    "cache_read_tokens": 1070658,
+    "output_tokens": 217,
+    "api_call_count": 22
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-26T14:44:45.334675Z",
+    "agent_lines": 120,
+    "human_added": 122,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 242,
+    "agent_percentage": 49.586776859504134
+  },
+  "transcript_path": ".claude/projects/-Users-architjoshi-intent-workspaces-inspect-current-replicant-mcp/88e5ef83-2c06-485f-b13b-1ccb034962ac.jsonl"
+}

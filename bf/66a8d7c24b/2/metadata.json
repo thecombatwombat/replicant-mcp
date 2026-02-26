@@ -1,0 +1,35 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "bf66a8d7c24b",
+  "session_id": "b93d1dfe-37a9-4aed-b35b-fb72cea6eefd",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-26T14:46:21.795093Z",
+  "branch": "fix/gradle-timeout",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/types/device.ts",
+    "src/parsers/adb-output.ts",
+    "src/services/device-state.ts",
+    "tests/adapters/adb.test.ts",
+    "tests/services/device-state.test.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "d21a33369e8b",
+  "token_usage": {
+    "input_tokens": 45,
+    "cache_creation_tokens": 72959,
+    "cache_read_tokens": 2362500,
+    "output_tokens": 434,
+    "api_call_count": 41
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-26T14:46:21.736007Z",
+    "agent_lines": 55,
+    "human_added": 63,
+    "human_modified": 5,
+    "human_removed": 0,
+    "total_committed": 123,
+    "agent_percentage": 44.71544715447154
+  },
+  "transcript_path": ".claude/projects/-Users-architjoshi-intent-workspaces-inspect-current-replicant-mcp/b93d1dfe-37a9-4aed-b35b-fb72cea6eefd.jsonl"
+}

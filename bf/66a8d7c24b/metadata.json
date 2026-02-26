@@ -3,7 +3,7 @@
   "checkpoint_id": "bf66a8d7c24b",
   "strategy": "manual-commit",
   "branch": "fix/gradle-timeout",
-  "checkpoints_count": 0,
+  "checkpoints_count": 1,
   "files_touched": [
     "src/parsers/adb-output.ts",
     "src/services/device-state.ts",
@@ -30,13 +30,20 @@
       "context": "/bf/66a8d7c24b/1/context.md",
       "content_hash": "/bf/66a8d7c24b/1/content_hash.txt",
       "prompt": "/bf/66a8d7c24b/1/prompt.txt"
+    },
+    {
+      "metadata": "/bf/66a8d7c24b/2/metadata.json",
+      "transcript": "/bf/66a8d7c24b/2/full.jsonl",
+      "context": "/bf/66a8d7c24b/2/context.md",
+      "content_hash": "/bf/66a8d7c24b/2/content_hash.txt",
+      "prompt": "/bf/66a8d7c24b/2/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 22,
-    "cache_creation_tokens": 10919,
-    "cache_read_tokens": 1418745,
-    "output_tokens": 214,
-    "api_call_count": 22
+    "input_tokens": 67,
+    "cache_creation_tokens": 83878,
+    "cache_read_tokens": 3781245,
+    "output_tokens": 648,
+    "api_call_count": 63
   }
 }

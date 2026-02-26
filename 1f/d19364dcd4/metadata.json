@@ -3,7 +3,7 @@
   "checkpoint_id": "1fd19364dcd4",
   "strategy": "manual-commit",
   "branch": "fix/offline-device-filter",
-  "checkpoints_count": 0,
+  "checkpoints_count": 1,
   "files_touched": [
     "src/parsers/adb-output.ts",
     "src/services/device-state.ts",
@@ -25,13 +25,20 @@
       "context": "/1f/d19364dcd4/1/context.md",
       "content_hash": "/1f/d19364dcd4/1/content_hash.txt",
       "prompt": "/1f/d19364dcd4/1/prompt.txt"
+    },
+    {
+      "metadata": "/1f/d19364dcd4/2/metadata.json",
+      "transcript": "/1f/d19364dcd4/2/full.jsonl",
+      "context": "/1f/d19364dcd4/2/context.md",
+      "content_hash": "/1f/d19364dcd4/2/content_hash.txt",
+      "prompt": "/1f/d19364dcd4/2/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 21,
-    "cache_creation_tokens": 48438,
-    "cache_read_tokens": 944146,
-    "output_tokens": 158,
-    "api_call_count": 19
+    "input_tokens": 72,
+    "cache_creation_tokens": 122713,
+    "cache_read_tokens": 3786745,
+    "output_tokens": 629,
+    "api_call_count": 66
   }
 }

@@ -72,6 +72,31 @@ describe("DeviceStateManager", () => {
       state.autoSelectIfSingle(devices);
       expect(state.getCurrentDevice()).toBeNull();
     });
+
+    it("skips offline devices during auto-select", () => {
+      const devices = [
+        { id: "emulator-5554", type: "emulator" as const, name: "Pixel", status: "offline" as const },
+      ];
+      state.autoSelectIfSingle(devices);
+      expect(state.getCurrentDevice()).toBeNull();
+    });
+
+    it("skips unauthorized devices during auto-select", () => {
+      const devices = [
+        { id: "device-1234", type: "physical" as const, name: "Phone", status: "unauthorized" as const },
+      ];
+      state.autoSelectIfSingle(devices);
+      expect(state.getCurrentDevice()).toBeNull();
+    });
+
+    it("auto-selects the one online device among mixed statuses", () => {
+      const devices = [
+        { id: "emulator-5554", type: "emulator" as const, name: "Pixel", status: "offline" as const },
+        { id: "device-1234", type: "physical" as const, name: "Phone", status: "online" as const },
+      ];
+      state.autoSelectIfSingle(devices);
+      expect(state.getCurrentDevice()?.id).toBe("device-1234");
+    });
   });
 
   describe("ensureDevice", () => {
@@ -115,6 +140,55 @@ describe("DeviceStateManager", () => {
       await expect(state.ensureDevice(mockAdb as any)).rejects.toMatchObject({
         code: "MULTIPLE_DEVICES",
         message: expect.stringContaining("emulator-5554"),
+      });
+    });
+
+    it("throws DEVICE_OFFLINE when only device is offline", async () => {
+      const devices = [
+        { id: "emulator-5554", type: "emulator" as const, name: "test", status: "offline" as const },
+      ];
+      const mockAdb = { getDevices: vi.fn().mockResolvedValue(devices) };
+
+      await expect(state.ensureDevice(mockAdb as any)).rejects.toMatchObject({
+        code: "DEVICE_OFFLINE",
+        message: expect.stringContaining("offline"),
+      });
+    });
+
+    it("throws DEVICE_OFFLINE with auth suggestion when device is unauthorized", async () => {
+      const devices = [
+        { id: "device-1234", type: "physical" as const, name: "test", status: "unauthorized" as const },
+      ];
+      const mockAdb = { getDevices: vi.fn().mockResolvedValue(devices) };
+
+      await expect(state.ensureDevice(mockAdb as any)).rejects.toMatchObject({
+        code: "DEVICE_OFFLINE",
+        suggestion: expect.stringContaining("authorization"),
+      });
+    });
+
+    it("auto-selects the one online device when others are offline", async () => {
+      const devices = [
+        { id: "emulator-5554", type: "emulator" as const, name: "test1", status: "offline" as const },
+        { id: "device-1234", type: "physical" as const, name: "test2", status: "online" as const },
+      ];
+      const mockAdb = { getDevices: vi.fn().mockResolvedValue(devices) };
+
+      const result = await state.ensureDevice(mockAdb as any);
+      expect(result.id).toBe("device-1234");
+    });
+
+    it("throws MULTIPLE_DEVICES only counting online devices", async () => {
+      const devices = [
+        { id: "emulator-5554", type: "emulator" as const, name: "test1", status: "online" as const },
+        { id: "device-1234", type: "physical" as const, name: "test2", status: "online" as const },
+        { id: "device-5678", type: "physical" as const, name: "test3", status: "offline" as const },
+      ];
+      const mockAdb = { getDevices: vi.fn().mockResolvedValue(devices) };
+
+      await expect(state.ensureDevice(mockAdb as any)).rejects.toMatchObject({
+        code: "MULTIPLE_DEVICES",
+        message: expect.stringContaining("2 devices"),
       });
     });
   });

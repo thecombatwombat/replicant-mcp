@@ -51,6 +51,46 @@ describe("GradleAdapter", () => {
     });
   });
 
+  describe("timeouts", () => {
+    it("passes 300s timeout for builds", async () => {
+      const mockRunner = {
+        run: vi.fn().mockResolvedValue({
+          stdout: "BUILD SUCCESSFUL in 5s\n1 actionable task: 1 executed",
+          stderr: "",
+          exitCode: 0,
+        }),
+      } as unknown as ProcessRunner;
+
+      const adapter = new GradleAdapter(mockRunner);
+      await adapter.build("assembleDebug");
+
+      expect(mockRunner.run).toHaveBeenCalledWith(
+        expectedGradleCmd,
+        ["assembleDebug"],
+        expect.objectContaining({ timeoutMs: 300000 })
+      );
+    });
+
+    it("passes 600s timeout for tests", async () => {
+      const mockRunner = {
+        run: vi.fn().mockResolvedValue({
+          stdout: "1 tests completed, 0 failed",
+          stderr: "",
+          exitCode: 0,
+        }),
+      } as unknown as ProcessRunner;
+
+      const adapter = new GradleAdapter(mockRunner);
+      await adapter.test("unitTest");
+
+      expect(mockRunner.run).toHaveBeenCalledWith(
+        expectedGradleCmd,
+        ["testDebugUnitTest"],
+        expect.objectContaining({ timeoutMs: 600000 })
+      );
+    });
+  });
+
   describe("error handling", () => {
     it("mentions REPLICANT_PROJECT_ROOT when gradlew not found", async () => {
       const mockRunner = {

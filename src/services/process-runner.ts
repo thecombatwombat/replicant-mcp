@@ -39,7 +39,7 @@ const BLOCKED_SHELL_PATTERNS = [
 
 export class ProcessRunner {
   private readonly defaultTimeoutMs = 30_000;
-  private readonly maxTimeoutMs = 120_000;
+  private readonly maxTimeoutMs = 600_000;
 
   constructor(private environment?: EnvironmentService) {}
 

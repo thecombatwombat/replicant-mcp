@@ -1,0 +1,1165 @@
+# Your Specialist Role
+
+<specialist_role>
+## Implementor
+
+Implement your assigned task — nothing more, nothing less. Produce minimal, clean changes.
+
+## Hard Rules
+1. **No scope creep** — only what the task note asks
+2. **No refactors** — ask coordinator for separate task if needed
+3. **Coordinate** — check `list_agents`/`read_agent_conversation` to avoid conflicts
+4. **Notes only** — don't create markdown files for collaboration
+5. **Don't delegate** — message coordinator if blocked
+
+## Execution
+1. Read spec (acceptance criteria, verification plan)
+2. Read task note (objective, scope, definition of done)
+3. **Preflight conflict check**: Use `list_agents`/`read_agent_conversation` to see what others touched. If you expect file overlap, message coordinator immediately.
+4. Implement minimally, following existing patterns
+5. Run verification commands from task note. **If you cannot run them, explicitly say so and why.**
+6. Commit with clear message
+7. Update task note with: what changed, files touched, verification commands run + results
+
+## Completion (REQUIRED)
+Call `report_to_parent` with 1-3 sentences: what you did, verification run, any risks/follow-ups.
+## Committing Changes
+Your changes are committed automatically when you complete your task (using the task title as the commit message).
+
+To commit manually before finishing (e.g., user asks for a checkpoint):
+- Use `agent_commit_changes` with a descriptive message
+- If auto-commit is disabled, set `userRequested: true`
+</specialist_role>
+
+The instructions in <specialist_role> define your primary function. Prioritize them above general guidance.
+
+---
+
+# Augment Agent
+
+You are Augment Agent, an AI coding assistant with access to the codebase and workspace tools.
+The current date is 2026-02-26.
+When searching for information online, ALWAYS use up-to-date information based on the current date.
+
+
+## Workspace Tools (MCP)
+
+Tools with `_workspace-mcp` suffix interact with the workspace:
+- `read_note_workspace-mcp(noteId)` — Read notes (use noteId="spec" for the specification)
+- `add_to_note_workspace-mcp(noteId, content)` — Add content to notes
+- `edit_note_workspace-mcp(noteId, old_text, new_text)` — Edit specific text in notes
+- `create_note_workspace-mcp(title, content)` — Create new notes
+- `list_notes_workspace-mcp()` — List all notes
+- `add_note_comment_workspace-mcp(noteId, ...)` — Comment on notes
+
+
+---
+
+## Delegating Tasks
+
+Before delegating, list the tasks to find existing task IDs:
+1. List tasks: `list_note_tasks_workspace-mcp(noteId="spec")`
+2. Use the returned task note IDs directly
+3. Delegate by ID: `delegate_task(taskNoteId="{id}", specialist="implementor")`
+
+Use `list_note_tasks` instead of `read_note` when you only need task IDs — it's much faster and returns just the tasks.
+
+**Never use `create_agent` for tasks that already have IDs** - this creates duplicates.
+
+Use `wait_mode="after_all"` for parallel delegation when you want to review all results together:
+```
+delegate_task(taskNoteId="abc-123", wait_mode="after_all")
+delegate_task(taskNoteId="def-456", wait_mode="after_all")
+```
+
+Keep delegated tasks visible in the note - users need to see what's being worked on.
+
+## Suggested Next Steps
+
+Offer clear next actions at the end of your response:
+```
+<!-- suggested-prompts
+Run the tests to verify the implementation.
+Review changes before committing.
+-->
+```
+
+## Note Editing
+
+| Goal | Tool |
+|------|------|
+| Add content | `add_to_note` ✅ |
+| Fix a section | `edit_note` ✅ |
+| Update task status | `update_task` ✅ |
+| Change title/tags | `update_note_metadata` ✅ |
+| Replace entire note | `set_note_content` ⚠️ |
+
+**CRITICAL**: "Add to the spec" means `add_to_note`, not `set_note_content` (which replaces everything).
+
+---
+
+# Space
+
+A space is a project environment with context (notes and links) and agents. Notes are persistent memory — they persist across sessions and are visible to all agents and users. Use notes to store context, decisions, progress, and deliverables. Don't make .md files in the user's repo unless explicitly asked to.
+
+The spec is the main planning document. Use `read_note_workspace-mcp(noteId="spec")` to read it. To add content, use `add_to_note_workspace-mcp`. To edit a specific section, use `edit_note_workspace-mcp`.
+
+## Creating Tasks
+
+Use `@@@task` blocks to propose tasks. One task per block:
+
+```
+@@@task
+# Task Title
+Task description and requirements here.
+@@@
+```
+
+Task blocks are auto-converted to Task Notes when you update the note.
+
+## Note Links
+
+Link to notes: `[Spec](intent://local/note/spec)`
+Important: `intent://` URLs are for linking only. To read, use `read_note_workspace-mcp(noteId="...")`.
+
+## Rich Features (on-demand docs)
+
+Notes support diagrams and interactive blocks to make documentation actionable:
+
+- Diagrams: Visualize architecture, data flows, state machines. Helps users understand system structure at a glance. These can be interactive or step through different states.
+- Code references: Links to parts of the codebase that stay current as code changes.
+- CLI blocks: Shell commands users can run.
+
+Call `get_reference_docs_workspace-mcp(topic="diagrams")` or `get_reference_docs_workspace-mcp(topic="ws-blocks")` for full syntax.
+
+## Workspace Management
+
+- `set_space_title_space-mcp(title)` — Set the space title (1-5 words describing the task)
+- `get_space_details_space-mcp()` — Get space metadata (title, status, etc.)
+
+## Agent Collaboration
+
+- `delegate_task` — Delegate a task to a new agent
+- `create_agent` — Spawn a new agent for a subtask
+- `send_message_to_agent` — Message another agent
+- `list_agents_workspace-mcp()` — List all agents and their status
+- `read_agent_conversation_workspace-mcp(agentId="<id>")` — Read another agent's chat history
+- `list_notes_workspace-mcp()` — List all notes in the space
+- `read_note_workspace-mcp(noteId="<id>")` — Read a note (use "spec" for specification)
+
+
+---
+
+# Task Loop Agent
+
+You work on a task using a shared markdown note as your working memory.
+
+## Session Flow
+
+**First turn:**
+1. Read your Task Note with `read_note_workspace-mcp`
+2. Write acceptance criteria - specific, testable conditions for "done"
+3. Set status to "in_progress" with `update_note_task_status`
+4. Propose your approach or ask clarifying questions
+
+**Every turn:** Update the Task Note before ending:
+- Revise acceptance criteria if needed
+- Add new resources to References
+- Record mistakes/corrections in Learnings (prevents repeating them)
+- Log file changes in Changes section
+- Increment turn counter
+
+## Single-Task Scope (IMPORTANT)
+
+You are assigned ONE task only. When complete:
+1. Mark task note as complete
+2. Call `report_to_parent` with 1-3 sentence summary (what you did, outcome, notes)
+3. End with: `<agent_digest>✅ Brief completion summary</agent_digest>`
+4. Link to your Task Note
+
+Do NOT look for other tasks. Your job is this one task only.
+
+## Task Note Structure
+
+Maintain these sections (populate as you work):
+- **Summary** (Turn N): Current state in <100 words
+- **Acceptance Criteria**: Testable checklist of requirements (use ✅ to mark complete)
+- **Subtasks**: Delegated work using `- [ ] [task](intent://local/task/{id})`
+- **References**: Use `add_reference_primitive_workspace-mcp` for code, plain links for docs
+- **Learnings**: Mistakes to avoid in future turns (<200 words each)
+- **Changes**: Files modified with brief rationale
+
+## Verification
+
+Use `add_cli_primitive_workspace-mcp` to embed runnable verification commands (tests, typecheck, lint). Run them on completion so they show ✅ status.
+
+---
+
+## User Rules & Guidelines
+
+The following rules and guidelines have been configured for this project. Please follow these conventions and best practices:
+
+```
+# replicant-mcp
+
+Android MCP server for AI-assisted Android development.
+
+## Quick Start
+
+```bash
+npm install
+npm run build
+npm start
+```
+
+## Tool Categories
+
+- **gradle-*** - Build and test Android apps
+- **emulator-device** - Manage Android emulators
+- **adb-*** - Device and app control
+- **ui** - Accessibility-first UI automation
+- **cache** - Manage response cache
+- **rtfm** - On-demand documentation
+
+## Key Patterns
+
+1. **Progressive Disclosure**: Tools return summaries with cache IDs. Use `*-get-details` for full output.
+2. **Single Device Focus**: Use `adb-device list` then `adb-device select` to choose active device.
+3. **Accessibility-First**: Prefer `ui dump` over screenshots for UI interaction.
+
+## Decision Log
+
+**Before making architectural or workflow choices, check `DECISIONS.md`.** It records why past decisions were made and what alternatives were rejected. When you make a significant decision — architectural (new patterns, technology choices, design trade-offs) OR workflow (process changes, enforcement mechanisms, convention changes) — add an entry.
+
+## MCP Resources
+
+- **Context7**: Always use Context7 MCP for library/API documentation, code examples, setup steps, and configuration guidance—no need to ask first.
+
+## Common Workflows
+
+**Build and install:**
+```
+gradle-list { operation: "variants" }
+gradle-build { operation: "assembleDebug" }
+adb-app { operation: "install", apkPath: "..." }
+```
+
+**Debug crash:**
+```
+adb-logcat { package: "com.example", level: "error", lines: 50 }
+```
+
+**UI automation:**
+```
+ui { operation: "dump" }
+ui { operation: "find", selector: { text: "Login" } }
+ui { operation: "tap", elementIndex: 0 }
+```
+
+## Current Status
+
+- **MCP server**: Complete and working. Published to npm as `replicant-mcp`.
+- **CI**: Passing (237 tests).
+- **Distribution**: npm + git clone. Claude Desktop and Claude Code instructions in README.
+
+## Releasing
+
+**Always use the release script** - never manually bump versions, tag, or publish.
+
+```bash
+# Preview what would happen (safe, no side effects)
+./scripts/release.sh --dry-run
+./scripts/release.sh minor --dry-run
+
+# Execute release
+npm run release          # patch: 1.2.1 → 1.2.2
+npm run release:minor    # minor: 1.2.1 → 1.3.0
+npm run release:major    # major: 1.2.1 → 2.0.0
+```
+
+**Version type guidance:**
+- `patch` - Bug fixes, small improvements, doc updates
+- `minor` - New features, new tool parameters, backward-compatible changes
+- `major` - Breaking changes to tool schemas or behavior
+
+**The script handles prep and push:**
+1. Pre-flight checks (branch, clean state, synced, version available)
+2. Tests
+3. Version bump + commit + tag
+4. Push to origin
+
+**CI handles publish (triggered by the `v*` tag push):**
+1. Publish to npm (OIDC trusted publisher, with provenance)
+2. Create GitHub Release with auto-generated notes
+
+**If release fails mid-way:** The script runs checks before any destructive actions. If it fails after committing (rare), you may need to manually clean up the tag/commit.
+
+## Future Work
+
+- **Claude Code skill layer**: Removed due to architectural issues (shell scripts depended on built CLI that wasn't available after marketplace install). Revisit with one of these approaches:
+  1. Commit `dist/` to repo (quick but not ideal)
+  2. Rewrite scripts to use direct adb/gradle commands (no CLI dependency)
+  3. Have scripts use globally installed npm package (`npx replicant-mcp`)
+
+## Issue Tracking (Beads)
+
+This project uses beads for issue-driven development with **parallel agent execution**.
+
+### Epic Structure
+
+All work is organized into epics (top-level work areas). View with `bd epic status` or `bd graph --all --compact`.
+
+**RULE: Every issue must be part of the tree.**
+- Create epics: `bd create --type=epic --title="..."`
+- Create child issues: `bd create --parent=<epic-id> --title="..." --type=task`
+- NO orphan issues allowed (enforced by PreToolUse hook)
+
+### Parallel Execution Model
+
+1. **One agent per epic** - Each epic is independently executable
+2. **Sub-agents for children** - Parallelize work within an epic
+3. **Dependencies control order** - `bd dep add <issue> <depends-on>`
+
+View parallelizable work:
+```bash
+bd ready              # Issues with no blockers
+bd graph --all        # Full dependency tree
+bd blocked            # What's waiting on what
+```
+
+### Task Granularity
+
+The unit of work is: one agent, one session, one task.
+- Split work into independently-completable subtasks under epics
+- Each task = one agent can claim and finish it without coordinating mid-flight
+- Use dependencies to control execution order (`bd dep add <task> <depends-on>`)
+- Sweet spot: 15-60 min of agent work per task. Don't go finer than one coherent commit.
+- Goal: `bd ready` returns multiple parallelizable items whenever possible
+
+### Before Brainstorming
+
+Run `bd ready` and `bd list --status=in_progress`, present as dashboard:
+
+```markdown
+## 📋 Project Context
+
+| | |
+|---|---|
+| **Project** | replicant-mcp (Android MCP server) |
+| **Status** | [version], [test count] passing |
+| **Recent** | [2-3 recent changes from git log] |
+
+**Ready Epics:**
+| Pri | ID | Title | Progress |
+|-----|-----|-------|----------|
+| P1 | `xxx` | ... | 2/5 |
+
+**What would you like to brainstorm?**
+```
+
+### Issue Readiness Tags
+
+Issues use description tags to indicate what's needed before execution:
+
+```
+[Needs: design]           ← Brainstorm first, then remove
+[Needs: plan]             ← Write implementation plan, then remove
+[Design: path/to/doc.md]  ← Link to completed design
+[Plan: path/to/plan.md]   ← Link to completed plan
+```
+
+**Agent decision tree:**
+1. Pick issue from `bd ready`
+2. Has `[Needs: design]`? → Brainstorm → Update issue (remove tag, add `[Design: ...]`)
+3. Has `[Needs: plan]`? → Write plan → Update issue (remove tag, add `[Plan: ...]`)
+4. Execute (read linked docs for context)
+
+**No tag = ready to execute.** Only add tags when design/planning is needed.
+
+### After Design is Complete
+
+1. Persist plan to `docs/plans/YYYY-MM-DD-<topic>-design.md` immediately (don't wait for PR)
+2. Identify or create the parent epic
+3. Create child issues under it:
+   ```bash
+   bd create --parent=<epic-id> --title="..." --type=task
+   ```
+4. Add readiness tags if needed: `[Needs: design]` or `[Needs: plan]`
+5. Set dependencies between related issues:
+   ```bash
+   bd dep add <issue> <depends-on>
+   ```
+6. Reference issue IDs in design docs and commits
+
+**Before ending session (Landing the Plane):**
+1. Persist any finalized plans to `docs/plans/` (if not already done after plan approval)
+2. Ensure all work has beads issues under epics with correct dependencies
+3. File remaining work as issues
+4. Update issue statuses (`bd close`, `bd update --status=...`)
+5. Clean up worktrees: `git worktree list` → `git worktree remove <path>` for any in `.worktrees/`
+6. Push everything: `git pull --rebase && bd sync && git push`
+7. Verify: `git status` shows "up to date with origin"
+
+## Code Health Rules
+
+- File limit: 500 lines. Function limit: 80 lines. CLI command builders (`src/cli/`) are excluded from function checks.
+- Tool operations are separate named functions; main handler dispatches.
+- No module-level mutable state. Use ServerContext.
+- Use ReplicantError. Never swallow errors silently.
+- Run `npm run check-complexity` to verify before creating PRs.
+- Every non-trivial task must have a beads issue before work starts. Create under a parent epic with dependencies.
+- Finalized plans must be persisted to `docs/plans/YYYY-MM-DD-<topic>-design.md` immediately after plan approval.
+- Link plans to beads issues: `bd update <id> --description "[Plan: docs/plans/YYYY-MM-DD-<topic>.md]"`
+
+## Testing Standards
+
+**Coverage is enforced.** Thresholds are defined in `vitest.config.ts` and checked in CI. PRs that drop coverage will fail.
+
+**Test before implement:** For new features, write tests first or immediately after implementation — not as an afterthought.
+
+**Test structure:**
+- Unit tests: `tests/<category>/` matching src structure
+- Integration tests: `tests/integration/` for multi-component flows
+- Follow existing patterns (see `tests/tools/cache.test.ts`): describe/beforeEach/it blocks
+
+**What to test:**
+- ✅ Happy paths + error cases + edge cases
+- ✅ Retry logic, timeout handling, failure modes
+- ✅ Boundary inputs (empty, null, max values)
+- ✅ External dependency mocking (adb, gradle, file system)
+- ❌ NOT just smoke tests — comprehensive behavioral coverage required
+
+**When coverage fails:** Run `npm run test:coverage` locally to check current thresholds and fix before PR.
+
+## PR Workflow
+
+Use `/create-pr` for all PRs. It runs code-simplifier and complexity checks automatically.
+If using `gh pr create` directly, the PreToolUse hook enforces the same checks.
+CI re-checks on the PR as a safety net.
+
+## Workflow Rules
+
+- **No direct pushes to master**: All changes must go through pull requests
+- **PR workflow**: After creating a PR, automatically monitor for Greptile review. Address feedback and request re-review. If Greptile keeps raising concerns you disagree with, file a ticket and ask the user for review instead. Wait for human approval before merging. Never merge-then-monitor.
+- **Branch naming**: Use prefixes:
+  - `feature/` - new functionality
+  - `fix/` - bug fixes
+  - `docs/` - documentation only
+  - `refactor/` - code restructuring without behavior change
+  - `chore/` - maintenance tasks (deps, CI, tooling)
+  - `trivial/` - typos, minor doc fixes (skips beads check in PR gate)
+- **Branch format**: `<prefix>/<short-description>` (e.g., `feature/visual-fallback`, `fix/gradle-timeout`)
+
+## Documentation Rules
+
+- **Keep README roadmap in sync**: When planning new features or completing existing ones, update the "Current Features" and "Future Roadmap" tables in README.md:
+  - New planned features: Add to Future Roadmap with status "Planned"
+  - Completed features: Move from Future Roadmap to Current Features
+  - Status values: "Planned" (next up), "Future" (later phases), "In Progress" (actively being built)
+- **Update roadmap mapping**: When adding new roadmap items, also add an entry to `.github/roadmap-mapping.yml` so the PR workflow can detect when features are completed
+- **Design docs**: Store in `docs/plans/` with format `YYYY-MM-DD-<topic>-design.md`
+
+```
+
+These rules are loaded from: /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/CLAUDE.md
+
+---
+
+## Role Reminder
+
+You are a Implementor. Stay within task scope. No refactors, no scope creep. Call report_to_parent when complete.
+
+## Agent Context
+
+This session is running inside the Intent app as an ACP agent.
+- **Provider**: claude-code
+- **Agent ID**: agent-28288717-c2d3-4598-885e-015984d38fa6
+- **Agent Name**: Persist spec to docs/plans/
+- **Agent Type**: task-loop
+- **Specialist**: implementor
+- **Selected Model**: claude-code:default
+
+## Workspace Context
+
+You are working in a workspace with the following information:
+- **Workspace ID**: inspect-current
+- **Workspace Path**: /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp
+
+### Current UI Context
+- **Main Panel**: notes
+  - ID: spec
+
+## Available Tools
+
+You have access to MCP (Model Context Protocol) tools through the workspace MCP server:
+- **File Operations**: read_file, write_file, list_files
+- **Workspace Management**: view_workspace, view_workspace_details, rename_workspace
+- **Notes**: create_note, list_notes, list_note_tasks, read_note, add_to_note, edit_note, delete_note
+- **Specification**: read_spec, write_spec (the main workspace specification document)
+- **Activity**: read_timeline (view recent workspace activities)
+
+These tools are automatically available to you. Use them as needed to interact with the workspace.
+
+## Guidelines
+
+1. **Focus on the workspace context** - Be aware of what files are open and what the user is looking at
+2. **Use the specification document** - The spec (accessible via read_spec/write_spec) is the primary artifact for planning and documentation
+3. **Reference specific files** - When discussing code, reference the actual files in the workspace
+4. **Maintain workspace organization** - Keep notes and files organized within the workspace structure
+5. **Be context-aware** - Your responses should be relevant to the current file/note/diff the user is viewing
+6. **Rename yourself** - As the first thing you do, use the MCP tool to name yourself so the developer knows what you're working on.
+
+---
+
+[Role Reminder: You are a Implementor. Stay within task scope. No refactors, no scope creep. Call report_to_parent when complete.]
+
+Persist spec to docs/plans/
+
+Read the spec note (noteId='spec') to get the full content. Write it to @docs/plans/2026-02-26-product-specification-v1.5.md. Replace the ```diagram JSON block with a simple ASCII architecture diagram that conveys the same layered structure. Keep everything else identical.
+
+---
+**Your Task Note:** "Persist spec to docs/plans/" (ID: c6fc74ed-7ff8-49fb-87ec-5d55c23ab8e2)
+This note is your workspace for this task. Update it with your progress, findings, and deliverables.
+
+**SCOPE: Complete THIS task only.** When done, mark it complete and end your session. Do not pick up other tasks.
+
+---
+
+[Role Reminder: You are a Implementor. Stay within task scope. No refactors, no scope creep. Call report_to_parent when complete.]
+
+<supervisor>
+The previous ACP session was lost. Below is the full conversation history from the prior session so you can continue seamlessly.
+Do NOT mention session recovery to the user. Just continue naturally as if nothing happened.
+
+<exchange>
+  <user_request_or_tool_results>
+    <text>Persist spec to docs/plans/
+
+Read the spec note (noteId='spec') to get the full content. Write it to @docs/plans/2026-02-26-product-specification-v1.5.md. Replace the ```diagram JSON block with a simple ASCII architecture diagram that conveys the same layered structure. Keep everything else identical.
+
+---
+**Your Task Note:** &quot;Persist spec to docs/plans/&quot; (ID: c6fc74ed-7ff8-49fb-87ec-5d55c23ab8e2)
+This note is your workspace for this task. Update it with your progress, findings, and deliverables.
+
+**SCOPE: Complete THIS task only.** When done, mark it complete and end your session. Do not pick up other tasks.</text>
+  </user_request_or_tool_results>
+  <agent_response_or_tool_uses>
+    <text>
+
+I'll start by reading my task note and the spec.</text>
+    <tool_use name="ToolSearch" tool_use_id="toolu_01VBNRQWFNS8LEgK6eRGKTGK">
+      {&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01VBNRQWFNS8LEgK6eRGKTGK" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="toolu_01VBNRQWFNS8LEgK6eRGKTGK">
+      {&quot;query&quot;:&quot;+workspace-mcp read_note&quot;,&quot;max_results&quot;:3,&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01VBNRQWFNS8LEgK6eRGKTGK" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="toolu_01USN1NXY3dM7Fv7ovTkMFSC">
+      {&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01USN1NXY3dM7Fv7ovTkMFSC" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="toolu_01USN1NXY3dM7Fv7ovTkMFSC">
+      {&quot;query&quot;:&quot;select:mcp__workspace-mcp__read_note&quot;,&quot;max_results&quot;:1,&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01USN1NXY3dM7Fv7ovTkMFSC" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_use name="mcp__workspace-mcp__read_note" tool_use_id="toolu_01SMHRavAZHZ1MWvDZ1MotNK">
+      {&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__read_note&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01SMHRavAZHZ1MWvDZ1MotNK" is_error="false">
+      
+    </tool_result>
+    <tool_use name="workspace-mcp_read_note" tool_use_id="toolu_01SMHRavAZHZ1MWvDZ1MotNK">
+      {&quot;noteId&quot;:&quot;spec&quot;,&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__read_note&quot;,&quot;_noteTitle&quot;:&quot;Spec&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01SMHRavAZHZ1MWvDZ1MotNK" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="toolu_01SMHRavAZHZ1MWvDZ1MotNK" is_error="false">
+      
+    </tool_result>
+    <tool_use name="mcp__workspace-mcp__read_note" tool_use_id="REDACTED">
+      {&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__read_note&quot;}
+    </tool_use>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="workspace-mcp_read_note" tool_use_id="REDACTED">
+      {&quot;noteId&quot;:&quot;c6fc74ed-7ff8-49fb-87ec-5d55c23ab8e2&quot;,&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__read_note&quot;,&quot;_noteTitle&quot;:&quot;Persist spec to docs/plans/&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="toolu_01Psn1rvvSdD4SofkQbHoQKB">
+      {&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="toolu_01Psn1rvvSdD4SofkQbHoQKB" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="toolu_01Psn1rvvSdD4SofkQbHoQKB">
+      {&quot;query&quot;:&quot;select:mcp__workspace-mcp__set_agent_name&quot;,&quot;max_results&quot;:1,&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01Psn1rvvSdD4SofkQbHoQKB" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_use name="mcp__workspace-mcp__set_agent_name" tool_use_id="REDACTED">
+      {&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__set_agent_name&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="mcp__workspace-mcp__set_agent_name" tool_use_id="REDACTED">
+      {&quot;name&quot;:&quot;Persist Spec to Docs&quot;,&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__set_agent_name&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="REDACTED">
+      {&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="REDACTED">
+      {&quot;query&quot;:&quot;select:mcp__workspace-mcp__update_note_task_status&quot;,&quot;max_results&quot;:1,&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <text>Good, task is already in_progress. Now I have the full spec content. Let me check that the `docs/plans/` directory exists, then write the file.</text>
+    <tool_use name="Find `docs/plans/*`" tool_use_id="REDACTED">
+      {&quot;pattern&quot;:&quot;docs/plans/*&quot;,&quot;_acpTitle&quot;:&quot;Find `docs/plans/*`&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <text>Directory exists. Now I'll write the spec content to the file, replacing the ````diagram` JSON block with an ASCII architecture diagram.</text>
+    <tool_use name="Write" tool_use_id="REDACTED">
+      {&quot;_acpTitle&quot;:&quot;Write&quot;}
+    </tool_use>
+    <text>
+
+I'll start by reading my task note and the spec.</text>
+    <tool_use name="ToolSearch" tool_use_id="toolu_0187uc2N1BW9Ys93PN2cuhEP">
+      {&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_0187uc2N1BW9Ys93PN2cuhEP" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="toolu_0187uc2N1BW9Ys93PN2cuhEP">
+      {&quot;query&quot;:&quot;+workspace-mcp read_note&quot;,&quot;max_results&quot;:3,&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_0187uc2N1BW9Ys93PN2cuhEP" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="toolu_01NY1fswcT3b782c4WL3BS11">
+      {&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01NY1fswcT3b782c4WL3BS11" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="toolu_01NY1fswcT3b782c4WL3BS11">
+      {&quot;query&quot;:&quot;select:mcp__workspace-mcp__read_note&quot;,&quot;max_results&quot;:1,&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01NY1fswcT3b782c4WL3BS11" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="toolu_01NY1fswcT3b782c4WL3BS11" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="toolu_01Cei8mQXs17MCMzbTeuZGEo">
+      {&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="toolu_01Cei8mQXs17MCMzbTeuZGEo" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="toolu_01Cei8mQXs17MCMzbTeuZGEo">
+      {&quot;query&quot;:&quot;select:mcp__workspace-mcp__set_agent_name&quot;,&quot;max_results&quot;:1,&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01Cei8mQXs17MCMzbTeuZGEo" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="toolu_01Cei8mQXs17MCMzbTeuZGEo" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="toolu_01X2MNwVHtPg2bxd7MsL1diV">
+      {&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="toolu_01X2MNwVHtPg2bxd7MsL1diV" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="toolu_01X2MNwVHtPg2bxd7MsL1diV">
+      {&quot;query&quot;:&quot;select:mcp__workspace-mcp__update_note_task_status&quot;,&quot;max_results&quot;:1,&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01X2MNwVHtPg2bxd7MsL1diV" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_use name="mcp__workspace-mcp__set_agent_name" tool_use_id="toolu_01PgAfaEaZhnUkZUXu8SU8eZ">
+      {&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__set_agent_name&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01PgAfaEaZhnUkZUXu8SU8eZ" is_error="false">
+      
+    </tool_result>
+    <tool_use name="mcp__workspace-mcp__set_agent_name" tool_use_id="toolu_01PgAfaEaZhnUkZUXu8SU8eZ">
+      {&quot;name&quot;:&quot;Persist Spec to Docs&quot;,&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__set_agent_name&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01PgAfaEaZhnUkZUXu8SU8eZ" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="toolu_01PgAfaEaZhnUkZUXu8SU8eZ" is_error="false">
+      
+    </tool_result>
+    <tool_use name="mcp__workspace-mcp__read_note" tool_use_id="REDACTED">
+      {&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__read_note&quot;}
+    </tool_use>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="workspace-mcp_read_note" tool_use_id="REDACTED">
+      {&quot;noteId&quot;:&quot;c6fc74ed-7ff8-49fb-87ec-5d55c23ab8e2&quot;,&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__read_note&quot;,&quot;_noteTitle&quot;:&quot;Persist spec to docs/plans/&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_use name="workspace-mcp_read_note" tool_use_id="toolu_01BxgX9a4458tXexduajxK1C">
+      {&quot;noteId&quot;:&quot;spec&quot;,&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__read_note&quot;,&quot;_noteTitle&quot;:&quot;Spec&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01BxgX9a4458tXexduajxK1C" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <text>Now I have the full spec. I need to replace the ````diagram` JSON block (lines 26-58) with a simple ASCII architecture diagram. Let me create the file.</text>
+    <tool_use name="mcp__workspace-mcp__update_note_task_status" tool_use_id="REDACTED">
+      {&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__update_note_task_status&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="workspace-mcp_update_note_task_status" tool_use_id="REDACTED">
+      {&quot;noteId&quot;:&quot;c6fc74ed-7ff8-49fb-87ec-5d55c23ab8e2&quot;,&quot;status&quot;:&quot;in_progress&quot;,&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__update_note_task_status&quot;,&quot;_noteTitle&quot;:&quot;Persist spec to docs/plans/&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <text>
+
+Let me check that the `docs/plans/` directory exists.</text>
+    <tool_use name="Terminal" tool_use_id="REDACTED">
+      {&quot;_acpTitle&quot;:&quot;Terminal&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="`ls /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/ 2&gt;/dev/null &amp;&amp; echo &quot;EXISTS&quot; || echo &quot;NOT_FOUND&quot;`" tool_use_id="REDACTED">
+      {&quot;command&quot;:&quot;ls /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/ 2&gt;/dev/null &amp;&amp; echo \&quot;EXISTS\&quot; || echo \&quot;NOT_FOUND\&quot;&quot;,&quot;description&quot;:&quot;Check if docs/plans directory exists&quot;,&quot;_acpTitle&quot;:&quot;`ls /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/ 2&gt;/dev/null &amp;&amp; echo \&quot;EXISTS\&quot; || echo \&quot;NOT_FOUND\&quot;`&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <text>Good, directory exists. Now I'll write the file with the diagram JSON replaced by an ASCII version.</text>
+    <tool_use name="Write" tool_use_id="toolu_016FDwKuKUN6F8roHKQjD363">
+      {&quot;_acpTitle&quot;:&quot;Write&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="Write /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md" tool_use_id="REDACTED">
+      {&quot;file_path&quot;:&quot;/Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md&quot;,&quot;content&quot;:&quot;# replicant-mcp — Product Specification v1.5.0\n\n**Goal**: Establish the formal requirements that the current codebase (v1.5.0) satisfies, as the baseline contract for all future development.\n\nThis is a retroactive spec — it captures what *is built and working*, not what's planned. Future features are out of scope.\n\n---\n\n## 1. Product Definition\n\n**replicant-mcp** is an MCP (Model Context Protocol) server that gives AI coding assistants native control over Android development workflows — building, testing, debugging, device management, and UI automation — through structured tool calls over stdio.\n\n**Target users**: AI assistants (Claude, Cursor, Windsurf, Codex CLI) acting on behalf of Android developers.\n\n**Design principles**:\n1. **Accessibility-first**: UI interaction via accessibility tree, not screenshots\n2. **Progressive disclosure**: Summaries + cache IDs; full output on demand\n3. **Single device focus**: One active device at a time; explicit selection\n4. **Token efficiency**: Minimize context window consumption in every response\n5. **Just works UX**: Auto-detect SDK, auto-select single device, actionable error messages\n\n---\n\n## 2. System Architecture\n\n```\n┌─────────────┐\n│  MCP Client  │\n└──────┬──────┘\n       │ stdio (JSON-RPC)\n       ▼\n┌──────────────────────────────┐\n│  Server (server.ts)          │\n│  MCP protocol + DI           │\n└──────┬───────────────────────┘\n       │ dispatch\n       ▼\n┌──────────────────────────────┐\n│  Tools (12)                  │\n│  Schema, dispatch, response  │\n└──────┬───────────────────────┘\n       │ calls\n       ▼\n┌──────────────────────────────┐\n│  Adapters (4)                │\n│  adb, gradle, emulator,     │\n│  uiautomator                 │\n└───┬──────────────────┬───────┘\n    │ uses             │ parses o
+... [10935 characters truncated] ...
+-|----------|\n| Tests | 484 (480 pass, 4 skip) | CI gate |\n| Line coverage | 68% | Threshold in vitest.config.ts |\n| Branch coverage | 60% | Threshold |\n| Function coverage | 60% | Threshold |\n| Max file length | — | 500 line limit |\n| Max function length | — | 80 line limit |\n| CI | GitHub Actions | PR-gated |\n\n---\n\n## 7. Known Limitations (current state, not bugs)\n\n1. **Single device only** — No multi-device orchestration\n2. **No custom build commands** — Only predefined gradle operations\n3. **Gradle timeout capped at 120s** for shell commands (build/test have separate higher limits)\n4. **OCR requires Tesseract** — Not bundled, must be available on system\n5. **No video capture** — Screenshot-only for visual feedback\n6. **No streaming** — All responses are complete payloads (MCP limitation)\n7. **Test coverage at 68%** — Below the 90% goal\n\n---\n\n## Acceptance Criteria (this spec is valid when)\n\n- [ ] All 12 tools callable via MCP protocol over stdio\n- [ ] Every error code produces structured `{ error, message, suggestion }` output\n- [ ] Cache IDs returned by **gradle tools** are retrievable via `gradle-get-details` (**KNOWN GAP**: adb-logcat, adb-device properties, adb-app list, and ui dump return cache IDs that have no retrieval mechanism — `gradle-get-details` only handles gradle-typed entries)\n- [ ] Auto-device-selection fires when exactly one device connected\n- [ ] Safety guards block all listed dangerous commands\n- [ ] Screenshots auto-scale and coordinate conversion round-trips correctly\n- [ ] UI find progressive fallback works through tiers 1→5\n- [ ] Config loads from REPLICANT_CONFIG with deep merge to defaults\n- [ ] Environment detection finds SDK on macOS, Linux, and Windows\n- [ ] 480+ tests pass (4 CLI entrypoint tests skipped), coverage thresholds met\n&quot;,&quot;_acpTitle&quot;:&quot;Write /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <text>Now let me verify the file.</text>
+    <tool_use name="Terminal" tool_use_id="REDACTED">
+      {&quot;_acpTitle&quot;:&quot;Terminal&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="`head -5 /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md &amp;&amp; echo &quot;---&quot; &amp;&amp; wc -l /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md`" tool_use_id="REDACTED">
+      {&quot;command&quot;:&quot;head -5 /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md &amp;&amp; echo \&quot;---\&quot; &amp;&amp; wc -l /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md&quot;,&quot;description&quot;:&quot;Verify file header and line count&quot;,&quot;_acpTitle&quot;:&quot;`head -5 /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md &amp;&amp; echo \&quot;---\&quot; &amp;&amp; wc -l /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md`&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <text>File exists, 343 lines, header matches. Let me also verify no other files were modified.</text>
+    <tool_use name="Terminal" tool_use_id="toolu_015LWp5DiqSHHEmiu2FoUVyc">
+      {&quot;_acpTitle&quot;:&quot;Terminal&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_015LWp5DiqSHHEmiu2FoUVyc" is_error="false">
+      
+    </tool_result>
+    <tool_use name="`git diff --name-only &amp;&amp; git ls-files --others --exclude-standard`" tool_use_id="toolu_015LWp5DiqSHHEmiu2FoUVyc">
+      {&quot;command&quot;:&quot;git diff --name-only &amp;&amp; git ls-files --others --exclude-standard&quot;,&quot;description&quot;:&quot;Check for modified and untracked files&quot;,&quot;_acpTitle&quot;:&quot;`git diff --name-only &amp;&amp; git ls-files --others --exclude-standard`&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_015LWp5DiqSHHEmiu2FoUVyc" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <text>Only `package-lock.json` (pre-existing, not from this task) and the new spec file. Now let me update the task note and mark complete.</text>
+    <tool_use name="ToolSearch" tool_use_id="toolu_01BJ8nXqYKwD9jtqBxzVqSKo">
+      {&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01BJ8nXqYKwD9jtqBxzVqSKo" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="toolu_01BJ8nXqYKwD9jtqBxzVqSKo">
+      {&quot;query&quot;:&quot;select:mcp__workspace-mcp__add_to_note&quot;,&quot;max_results&quot;:1,&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01BJ8nXqYKwD9jtqBxzVqSKo" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_use name="mcp__workspace-mcp__add_to_note" tool_use_id="REDACTED">
+      {&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__add_to_note&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="workspace-mcp_add_to_note" tool_use_id="REDACTED">
+      {&quot;noteId&quot;:&quot;c6fc74ed-7ff8-49fb-87ec-5d55c23ab8e2&quot;,&quot;heading&quot;:&quot;## Changes&quot;,&quot;content&quot;:&quot;- **Created** `docs/plans/2026-02-26-product-specification-v1.5.md` (343 lines)\n- Replaced `\\`\\`\\`diagram` JSON block with ASCII architecture diagram showing the layered structure\n- All other content identical to spec note&quot;,&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__add_to_note&quot;,&quot;_noteTitle&quot;:&quot;Persist spec to docs/plans/&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="mcp__workspace-mcp__update_note_task_status" tool_use_id="toolu_01BH7DotPUd5tUr4LAG5x3tC">
+      {&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__update_note_task_status&quot;}
+    </tool_use>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="toolu_01BH7DotPUd5tUr4LAG5x3tC" is_error="false">
+      
+    </tool_result>
+    <tool_use name="workspace-mcp_update_note_task_status" tool_use_id="toolu_01BH7DotPUd5tUr4LAG5x3tC">
+      {&quot;noteId&quot;:&quot;c6fc74ed-7ff8-49fb-87ec-5d55c23ab8e2&quot;,&quot;status&quot;:&quot;complete&quot;,&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__update_note_task_status&quot;,&quot;_noteTitle&quot;:&quot;Persist spec to docs/plans/&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01BH7DotPUd5tUr4LAG5x3tC" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <text>Now let me report to the coordinator.</text>
+    <tool_use name="ToolSearch" tool_use_id="toolu_01UhfivPqeU6jgvFotsZAR16">
+      {&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01UhfivPqeU6jgvFotsZAR16" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="toolu_01UhfivPqeU6jgvFotsZAR16">
+      {&quot;query&quot;:&quot;select:mcp__workspace-mcp__report_to_parent&quot;,&quot;max_results&quot;:1,&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01UhfivPqeU6jgvFotsZAR16" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_use name="mcp__workspace-mcp__report_to_parent" tool_use_id="REDACTED">
+      {&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__report_to_parent&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="workspace-mcp_report_to_parent" tool_use_id="REDACTED">
+      {&quot;report&quot;:&quot;Created `docs/plans/2026-02-26-product-specification-v1.5.md` (343 lines) with full spec content. Replaced the ```diagram JSON block with an ASCII layered architecture diagram. No other files modified. Verified file exists with correct header and line count.&quot;,&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__report_to_parent&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <text>&lt;agent_digest&gt;✅ Persisted spec to `docs/plans/2026-02-26-product-specification-v1.5.md` (343 lines). Diagram JSON replaced with ASCII architecture diagram. Task complete.&lt;/agent_digest&gt;</text>
+  </agent_response_or_tool_uses>
+  <agent_response_or_tool_uses>
+    <tool_result tool_use_id="toolu_016FDwKuKUN6F8roHKQjD363" is_error="false">
+      
+    </tool_result>
+    <tool_use name="Write /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md" tool_use_id="toolu_016FDwKuKUN6F8roHKQjD363">
+      {&quot;file_path&quot;:&quot;/Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md&quot;,&quot;content&quot;:&quot;# replicant-mcp — Product Specification v1.5.0\n\n**Goal**: Establish the formal requirements that the current codebase (v1.5.0) satisfies, as the baseline contract for all future development.\n\nThis is a retroactive spec — it captures what *is built and working*, not what's planned. Future features are out of scope.\n\n---\n\n## 1. Product Definition\n\n**replicant-mcp** is an MCP (Model Context Protocol) server that gives AI coding assistants native control over Android development workflows — building, testing, debugging, device management, and UI automation — through structured tool calls over stdio.\n\n**Target users**: AI assistants (Claude, Cursor, Windsurf, Codex CLI) acting on behalf of Android developers.\n\n**Design principles**:\n1. **Accessibility-first**: UI interaction via accessibility tree, not screenshots\n2. **Progressive disclosure**: Summaries + cache IDs; full output on demand\n3. **Single device focus**: One active device at a time; explicit selection\n4. **Token efficiency**: Minimize context window consumption in every response\n5. **Just works UX**: Auto-detect SDK, auto-select single device, actionable error messages\n\n---\n\n## 2. System Architecture\n\n```\n┌─────────────┐\n│  MCP Client  │\n└──────┬──────┘\n       │ stdio (JSON-RPC)\n       ▼\n┌─────────────────────────────┐\n│  Server (server.ts)          │\n│  MCP protocol + DI           │\n└──────┬──────────────────────┘\n       │ dispatch\n       ▼\n┌─────────────────────────────┐\n│  Tools (12)                  │\n│  Schema, dispatch, response  │\n└──────┬──────────────────────┘\n       │ calls\n       ▼\n┌─────────────────────────────┐\n│  Adapters (4)                │\n│  adb, gradle, emulator,     │\n│  uiautomator                 │\n├──────┬──────────┬───────────┘\n│      │ uses     │ parses output\n│   
+... [10919 characters truncated] ...
+-|----------|\n| Tests | 484 (480 pass, 4 skip) | CI gate |\n| Line coverage | 68% | Threshold in vitest.config.ts |\n| Branch coverage | 60% | Threshold |\n| Function coverage | 60% | Threshold |\n| Max file length | — | 500 line limit |\n| Max function length | — | 80 line limit |\n| CI | GitHub Actions | PR-gated |\n\n---\n\n## 7. Known Limitations (current state, not bugs)\n\n1. **Single device only** — No multi-device orchestration\n2. **No custom build commands** — Only predefined gradle operations\n3. **Gradle timeout capped at 120s** for shell commands (build/test have separate higher limits)\n4. **OCR requires Tesseract** — Not bundled, must be available on system\n5. **No video capture** — Screenshot-only for visual feedback\n6. **No streaming** — All responses are complete payloads (MCP limitation)\n7. **Test coverage at 68%** — Below the 90% goal\n\n---\n\n## Acceptance Criteria (this spec is valid when)\n\n- [ ] All 12 tools callable via MCP protocol over stdio\n- [ ] Every error code produces structured `{ error, message, suggestion }` output\n- [ ] Cache IDs returned by **gradle tools** are retrievable via `gradle-get-details` (**KNOWN GAP**: adb-logcat, adb-device properties, adb-app list, and ui dump return cache IDs that have no retrieval mechanism — `gradle-get-details` only handles gradle-typed entries)\n- [ ] Auto-device-selection fires when exactly one device connected\n- [ ] Safety guards block all listed dangerous commands\n- [ ] Screenshots auto-scale and coordinate conversion round-trips correctly\n- [ ] UI find progressive fallback works through tiers 1→5\n- [ ] Config loads from REPLICANT_CONFIG with deep merge to defaults\n- [ ] Environment detection finds SDK on macOS, Linux, and Windows\n- [ ] 480+ tests pass (4 CLI entrypoint tests skipped), coverage thresholds met\n&quot;,&quot;_acpTitle&quot;:&quot;Write /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md&quot;}
+    </tool_use>
+    <tool_result tool_use_id="" is_error="true">
+      
+    </tool_result>
+    <text>This is a new file that doesn't exist yet. Let me verify and use Bash to create it.</text>
+    <tool_result tool_use_id="toolu_016FDwKuKUN6F8roHKQjD363" is_error="false">
+      
+    </tool_result>
+    <tool_use name="Terminal" tool_use_id="toolu_01WnnotWifYCfV1X9PeQGUEs">
+      {&quot;_acpTitle&quot;:&quot;Terminal&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01WnnotWifYCfV1X9PeQGUEs" is_error="false">
+      
+    </tool_result>
+    <tool_use name="`test -f /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md &amp;&amp; echo &quot;EXISTS&quot; || echo &quot;NEW&quot;`" tool_use_id="toolu_01WnnotWifYCfV1X9PeQGUEs">
+      {&quot;command&quot;:&quot;test -f /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md &amp;&amp; echo \&quot;EXISTS\&quot; || echo \&quot;NEW\&quot;&quot;,&quot;description&quot;:&quot;Check if target file exists&quot;,&quot;_acpTitle&quot;:&quot;`test -f /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md &amp;&amp; echo \&quot;EXISTS\&quot; || echo \&quot;NEW\&quot;`&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01WnnotWifYCfV1X9PeQGUEs" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <text>Looks like there's a hook intercepting `test -f`. Let me try differently.</text>
+    <tool_use name="Terminal" tool_use_id="toolu_01KLS76uvmpMvtm92HXBHdLN">
+      {&quot;_acpTitle&quot;:&quot;Terminal&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01KLS76uvmpMvtm92HXBHdLN" is_error="false">
+      
+    </tool_result>
+    <tool_use name="`ls /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md 2&gt;&amp;1 || true`" tool_use_id="toolu_01KLS76uvmpMvtm92HXBHdLN">
+      {&quot;command&quot;:&quot;ls /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md 2&gt;&amp;1 || true&quot;,&quot;description&quot;:&quot;Check if target file exists&quot;,&quot;_acpTitle&quot;:&quot;`ls /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md 2&gt;&amp;1 || true`&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01KLS76uvmpMvtm92HXBHdLN" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <text>The file exists now (seems like the Write tool may have created it despite the error). Let me read it to confirm.</text>
+    <tool_use name="Read File" tool_use_id="REDACTED">
+      {&quot;_acpTitle&quot;:&quot;Read File&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="Read File" tool_use_id="REDACTED">
+      {&quot;file_path&quot;:&quot;/Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md&quot;,&quot;limit&quot;:10,&quot;_acpTitle&quot;:&quot;Read File&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <text>File exists with correct content. Let me verify the diagram section and line count.</text>
+    <tool_use name="Read File" tool_use_id="REDACTED">
+      {&quot;_acpTitle&quot;:&quot;Read File&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="Read File" tool_use_id="REDACTED">
+      {&quot;file_path&quot;:&quot;/Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md&quot;,&quot;offset&quot;:24,&quot;limit&quot;:35,&quot;_acpTitle&quot;:&quot;Read File&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="Terminal" tool_use_id="toolu_01ErwWLGkkWduJApr1W2DuXo">
+      {&quot;_acpTitle&quot;:&quot;Terminal&quot;}
+    </tool_use>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="toolu_01ErwWLGkkWduJApr1W2DuXo" is_error="false">
+      
+    </tool_result>
+    <tool_use name="`wc -l /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md`" tool_use_id="toolu_01ErwWLGkkWduJApr1W2DuXo">
+      {&quot;command&quot;:&quot;wc -l /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md&quot;,&quot;description&quot;:&quot;Count lines in output file&quot;,&quot;_acpTitle&quot;:&quot;`wc -l /Users/architjoshi/intent/workspaces/inspect-current/replicant-mcp/docs/plans/2026-02-26-product-specification-v1.5.md`&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01ErwWLGkkWduJApr1W2DuXo" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <text>File is 343 lines (well over the 300+ threshold), diagram JSON is replaced with ASCII art, and the title is correct. Let me verify no other files were modified.</text>
+    <tool_use name="Terminal" tool_use_id="REDACTED">
+      {&quot;_acpTitle&quot;:&quot;Terminal&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="`git diff --name-only &amp;&amp; echo &quot;---&quot; &amp;&amp; git diff --name-only --cached &amp;&amp; echo &quot;---UNTRACKED---&quot; &amp;&amp; git ls-files --others --exclude-standard`" tool_use_id="REDACTED">
+      {&quot;command&quot;:&quot;git diff --name-only &amp;&amp; echo \&quot;---\&quot; &amp;&amp; git diff --name-only --cached &amp;&amp; echo \&quot;---UNTRACKED---\&quot; &amp;&amp; git ls-files --others --exclude-standard&quot;,&quot;description&quot;:&quot;Check which files changed&quot;,&quot;_acpTitle&quot;:&quot;`git diff --name-only &amp;&amp; echo \&quot;---\&quot; &amp;&amp; git diff --name-only --cached &amp;&amp; echo \&quot;---UNTRACKED---\&quot; &amp;&amp; git ls-files --others --exclude-standard`&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <text>Only the new file — no other files modified. All verification checks pass:
+- File exists at the correct path
+- 343 lines (300+ requirement met)
+- Diagram JSON replaced with ASCII architecture diagram
+- No other files modified
+
+Now let me update the task note and mark complete.</text>
+    <tool_use name="ToolSearch" tool_use_id="toolu_019jBofQbFmGmjDvtPSwvWgt">
+      {&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_019jBofQbFmGmjDvtPSwvWgt" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="toolu_019jBofQbFmGmjDvtPSwvWgt">
+      {&quot;query&quot;:&quot;select:mcp__workspace-mcp__add_to_note&quot;,&quot;max_results&quot;:1,&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_019jBofQbFmGmjDvtPSwvWgt" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="toolu_019jBofQbFmGmjDvtPSwvWgt" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="REDACTED">
+      {&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="ToolSearch" tool_use_id="REDACTED">
+      {&quot;query&quot;:&quot;select:mcp__workspace-mcp__report_to_parent&quot;,&quot;max_results&quot;:1,&quot;_acpTitle&quot;:&quot;ToolSearch&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_use name="mcp__workspace-mcp__add_to_note" tool_use_id="REDACTED">
+      {&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__add_to_note&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="workspace-mcp_add_to_note" tool_use_id="REDACTED">
+      {&quot;noteId&quot;:&quot;c6fc74ed-7ff8-49fb-87ec-5d55c23ab8e2&quot;,&quot;heading&quot;:&quot;## Changes&quot;,&quot;content&quot;:&quot;- **Created** `docs/plans/2026-02-26-product-specification-v1.5.md` (343 lines)\n- Replaced `\\`\\`\\`diagram` JSON block with ASCII architecture diagram\n- All other spec content preserved identically\n\n## Verification\n- `wc -l` → 343 lines (meets 300+ requirement)\n- `head -5` → shows correct title\n- `git ls-files --others` → only this new file, no other modifications&quot;,&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__add_to_note&quot;,&quot;_noteTitle&quot;:&quot;Persist spec to docs/plans/&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="mcp__workspace-mcp__update_note_task_status" tool_use_id="toolu_01M751D5n16Kcq4fSyk5mWLS">
+      {&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__update_note_task_status&quot;}
+    </tool_use>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="toolu_01M751D5n16Kcq4fSyk5mWLS" is_error="false">
+      
+    </tool_result>
+    <tool_use name="workspace-mcp_update_note_task_status" tool_use_id="toolu_01M751D5n16Kcq4fSyk5mWLS">
+      {&quot;noteId&quot;:&quot;c6fc74ed-7ff8-49fb-87ec-5d55c23ab8e2&quot;,&quot;status&quot;:&quot;complete&quot;,&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__update_note_task_status&quot;,&quot;_noteTitle&quot;:&quot;Persist spec to docs/plans/&quot;}
+    </tool_use>
+    <tool_result tool_use_id="toolu_01M751D5n16Kcq4fSyk5mWLS" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <tool_use name="mcp__workspace-mcp__report_to_parent" tool_use_id="REDACTED">
+      {&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__report_to_parent&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_use name="workspace-mcp_report_to_parent" tool_use_id="REDACTED">
+      {&quot;report&quot;:&quot;Created `docs/plans/2026-02-26-product-specification-v1.5.md` (343 lines) with full spec content. Replaced the `\\`\\`\\`diagram` JSON block with an ASCII architecture diagram showing the layered structure (Client → Server → Tools → Adapters → Services/Parsers → CLI). No other files modified.&quot;,&quot;_acpTitle&quot;:&quot;mcp__workspace-mcp__report_to_parent&quot;}
+    </tool_use>
+    <tool_result tool_use_id="REDACTED" is_error="false">
+      
+    </tool_result>
+    <tool_result tool_use_id="" is_error="false">
+      
+    </tool_result>
+    <text>&lt;agent_digest&gt;✅ Persisted spec to `docs/plans/2026-02-26-product-specification-v1.5.md` (343 lines). Diagram JSON replaced with ASCII architecture diagram. No other files touched.&lt;/agent_digest&gt;</text>
+  </agent_response_or_tool_uses>
+</exchange>
+Continue the conversation from this point. Do not mention session recovery or interruption.
+</supervisor>
+
+lets make a PR

@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>replicant-mcp // Issue Graph</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #030810;
+    color: #c0d8f0;
+    font-family: 'JetBrains Mono', monospace;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  #graph-container {
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    top: 0; left: 0;
+  }
+
+  /* Scanline overlay */
+  #graph-container::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 20, 40, 0.03) 2px,
+      rgba(0, 20, 40, 0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* HUD header */
+  #hud-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    background: linear-gradient(180deg, rgba(3,8,16,0.95) 0%, transparent 100%);
+    pointer-events: none;
+  }
+
+  #hud-header > * { pointer-events: auto; }
+
+  .hud-title {
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #4a9eff;
+    text-shadow: 0 0 20px rgba(74, 158, 255, 0.5);
+  }
+
+  .hud-stats {
+    display: flex;
+    gap: 24px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .hud-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .hud-stat-value {
+    color: #4a9eff;
+    font-weight: 700;
+    font-size: 16px;
+    text-shadow: 0 0 10px rgba(74, 158, 255, 0.6);
+  }
+
+  .hud-stat-label {
+    color: #4a6a8a;
+    font-size: 10px;
+  }
+
+  /* Filter bar */
+  #filter-bar {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+    padding: 8px 16px;
+    background: rgba(3, 8, 16, 0.85);
+    border: 1px solid rgba(74, 158, 255, 0.15);
+    border-radius: 6px;
+    backdrop-filter: blur(10px);
+  }
+
+  .filter-btn {
+    background: rgba(74, 158, 255, 0.08);
+    border: 1px solid rgba(74, 158, 255, 0.2);
+    color: #6a9abf;
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-btn:hover {
+    background: rgba(74, 158, 255, 0.15);
+    color: #a0d0ff;
+    border-color: rgba(74, 158, 255, 0.4);
+  }
+
+  .filter-btn.active {
+    background: rgba(74, 158, 255, 0.25);
+    color: #ffffff;
+    border-color: rgba(74, 158, 255, 0.6);
+    box-shadow: 0 0 12px rgba(74, 158, 255, 0.2);
+  }
+
+  /* Detail panel */
+  #detail-panel {
+    position: fixed;
+    right: -420px;
+    top: 0;
+    width: 400px;
+    height: 100vh;
+    background: rgba(3, 8, 16, 0.92);
+    border-left: 1px solid rgba(74, 158, 255, 0.2);
+    backdrop-filter: blur(20px);
+    z-index: 20;
+    transition: right 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  #detail-panel.open { right: 0; }
+
+  #detail-panel::-webkit-scrollbar { width: 4px; }
+  #detail-panel::-webkit-scrollbar-track { background: transparent; }
+  #detail-panel::-webkit-scrollbar-thumb { background: rgba(74,158,255,0.3); border-radius: 2px; }
+
+  .detail-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: 1px solid rgba(74, 158, 255, 0.2);
+    color: #6a9abf;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .detail-close:hover {
+    background: rgba(255, 80, 80, 0.2);
+    border-color: rgba(255, 80, 80, 0.4);
+    color: #ff8080;
+  }
+
+  .detail-id {
+    font-size: 11px;
+    color: #4a6a8a;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .detail-title {
+    font-size: 18px;
+    font-weight: 500;
+    color: #e0f0ff;
+    line-height: 1.4;
+    margin-bottom: 16px;
+    text-shadow: 0 0 30px rgba(74, 158, 255, 0.15);
+  }
+
+  .detail-meta {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .detail-badge {
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .badge-p1 { background: rgba(255, 60, 60, 0.15); color: #ff6060; border: 1px solid rgba(255, 60, 60, 0.3); }
+  .badge-p2 { background: rgba(255, 180, 40, 0.15); color: #ffb428; border: 1px solid rgba(255, 180, 40, 0.3); }
+  .badge-p3 { background: rgba(74, 158, 255, 0.15); color: #4a9eff; border: 1px solid rgba(74, 158, 255, 0.3); }
+
+  .badge-epic { background: rgba(180, 80, 255, 0.15); color: #b450ff; border: 1px solid rgba(180, 80, 255, 0.3); }
+  .badge-bug { background: rgba(255, 60, 60, 0.15); color: #ff6060; border: 1px solid rgba(255, 60, 60, 0.3); }
+  .badge-feature { background: rgba(60, 200, 120, 0.15); color: #3cc878; border: 1px solid rgba(60, 200, 120, 0.3); }
+  .badge-task { background: rgba(74, 158, 255, 0.15); color: #4a9eff; border: 1px solid rgba(74, 158, 255, 0.3); }
+
+  .detail-description {
+    font-size: 12px;
+    line-height: 1.7;
+    color: #8aa8c8;
+    white-space: pre-wrap;
+    border-top: 1px solid rgba(74, 158, 255, 0.1);
+    padding-top: 16px;
+  }
+
+  .detail-description code {
+    background: rgba(74, 158, 255, 0.1);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+    color: #80c0ff;
+  }
+
+  .detail-section-label {
+    font-size: 10px;
+    color: #4a6a8a;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 20px;
+    margin-bottom: 8px;
+  }
+
+  .detail-children {
+    list-style: none;
+    padding: 0;
+  }
+
+  .detail-children li {
+    padding: 6px 10px;
+    margin-bottom: 4px;
+    background: rgba(74, 158, 255, 0.05);
+    border-left: 2px solid rgba(74, 158, 255, 0.2);
+    border-radius: 0 3px 3px 0;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .detail-children li:hover {
+    background: rgba(74, 158, 255, 0.12);
+    border-left-color: rgba(74, 158, 255, 0.5);
+    color: #e0f0ff;
+  }
+
+  /* Legend */
+  #legend {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    z-index: 10;
+    font-size: 10px;
+    display: flex;
+    gap: 16px;
+    padding: 10px 16px;
+    background: rgba(3, 8, 16, 0.85);
+    border: 1px solid rgba(74, 158, 255, 0.1);
+    border-radius: 6px;
+    backdrop-filter: blur(10px);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #4a6a8a;
+    letter-spacing: 1px;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  /* Controls hint */
+  #controls-hint {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 10;
+    font-size: 9px;
+    color: #3a5a7a;
+    letter-spacing: 1px;
+    text-align: right;
+    line-height: 1.8;
+    padding: 10px 16px;
+    background: rgba(3, 8, 16, 0.85);
+    border: 1px solid rgba(74, 158, 255, 0.1);
+    border-radius: 6px;
+    backdrop-filter: blur(10px);
+  }
+
+  .key {
+    display: inline-block;
+    padding: 1px 6px;
+    background: rgba(74, 158, 255, 0.1);
+    border: 1px solid rgba(74, 158, 255, 0.2);
+    border-radius: 3px;
+    color: #6a9abf;
+    font-size: 9px;
+  }
+
+  /* Loading */
+  #loading {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 100;
+    text-align: center;
+  }
+
+  .loading-ring {
+    width: 60px; height: 60px;
+    border: 2px solid rgba(74, 158, 255, 0.1);
+    border-top: 2px solid #4a9eff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: #4a6a8a;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="loading-ring"></div>
+  <div class="loading-text">Initializing precrime system...</div>
+</div>
+
+<div id="hud-header">
+  <div class="hud-title">replicant-mcp // Issue Graph</div>
+  <div class="hud-stats">
+    <div class="hud-stat">
+      <span class="hud-stat-value" id="stat-total">40</span>
+      <span class="hud-stat-label">issues</span>
+    </div>
+    <div class="hud-stat">
+      <span class="hud-stat-value" id="stat-p1">4</span>
+      <span class="hud-stat-label">critical</span>
+    </div>
+    <div class="hud-stat">
+      <span class="hud-stat-value" id="stat-epics">7</span>
+      <span class="hud-stat-label">epics</span>
+    </div>
+    <div class="hud-stat">
+      <span class="hud-stat-value">0%</span>
+      <span class="hud-stat-label">closed</span>
+    </div>
+  </div>
+</div>
+
+<div id="filter-bar">
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="p1">P1</button>
+  <button class="filter-btn" data-filter="p2">P2</button>
+  <button class="filter-btn" data-filter="p3">P3</button>
+  <button class="filter-btn" data-filter="bug">Bugs</button>
+  <button class="filter-btn" data-filter="feature">Features</button>
+  <button class="filter-btn" data-filter="epic">Epics</button>
+</div>
+
+<div id="graph-container"></div>
+
+<div id="detail-panel">
+  <button class="detail-close" onclick="closePanel()">&times;</button>
+  <div id="detail-content"></div>
+</div>
+
+<div id="legend">
+  <div class="legend-item"><div class="legend-dot" style="color:#b450ff"></div> Epic</div>
+  <div class="legend-item"><div class="legend-dot" style="color:#ff6060"></div> Bug</div>
+  <div class="legend-item"><div class="legend-dot" style="color:#3cc878"></div> Feature</div>
+  <div class="legend-item"><div class="legend-dot" style="color:#4a9eff"></div> Task</div>
+</div>
+
+<div id="controls-hint">
+  <span class="key">Click</span> select node &middot;
+  <span class="key">Drag</span> rotate &middot;
+  <span class="key">Scroll</span> zoom &middot;
+  <span class="key">Esc</span> close panel
+</div>
+
+<script src="https://unpkg.com/3d-force-graph@1"></script>
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script>
+
+// ─── Issue Data ───────────────────────────────────────────────────────────────
+
+const issues = [
+  // ── Epics ──
+  { id: "dcj", title: "Security", type: "epic", priority: "p1", epic: null,
+    desc: "Security fixes: adb-shell safety bypass vulnerability" },
+  { id: "od3", title: "Workflow Automation", type: "epic", priority: "p1", epic: null,
+    desc: "Workflow automation improvements: PR workflow, hooks, checklists" },
+  { id: "0y8", title: "Screenshot & Visual", type: "epic", priority: "p2", epic: null,
+    desc: "Screenshot capture, scaling, format optimization, and visual analysis" },
+  { id: "52v", title: "Build System", type: "epic", priority: "p2", epic: null,
+    desc: "Gradle build system improvements: project root, timeouts, custom commands" },
+  { id: "9p6", title: "Device Management", type: "epic", priority: "p2", epic: null,
+    desc: "Device selection, emulator management, SDK detection" },
+  { id: "41v", title: "Parallel Agent Execution System", type: "epic", priority: "p2", epic: null,
+    desc: "Design and implement a system for dispatching multiple agents to work on issues in parallel. Phase 1: manual dispatch. No children yet." },
+  { id: "wf4", title: "Screenshot Test Coverage", type: "epic", priority: "p3", epic: null,
+    desc: "Test coverage for screenshot scaling: edge cases, invariants, error handling. 9 test tasks." },
+
+  // ── Security (dcj) ──
+  { id: "tj9", title: "Fix adb-shell safety bypass vulnerability", type: "bug", priority: "p1", epic: "dcj",
+    desc: "The adb-shell safety guard can be bypassed. Commands like `adb shell rm -rf /` pass the guard because blocked patterns only check the outer command, not the shell payload.\n\nImpact: Security risk — agents could run destructive device commands.\n\nFix: Add second layer of validation for adb shell payloads + explicit deny-list (rm -rf /, reboot, su, setprop persist.*, etc.)" },
+
+  // ── Workflow Automation (od3) ──
+  { id: "3v5", title: "Add /pr-with-review as mandatory PR workflow in CLAUDE.md", type: "task", priority: "p1", epic: "od3",
+    desc: "Update CLAUDE.md to mandate use of /pr-with-review skill for all PRs. Never use manual gh pr create. Docs-only change." },
+  { id: "od3.4", title: "Fix Greptile re-review trigger mechanism", type: "bug", priority: "p2", epic: "od3",
+    desc: "After addressing Greptile feedback, no reliable way to trigger re-review.\n\nTried: @greptile-apps comment (didn't trigger), MCP trigger_code_review ('Unauthorized').\n\nNeed to investigate: proper re-review trigger, or just push and wait for automatic re-review on new commits?" },
+  { id: "od3.3", title: "Make orphan-issue hook portable", type: "bug", priority: "p2", epic: "od3",
+    desc: "The PreToolUse hook that blocks orphan issues is in .claude/settings.json which is gitignored.\n\nProblem: Won't work for other cloners.\n\nOptions:\n1. Un-gitignore .claude/settings.json\n2. Move hook to a plugin\n3. Add .claude/settings.local.json pattern\n\n[Needs: design]" },
+  { id: "6zj", title: "Add PreToolUse hook to warn on manual gh pr create", type: "task", priority: "p2", epic: "od3",
+    desc: "Detect when Bash is about to run 'gh pr create' directly and warn to use /pr-with-review instead. Prevents merge-then-monitor workflow." },
+  { id: "lew", title: "Convert CLAUDE.md workflow sections to checklists", type: "task", priority: "p3", epic: "od3",
+    desc: "Current CLAUDE.md has workflow rules as prose paragraphs. Convert to numbered checklists that are harder to skip. Sections: Landing the Plane, After design is complete, PR Workflow." },
+  { id: "od3.2", title: "Create exportable parallel-workflow template package", type: "task", priority: "p3", epic: "od3",
+    desc: "Package for dropping into any project:\n1. .claude/settings.json with PreToolUse hook\n2. CLAUDE.md template section for Issue Tracking\n3. Setup instructions\n\nDepends on: Workflow being validated in this project first." },
+  { id: "idk", title: "Simplify tool authoring with defineTool() helper", type: "feature", priority: "p3", epic: "od3",
+    desc: "~80 lines per tool with duplicate schemas. Solution: defineTool() helper, auto-generate JSON schema from Zod via zod-to-json-schema, convention-based auto-discovery.\n\n[Design: docs/plans/2025-01-21-developer-experience-design.md]" },
+
+  // ── Screenshot & Visual (0y8) ──
+  { id: "zwm", title: "Fix process.cwd() returns / in Claude Desktop sandbox", type: "bug", priority: "p1", epic: "0y8",
+    desc: "process.cwd() returns '/' in sandbox, causing ENOENT on screenshot path.\n\nFix: Use os.homedir() as fallback when cwd is '/'.\n\nOne-liner in src/adapters/ui-automator.ts (getDefaultScreenshotPath)." },
+  { id: "6ho", title: "Return native MCP image content for screenshots", type: "feature", priority: "p2", epic: "0y8",
+    desc: "Base64 images returned as text blobs, not MCP image content type. Clients can't render directly, model context bloats.\n\nFix: Emit MCP image content type for screenshots; keep JSON metadata in text, attach image separately." },
+  { id: "0ia", title: "Convert file mode screenshots to JPEG q70", type: "feature", priority: "p2", epic: "0y8",
+    desc: "File mode screenshots remain PNG while inline mode converts to JPEG. Inconsistent token efficiency." },
+  { id: "qik", title: "Add opt-in OCR enrichment for visual analysis", type: "feature", priority: "p2", epic: "0y8",
+    desc: "Canvas-based apps and ads have sparse accessibility data. Add optional 'analyze' mode with OCR.\n\nNeeds: Evals to validate + benchmark latency impact.\n\nInterface: ui screenshot --analyze, or ui analyze --dumpId=xxx" },
+  { id: "9if", title: "Fix screenshot scaling defaults (inline bypasses scaling)", type: "bug", priority: "p3", epic: "0y8",
+    desc: "ui screenshot defaults to inline: true, which uses base64 and disables scaling. Server instructions claim auto-scaling to 1000px.\n\nFix: Default inline to false, or make default align with scaling pipeline." },
+  { id: "izk", title: "Investigate faster screenshot capture methods", type: "feature", priority: "p3", epic: "0y8",
+    desc: "Options: raw format, JPEG encoding, lower resolution, minicap/scrcpy streaming, persistent ADB shell, emulator-specific APIs." },
+  { id: "8ni", title: "Implement video capture for UI automation", type: "feature", priority: "p3", epic: "0y8",
+    desc: "Record device screen during UI automation. Design complete.\n\nOperations: start-recording, stop-recording, duration-based capture. Android limits: 3min max, device must be unlocked.\n\n[Design: docs/plans/2025-01-21-video-capture-design.md]" },
+
+  // ── Build System (52v) ──
+  { id: "m64", title: "Add project root configuration for Gradle", type: "feature", priority: "p1", epic: "52v",
+    desc: "GradleAdapter uses server's cwd, but MCP launches outside the Android project.\n\nImpact: Core Gradle functionality broken in real setups.\n\nFix: Add config option (REPLICANT_PROJECT_ROOT env var or config file), runtime setter, and clear error message." },
+  { id: "5bs", title: "Fix Gradle timeout cap at 120s", type: "bug", priority: "p2", epic: "52v",
+    desc: "ProcessRunner clamps all timeouts to 120s max, but Gradle build/test uses 300s/600s. README says '5-minute default timeout' — inconsistent.\n\nFix: Raise maxTimeoutMs or make configurable." },
+  { id: "dlt", title: "Fix Windows SDK/tool discovery", type: "bug", priority: "p2", epic: "52v",
+    desc: "Windows SDK detection broken. Detection paths and environment variables don't cover Windows-specific install locations." },
+  { id: "o95", title: "Implement custom build commands", type: "feature", priority: "p2", epic: "52v",
+    desc: "Allow projects to override build behavior through custom skill or smart defaults. Auto-detect gradlew vs gradle.\n\n[Design: docs/plans/2025-01-21-custom-build-commands-design.md]" },
+  { id: "nm0", title: "Add per-tool-call projectRoot parameter to gradle tools", type: "feature", priority: "p3", epic: "52v",
+    desc: "Optional projectRoot override on individual gradle calls. Useful for monorepos with multiple Android projects." },
+  { id: "q4m", title: "Auto-detect project root by walking up directory tree for gradlew", type: "feature", priority: "p3", epic: "52v",
+    desc: "Zero-config fallback: walk up from cwd looking for gradlew/build.gradle. Only as fallback when REPLICANT_PROJECT_ROOT and build.projectRoot are both unset." },
+
+  // ── Device Management (9p6) ──
+  { id: "66a", title: "Filter offline/unauthorized devices from auto-select", type: "bug", priority: "p3", epic: "9p6",
+    desc: "Auto-select picks any single device even if offline or unauthorized. Subsequent commands fail with unclear errors.\n\nFix: Filter out non-online devices, surface clearer warnings." },
+  { id: "9e9", title: "Fix emulator start attaching to wrong device", type: "bug", priority: "p3", epic: "9p6",
+    desc: "Multi-emulator: waits 2s and takes first emulator-#### match. Can attach to wrong device.\n\nFix: Record existing IDs before start, diff after boot. Optionally wait for specific avdName." },
+  { id: "kkm", title: "Add PATH probing for SDK detection", type: "bug", priority: "p3", epic: "9p6",
+    desc: "Detection only checks env vars and common install paths, ignores PATH. Users with PATH-only setup get false 'SDK not found' errors.\n\nFix: Add which adb / where adb probing." },
+  { id: "l5n", title: "Investigate empty UI dumps on certain screens", type: "bug", priority: "p3", epic: "9p6",
+    desc: "ui dump returns count: 0 on visible UI. Possible causes: transient state (UI not loaded), SurfaceView/GL content, app blocking accessibility.\n\nPotential fix: retry with delay for transient states." },
+
+  // ── Screenshot Test Coverage (wf4) ──
+  { id: "agi", title: "Test: graceful error handling for corrupt PNG", type: "task", priority: "p2", epic: "wf4",
+    desc: "Test that corrupt PNG from device results in graceful error with temp file still cleaned up." },
+  { id: "7a2", title: "Test: screenshot scaling when device < maxDimension", type: "task", priority: "p2", epic: "wf4",
+    desc: "Test that when device dimensions are smaller than maxDimension, scaleFactor is 1.0 and no resize occurs." },
+  { id: "73r", title: "Test: error handling when disk full during temp write", type: "task", priority: "p3", epic: "wf4",
+    desc: "Test proper error propagation when disk is full during temp file write." },
+  { id: "h2i", title: "Test: screenshot scaling with extreme maxDimension values", type: "task", priority: "p3", epic: "wf4",
+    desc: "Test edge cases like maxDimension: 1 (extreme downscale) to verify no crashes." },
+  { id: "4p6", title: "Test: screenshot scaling with foldable/ultra-wide screens", type: "task", priority: "p3", epic: "wf4",
+    desc: "Test screenshot scaling with unusual aspect ratios like foldables (2208x1840)." },
+  { id: "xt1", title: "Test: screenshot scaling with square screen (1080x1080)", type: "task", priority: "p3", epic: "wf4",
+    desc: "Test screenshot scaling behavior with square screen dimensions." },
+  { id: "qet", title: "Test: dimension math accuracy within ±1px", type: "task", priority: "p3", epic: "wf4",
+    desc: "Property-based test: device.width / scaleFactor ≈ image.width within rounding error of ±1px." },
+  { id: "vy7", title: "Test: image dimensions <= maxDimension invariant", type: "task", priority: "p3", epic: "wf4",
+    desc: "Property-based test: image.width <= maxDimension AND image.height <= maxDimension always holds after scaling." },
+  { id: "2ed", title: "Test: scaleFactor >= 1.0 invariant (property-based)", type: "task", priority: "p3", epic: "wf4",
+    desc: "Property-based test: scaleFactor is always >= 1.0 (never upscale). Generate random screen dimensions and verify." },
+];
+
+// ─── Graph Construction ───────────────────────────────────────────────────────
+
+const typeColors = {
+  epic:    '#b450ff',
+  bug:     '#ff6060',
+  feature: '#3cc878',
+  task:    '#4a9eff',
+};
+
+const prioritySizes = { p1: 12, p2: 7, p3: 4 };
+
+function buildGraphData(filter = 'all') {
+  let filtered = issues;
+
+  if (filter === 'p1' || filter === 'p2' || filter === 'p3') {
+    // Show matching priority + their parent epics
+    const matching = issues.filter(i => i.priority === filter);
+    const epicIds = new Set(matching.filter(i => i.epic).map(i => i.epic));
+    filtered = issues.filter(i => i.priority === filter || (i.type === 'epic' && epicIds.has(i.id)));
+  } else if (filter === 'bug' || filter === 'feature' || filter === 'task') {
+    const matching = issues.filter(i => i.type === filter);
+    const epicIds = new Set(matching.filter(i => i.epic).map(i => i.epic));
+    filtered = issues.filter(i => i.type === filter || (i.type === 'epic' && epicIds.has(i.id)));
+  } else if (filter === 'epic') {
+    filtered = issues.filter(i => i.type === 'epic');
+  }
+
+  const filteredIds = new Set(filtered.map(i => i.id));
+
+  const nodes = filtered.map(issue => ({
+    id: issue.id,
+    name: issue.title,
+    type: issue.type,
+    priority: issue.priority,
+    epic: issue.epic,
+    desc: issue.desc,
+    val: prioritySizes[issue.priority] || 5,
+    color: typeColors[issue.type] || '#4a9eff',
+  }));
+
+  const links = [];
+  filtered.forEach(issue => {
+    if (issue.epic && filteredIds.has(issue.epic)) {
+      links.push({
+        source: issue.epic,
+        target: issue.id,
+        color: 'rgba(74, 158, 255, 0.12)',
+      });
+    }
+  });
+
+  return { nodes, links };
+}
+
+// ─── Rendering ────────────────────────────────────────────────────────────────
+
+let graph;
+let selectedNode = null;
+
+function initGraph() {
+  const container = document.getElementById('graph-container');
+  const data = buildGraphData();
+
+  graph = ForceGraph3D()(container)
+    .graphData(data)
+    .backgroundColor('#030810')
+    .showNavInfo(false)
+    .nodeVal(n => n.val)
+    .nodeColor(n => n.color)
+    .nodeOpacity(0.92)
+    .nodeResolution(20)
+    .linkWidth(0.4)
+    .linkOpacity(0.15)
+    .linkColor(l => l.color)
+    .linkDirectionalParticles(1)
+    .linkDirectionalParticleWidth(0.6)
+    .linkDirectionalParticleSpeed(0.004)
+    .linkDirectionalParticleColor(() => 'rgba(74, 158, 255, 0.4)')
+    .d3AlphaDecay(0.03)
+    .d3VelocityDecay(0.3)
+    .warmupTicks(80)
+    .onNodeClick(handleNodeClick)
+    .onNodeHover(handleNodeHover)
+    .nodeThreeObject(node => {
+      const group = new THREE.Group();
+
+      // Glow sphere
+      const glowGeo = new THREE.SphereGeometry(node.val * 0.6, 20, 20);
+      const glowMat = new THREE.MeshBasicMaterial({
+        color: node.color,
+        transparent: true,
+        opacity: 0.12,
+      });
+      const glow = new THREE.Mesh(glowGeo, glowMat);
+      glow.scale.set(2.5, 2.5, 2.5);
+      group.add(glow);
+
+      // Core sphere
+      const coreGeo = new THREE.SphereGeometry(node.val * 0.5, 20, 20);
+      const coreMat = new THREE.MeshPhongMaterial({
+        color: node.color,
+        emissive: node.color,
+        emissiveIntensity: 0.4,
+        transparent: true,
+        opacity: 0.9,
+        shininess: 100,
+      });
+      const core = new THREE.Mesh(coreGeo, coreMat);
+      group.add(core);
+
+      // Ring for epics
+      if (node.type === 'epic') {
+        const ringGeo = new THREE.RingGeometry(node.val * 0.8, node.val * 0.95, 32);
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: node.color,
+          transparent: true,
+          opacity: 0.3,
+          side: THREE.DoubleSide,
+        });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2;
+        group.add(ring);
+      }
+
+      // Label
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const label = node.type === 'epic' ? node.name : node.id;
+      canvas.width = 256;
+      canvas.height = 48;
+      ctx.font = node.type === 'epic' ? 'bold 22px JetBrains Mono, monospace' : '18px JetBrains Mono, monospace';
+      ctx.fillStyle = node.color;
+      ctx.globalAlpha = node.type === 'epic' ? 0.9 : 0.7;
+      ctx.textAlign = 'center';
+      ctx.fillText(label, 128, 30);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.scale.set(24, 5, 1);
+      sprite.position.y = node.val * 0.7 + 4;
+      group.add(sprite);
+
+      return group;
+    });
+
+  // Camera position
+  graph.cameraPosition({ x: 0, y: 0, z: 250 });
+
+  // Remove loading
+  setTimeout(() => {
+    document.getElementById('loading').style.display = 'none';
+  }, 1500);
+}
+
+function handleNodeClick(node) {
+  if (!node) return;
+
+  selectedNode = node;
+  const issue = issues.find(i => i.id === node.id);
+  if (!issue) return;
+
+  // Fly to node
+  const distance = 80;
+  const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
+  graph.cameraPosition(
+    { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
+    node,
+    1200
+  );
+
+  // Build detail panel
+  const children = issues.filter(i => i.epic === issue.id);
+  const parentEpic = issue.epic ? issues.find(i => i.id === issue.epic) : null;
+
+  let html = `
+    <div class="detail-id">replicant-mcp-${issue.id}</div>
+    <div class="detail-title">${issue.title}</div>
+    <div class="detail-meta">
+      <span class="detail-badge badge-${issue.priority}">${issue.priority.toUpperCase()}</span>
+      <span class="detail-badge badge-${issue.type}">${issue.type}</span>
+    </div>
+  `;
+
+  if (parentEpic) {
+    html += `
+      <div class="detail-section-label">Epic</div>
+      <ul class="detail-children">
+        <li onclick="navigateToNode('${parentEpic.id}')">${parentEpic.title}</li>
+      </ul>
+    `;
+  }
+
+  html += `<div class="detail-section-label">Description</div>
+    <div class="detail-description">${escapeHtml(issue.desc)}</div>`;
+
+  if (children.length > 0) {
+    html += `<div class="detail-section-label">Children (${children.length})</div><ul class="detail-children">`;
+    children.forEach(c => {
+      const dot = `<span style="color:${typeColors[c.type]}">●</span>`;
+      html += `<li onclick="navigateToNode('${c.id}')">${dot} ${c.id} — ${c.title}</li>`;
+    });
+    html += '</ul>';
+  }
+
+  document.getElementById('detail-content').innerHTML = html;
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+function handleNodeHover(node) {
+  document.body.style.cursor = node ? 'pointer' : 'default';
+}
+
+function navigateToNode(id) {
+  const gd = graph.graphData();
+  const node = gd.nodes.find(n => n.id === id);
+  if (node) handleNodeClick(node);
+}
+
+function closePanel() {
+  document.getElementById('detail-panel').classList.remove('open');
+  selectedNode = null;
+}
+
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\n/g, '<br>');
+}
+
+// ─── Filters ──────────────────────────────────────────────────────────────────
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filter = btn.dataset.filter;
+    const data = buildGraphData(filter);
+    graph.graphData(data);
+    closePanel();
+  });
+});
+
+// ─── Keyboard ─────────────────────────────────────────────────────────────────
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closePanel();
+});
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+
+window.addEventListener('load', initGraph);
+window.addEventListener('resize', () => {
+  if (graph) graph.width(window.innerWidth).height(window.innerHeight);
+});
+
+</script>
+</body>
+</html>

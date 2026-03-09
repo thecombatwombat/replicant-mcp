@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { handleUiTool } from "../../src/tools/ui.js";
+import { handleUiQueryTool } from "../../src/tools/ui-query.js";
+import { handleUiCaptureTool } from "../../src/tools/ui-capture.js";
 
 describe("UI Tool - Token Efficient Defaults", () => {
   let mockContext: any;
@@ -38,7 +39,7 @@ describe("UI Tool - Token Efficient Defaults", () => {
       },
     ]);
 
-    const result = await handleUiTool({ operation: "dump" }, mockContext);
+    const result = await handleUiQueryTool({ operation: "dump" }, mockContext);
 
     expect(result).toMatchObject({
       elements: expect.any(Array),
@@ -56,7 +57,7 @@ describe("UI Tool - Token Efficient Defaults", () => {
       scaleFactor: 2.4,
     });
 
-    await handleUiTool({ operation: "screenshot" }, mockContext);
+    await handleUiCaptureTool({ operation: "screenshot" }, mockContext);
 
     expect(mockContext.ui.screenshot).toHaveBeenCalledWith(
       "emulator-5554",

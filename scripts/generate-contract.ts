@@ -27,7 +27,9 @@ import {
   gradleTestToolDefinition,
   gradleListToolDefinition,
   gradleGetDetailsToolDefinition,
-  uiToolDefinition,
+  uiQueryToolDefinition,
+  uiActionToolDefinition,
+  uiCaptureToolDefinition,
 } from "../src/tools/index.js";
 
 // Output schemas (Zod schemas that need conversion)
@@ -183,15 +185,19 @@ const outputSchemasByTool: Record<string, OutputSchemaMap> = {
     GradleGetDetailsTasksOutput,
     GradleGetDetailsAllOutput,
   },
-  ui: {
+  "ui-query": {
     UiDumpFullOutput,
     UiDumpCompactOutput,
     UiFindOutput,
+    UiAccessibilityCheckOutput,
+  },
+  "ui-action": {
     UiTapOutput,
     UiInputOutput,
     UiScrollOutput,
+  },
+  "ui-capture": {
     UiScreenshotOutput,
-    UiAccessibilityCheckOutput,
     UiVisualSnapshotOutput,
   },
 };
@@ -208,7 +214,9 @@ const toolDefinitions: ToolDef[] = [
   gradleTestToolDefinition,
   gradleListToolDefinition,
   gradleGetDetailsToolDefinition,
-  uiToolDefinition,
+  uiQueryToolDefinition,
+  uiActionToolDefinition,
+  uiCaptureToolDefinition,
 ];
 
 export function generateContract(): Record<string, unknown> {

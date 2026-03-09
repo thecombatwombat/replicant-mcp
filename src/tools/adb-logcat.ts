@@ -13,6 +13,25 @@ export const adbLogcatInputSchema = z.object({
 
 export type AdbLogcatInput = z.infer<typeof adbLogcatInputSchema>;
 
+function buildLogcatFilter(input: AdbLogcatInput): string | undefined {
+  if (input.rawFilter) return input.rawFilter;
+  if (!input.tags && !input.level) return undefined;
+
+  const levelMap: Record<string, string> = {
+    verbose: "V",
+    debug: "D",
+    info: "I",
+    warn: "W",
+    error: "E",
+  };
+  const levelChar = input.level ? levelMap[input.level] : "V";
+
+  if (input.tags) {
+    return input.tags.map((tag) => `${tag}:${levelChar}`).join(" ") + " *:S";
+  }
+  return `*:${levelChar}`;
+}
+
 export async function handleAdbLogcatTool(
   input: AdbLogcatInput,
   context: ServerContext
@@ -20,39 +39,18 @@ export async function handleAdbLogcatTool(
   const device = await context.deviceState.ensureDevice(context.adb);
   const deviceId = device.id;
 
-  // Build filter string
-  let filter = "";
-  if (input.rawFilter) {
-    filter = input.rawFilter;
-  } else if (input.tags || input.level) {
-    const levelMap: Record<string, string> = {
-      verbose: "V",
-      debug: "D",
-      info: "I",
-      warn: "W",
-      error: "E",
-    };
-    const levelChar = input.level ? levelMap[input.level] : "V";
-
-    if (input.tags) {
-      filter = input.tags.map((tag) => `${tag}:${levelChar}`).join(" ") + " *:S";
-    } else {
-      filter = `*:${levelChar}`;
-    }
-  }
+  const filter = buildLogcatFilter(input);
 
   const output = await context.adb.logcat(deviceId, {
     lines: input.lines,
-    filter: filter || undefined,
+    filter,
     since: input.since,
     package: input.package,
   });
 
-  // Cache the full output and return a summary
   const logId = context.cache.generateId("logcat");
   context.cache.set(logId, { output, deviceId, filter }, "logcat", CACHE_TTLS.LOGCAT);
 
-  // Parse log lines
   const lines = output.split("\n").filter(Boolean);
   const errorCount = lines.filter((l) => l.includes(" E ")).length;
   const warnCount = lines.filter((l) => l.includes(" W ")).length;
@@ -71,16 +69,16 @@ export async function handleAdbLogcatTool(
 
 export const adbLogcatToolDefinition = {
   name: "adb-logcat",
-  description: "Read device logs. Auto-selects device if only one connected. Returns summary with logId for full output.",
+  description: "Read device logs. Returns summary with logId.",
   inputSchema: {
     type: "object",
     properties: {
-      lines: { type: "number", description: "Number of lines (default: 100)" },
-      package: { type: "string", description: "Filter by package name" },
-      tags: { type: "array", items: { type: "string" }, description: "Filter by log tags" },
+      lines: { type: "number", description: "Default: 100" },
+      package: { type: "string" },
+      tags: { type: "array", items: { type: "string" } },
       level: { type: "string", enum: ["verbose", "debug", "info", "warn", "error"] },
-      rawFilter: { type: "string", description: "Raw logcat filter string" },
-      since: { type: "string", description: "Time filter in adb logcat -T format (e.g., '01-20 15:30:00.000')" },
+      rawFilter: { type: "string" },
+      since: { type: "string", description: "e.g., '01-20 15:30:00.000'" },
     },
   },
 };

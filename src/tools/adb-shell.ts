@@ -58,15 +58,15 @@ export async function handleAdbShellTool(
 
 export const adbShellToolDefinition = {
   name: "adb-shell",
-  description: "Execute shell commands with safety guards. Auto-selects device if only one connected. Dangerous commands are blocked.",
+  description: "Execute shell commands with safety guards.",
   inputSchema: {
     type: "object",
     properties: {
-      command: { type: "string", description: "Shell command to execute" },
-      timeout: { type: "number", description: "Timeout in ms (default: 30s, max: 120s)" },
-      maxChars: { type: "number", description: "Truncate stdout/stderr to at most this many characters" },
-      summaryOnly: { type: "boolean", description: "Return only compact previews and counts, omitting full stdout/stderr" },
-      previewChars: { type: "number", description: "For summaryOnly: preview length in characters (default: 200)" },
+      command: { type: "string" },
+      timeout: { type: "number", description: "ms, default: 30000, max: 120000" },
+      maxChars: { type: "number", description: "Truncate output to N chars" },
+      summaryOnly: { type: "boolean", description: "Compact preview only" },
+      previewChars: { type: "number", description: "Preview length (default: 200)" },
     },
     required: ["command"],
   },

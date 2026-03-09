@@ -9,5 +9,7 @@ export * from "./gradle-build.js";
 export * from "./gradle-test.js";
 export * from "./gradle-list.js";
 export * from "./gradle-get-details.js";
-export * from "./ui.js";
+export * from "./ui-query.js";
+export * from "./ui-action.js";
+export * from "./ui-capture.js";
 export * from "./ui-find.js";

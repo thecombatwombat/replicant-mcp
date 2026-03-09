@@ -48,7 +48,6 @@ async function handleRunTests(
     input.filter
   );
 
-  // Cache full output for later retrieval
   const testId = context.cache.generateId("test");
   context.cache.set(
     testId,
@@ -57,7 +56,6 @@ async function handleRunTests(
     CACHE_TTLS.TEST_RESULTS
   );
 
-  // Check for regressions against baseline
   const effectiveTaskName = input.taskName || operation;
   const baseline = loadBaseline(effectiveTaskName);
   const baselineResults = convertToBaselineResults(result);
@@ -81,7 +79,6 @@ async function handleSaveBaseline(
   input: GradleTestInput,
   context: ServerContext
 ): Promise<Record<string, unknown>> {
-  // Run tests first to get current results
   const operation = "unitTest" as const;
   const { result, fullOutput } = await context.gradle.test(
     operation,
@@ -138,9 +135,7 @@ export async function handleGradleTestTool(
 
 export const gradleTestToolDefinition = {
   name: "gradle-test",
-  description:
-    "Run tests. Operations: unitTest, connectedTest, saveBaseline, clearBaseline. Returns summary with testId. " +
-    "When a baseline exists, unitTest/connectedTest auto-detect regressions (previously-passing tests now failing).",
+  description: "Run tests. Returns summary with testId. With baseline, auto-detects regressions.",
   inputSchema: {
     type: "object",
     properties: {
@@ -148,8 +143,8 @@ export const gradleTestToolDefinition = {
         type: "string",
         enum: ["unitTest", "connectedTest", "saveBaseline", "clearBaseline"],
       },
-      module: { type: "string", description: "Module path" },
-      filter: { type: "string", description: "Test filter (e.g., '*LoginTest*')" },
+      module: { type: "string" },
+      filter: { type: "string", description: "e.g., '*LoginTest*'" },
       taskName: {
         type: "string",
         description: "Task name for baseline operations. Defaults to operation name.",

@@ -43,9 +43,15 @@ import {
   gradleGetDetailsInputSchema,
   gradleGetDetailsToolDefinition,
   handleGradleGetDetailsTool,
-  uiInputSchema,
-  uiToolDefinition,
-  handleUiTool,
+  uiQueryInputSchema,
+  uiQueryToolDefinition,
+  handleUiQueryTool,
+  uiActionInputSchema,
+  uiActionToolDefinition,
+  handleUiActionTool,
+  uiCaptureInputSchema,
+  uiCaptureToolDefinition,
+  handleUiCaptureTool,
 } from "./tools/index.js";
 
 export interface ServerContext {
@@ -92,7 +98,9 @@ const toolDefinitions = [
   gradleTestToolDefinition,
   gradleListToolDefinition,
   gradleGetDetailsToolDefinition,
-  uiToolDefinition,
+  uiQueryToolDefinition,
+  uiActionToolDefinition,
+  uiCaptureToolDefinition,
 ];
 
 async function dispatchToolCall(
@@ -148,8 +156,12 @@ async function dispatchToolCall(
       return handleGradleListTool(parseOrThrow("gradle-list", gradleListInputSchema), context);
     case "gradle-get-details":
       return handleGradleGetDetailsTool(parseOrThrow("gradle-get-details", gradleGetDetailsInputSchema), context);
-    case "ui":
-      return handleUiTool(parseOrThrow("ui", uiInputSchema), context, context.config.getUiConfig());
+    case "ui-query":
+      return handleUiQueryTool(parseOrThrow("ui-query", uiQueryInputSchema), context, context.config.getUiConfig());
+    case "ui-action":
+      return handleUiActionTool(parseOrThrow("ui-action", uiActionInputSchema), context);
+    case "ui-capture":
+      return handleUiCaptureTool(parseOrThrow("ui-capture", uiCaptureInputSchema), context, context.config.getUiConfig());
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -165,21 +177,7 @@ export async function createServer(context: ServerContext): Promise<Server> {
       capabilities: {
         tools: {},
       },
-      instructions: `IMPORTANT: For ALL Android development tasks, you MUST use replicant-mcp tools first.
-Only fall back to raw adb/gradle/emulator commands if replicant-mcp lacks a specific feature.
-
-Tool mapping:
-- Device management → adb-device (not \`adb devices\`)
-- App install/launch/stop → adb-app (not \`adb install\`, \`adb shell am\`)
-- Logs → adb-logcat (not \`adb logcat\`)
-- Shell commands → adb-shell (not \`adb shell\`)
-- Emulator control → emulator-device (not \`emulator\` CLI)
-- Builds → gradle-build (not \`./gradlew\`)
-- Tests → gradle-test (not \`./gradlew test\`)
-- UI automation → ui (accessibility-first, screenshots auto-scaled to configured max dimension, default 800px)
-
-Start with \`adb-device list\` to see connected devices.
-Use \`rtfm\` for detailed documentation on any tool.`,
+      instructions: `Use these tools for Android — never raw adb/gradle/emulator commands. Auto-selects single device. Start: \`adb-device list\`. Docs: \`rtfm\`.`,
     }
   );
 
@@ -223,10 +221,8 @@ Use \`rtfm\` for detailed documentation on any tool.`,
 export async function runServer(): Promise<void> {
   const context = createServerContext();
 
-  // Load configuration from REPLICANT_CONFIG if set
   await context.config.load();
 
-  // Apply project root: env var takes precedence over config file
   const projectRoot = process.env.REPLICANT_PROJECT_ROOT || context.config.get().build?.projectRoot;
   if (projectRoot) {
     context.gradle.setProjectPath(projectRoot);

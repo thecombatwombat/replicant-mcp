@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { handleUiTool } from "../../src/tools/ui.js";
+import { handleUiQueryTool } from "../../src/tools/ui-query.js";
 
 describe("Icon Recognition Integration", () => {
   let mockContext: any;
@@ -23,7 +23,7 @@ describe("Icon Recognition Integration", () => {
         cache: { generateId: vi.fn(), set: vi.fn() },
       };
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { text: "Login" }, debug: true },
         mockContext
       );
@@ -46,7 +46,7 @@ describe("Icon Recognition Integration", () => {
         cache: { generateId: vi.fn(), set: vi.fn() },
       };
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { text: "overflow menu" }, debug: true },
         mockContext
       );
@@ -71,7 +71,7 @@ describe("Icon Recognition Integration", () => {
         cache: { generateId: vi.fn(), set: vi.fn() },
       };
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { text: "some icon" }, debug: true },
         mockContext
       );
@@ -97,7 +97,7 @@ describe("Icon Recognition Integration", () => {
         cache: { generateId: vi.fn(), set: vi.fn() },
       };
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { text: "anything" }, debug: true },
         mockContext
       );
@@ -122,7 +122,7 @@ describe("Icon Recognition Integration", () => {
         cache: { generateId: vi.fn(), set: vi.fn() },
       };
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         {
           operation: "find",
           selector: { text: "anything" },

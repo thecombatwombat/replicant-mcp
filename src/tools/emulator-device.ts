@@ -175,7 +175,7 @@ export async function handleEmulatorDeviceTool(
 
 export const emulatorDeviceToolDefinition = {
   name: "emulator-device",
-  description: "Manage Android emulators. Operations: list, create, start, kill, wipe, snapshot-*",
+  description: "Manage Android emulators.",
   inputSchema: {
     type: "object",
     properties: {
@@ -193,11 +193,11 @@ export const emulatorDeviceToolDefinition = {
           "snapshot-delete",
         ],
       },
-      avdName: { type: "string", description: "AVD name" },
-      device: { type: "string", description: "Device profile (e.g., 'pixel_7')" },
-      systemImage: { type: "string", description: "System image" },
-      snapshotName: { type: "string", description: "Snapshot name" },
-      emulatorId: { type: "string", description: "Running emulator ID" },
+      avdName: { type: "string" },
+      device: { type: "string", description: "e.g., 'pixel_7'" },
+      systemImage: { type: "string" },
+      snapshotName: { type: "string" },
+      emulatorId: { type: "string" },
     },
     required: ["operation"],
   },

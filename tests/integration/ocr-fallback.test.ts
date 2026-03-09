@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { handleUiTool } from "../../src/tools/ui.js";
+import { handleUiQueryTool } from "../../src/tools/ui-query.js";
+import { handleUiActionTool } from "../../src/tools/ui-action.js";
 
 // This test simulates the Chobani scenario end-to-end with mocked dependencies
 
@@ -39,7 +40,7 @@ describe("OCR Fallback Integration", () => {
     };
 
     // Step 1: Find the Chobani ad
-    const findResult = await handleUiTool(
+    const findResult = await handleUiQueryTool(
       { operation: "find", selector: { text: "Chobani" }, debug: true },
       mockContext
     );
@@ -48,8 +49,8 @@ describe("OCR Fallback Integration", () => {
     expect(findResult.source).toBe("ocr");
     expect((findResult.elements as any[])[0].text).toContain("Chobani");
 
-    // Step 2: Tap on the found element
-    const tapResult = await handleUiTool(
+    // Step 2: Tap on the found element via ui-action
+    const tapResult = await handleUiActionTool(
       { operation: "tap", elementIndex: 0 },
       mockContext
     );
@@ -86,7 +87,7 @@ describe("OCR Fallback Integration", () => {
       },
     };
 
-    const findResult = await handleUiTool(
+    const findResult = await handleUiQueryTool(
       { operation: "find", selector: { text: "Login" }, debug: true },
       mockContext
     );
@@ -129,7 +130,7 @@ describe("OCR Fallback Integration", () => {
       },
     };
 
-    const findResult = await handleUiTool(
+    const findResult = await handleUiQueryTool(
       { operation: "find", selector: { textContains: "Product" } },
       mockContext
     );
@@ -156,7 +157,7 @@ describe("OCR Fallback Integration", () => {
       },
     };
 
-    const findResult = await handleUiTool(
+    const findResult = await handleUiQueryTool(
       { operation: "find", selector: { text: "NonExistent" } },
       mockContext
     );

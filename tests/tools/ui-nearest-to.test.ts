@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { handleUiTool } from "../../src/tools/ui.js";
+import { handleUiQueryTool } from "../../src/tools/ui-query.js";
+import { handleUiActionTool } from "../../src/tools/ui-action.js";
 
 describe("UI Tool - nearestTo", () => {
   let mockContext: any;
@@ -23,7 +24,6 @@ describe("UI Tool - nearestTo", () => {
 
   describe("containment-based matching", () => {
     it("prioritizes elements whose container contains the anchor point", async () => {
-      // First call finds the anchor "Chobani" via OCR
       mockContext.ui.findWithFallbacks
         .mockResolvedValueOnce({
           elements: [
@@ -31,12 +31,9 @@ describe("UI Tool - nearestTo", () => {
           ],
           source: "ocr",
         })
-        // Second call finds overflow menus
         .mockResolvedValueOnce({
           elements: [
-            // Roses pin overflow (wrong - closer by distance but different container)
             { text: "", resourceId: "pin_overflow_action_id", className: "android.view.View", centerX: 498, centerY: 668, bounds: { left: 477, top: 647, right: 519, bottom: 689 }, clickable: true },
-            // Chobani pin overflow (correct - same container as anchor)
             { text: "", resourceId: "pin_overflow_action_id", className: "android.view.View", centerX: 498, centerY: 1682, bounds: { left: 477, top: 1661, right: 519, bottom: 1703 }, clickable: true },
           ],
           source: "accessibility",
@@ -44,11 +41,10 @@ describe("UI Tool - nearestTo", () => {
           confidence: "high",
         });
 
-      // Mock the dump to return ViewGroup containers
       mockContext.ui.dump.mockResolvedValue([
         {
           className: "android.view.ViewGroup",
-          bounds: { left: 10, top: 335, right: 535, bottom: 750 }, // Roses pin container
+          bounds: { left: 10, top: 335, right: 535, bottom: 750 },
           centerX: 272, centerY: 542,
           children: [
             { resourceId: "pin_rep_id", bounds: { left: 10, top: 335, right: 535, bottom: 750 }, centerX: 272, centerY: 542 },
@@ -57,7 +53,7 @@ describe("UI Tool - nearestTo", () => {
         },
         {
           className: "android.view.ViewGroup",
-          bounds: { left: 10, top: 761, right: 535, bottom: 1839 }, // Chobani pin container - contains anchor (157, 836)
+          bounds: { left: 10, top: 761, right: 535, bottom: 1839 },
           centerX: 272, centerY: 1300,
           children: [
             { resourceId: "pin_rep_id", bounds: { left: 10, top: 761, right: 535, bottom: 1839 }, centerX: 272, centerY: 1300 },
@@ -66,12 +62,11 @@ describe("UI Tool - nearestTo", () => {
         },
       ]);
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { text: "overflow menu", nearestTo: "Chobani" }, debug: true },
         mockContext
       );
 
-      // The Chobani overflow (1682) should be first, not the roses overflow (668)
       expect(result.elements[0].centerY).toBe(1682);
       expect(result.sortedByProximityTo).toEqual({
         query: "Chobani",
@@ -81,7 +76,6 @@ describe("UI Tool - nearestTo", () => {
     });
 
     it("falls back to distance sorting when no containment matches found", async () => {
-      // Anchor found
       mockContext.ui.findWithFallbacks
         .mockResolvedValueOnce({
           elements: [
@@ -89,7 +83,6 @@ describe("UI Tool - nearestTo", () => {
           ],
           source: "ocr",
         })
-        // Target elements found
         .mockResolvedValueOnce({
           elements: [
             { text: "", resourceId: "btn1", className: "Button", centerX: 100, centerY: 100, bounds: { left: 50, top: 50, right: 150, bottom: 150 }, clickable: true },
@@ -99,15 +92,13 @@ describe("UI Tool - nearestTo", () => {
           tier: 2,
         });
 
-      // Empty tree - no ViewGroups contain the anchor
       mockContext.ui.dump.mockResolvedValue([]);
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { text: "button", nearestTo: "SearchText" }, debug: true },
         mockContext
       );
 
-      // btn2 at (600,600) is closer to anchor at (500,500) than btn1 at (100,100)
       expect(result.elements[0].centerX).toBe(600);
       expect(result.sortedByProximityTo.method).toBe("distance");
     });
@@ -115,13 +106,11 @@ describe("UI Tool - nearestTo", () => {
 
   describe("anchor not found", () => {
     it("shows warning when anchor element cannot be found", async () => {
-      // Anchor not found
       mockContext.ui.findWithFallbacks
         .mockResolvedValueOnce({
           elements: [],
           source: "accessibility",
         })
-        // Target elements found
         .mockResolvedValueOnce({
           elements: [
             { text: "", resourceId: "btn", className: "Button", centerX: 100, centerY: 100, bounds: { left: 50, top: 50, right: 150, bottom: 150 }, clickable: true },
@@ -130,7 +119,7 @@ describe("UI Tool - nearestTo", () => {
           tier: 2,
         });
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { text: "button", nearestTo: "NonexistentText" } },
         mockContext
       );
@@ -165,15 +154,13 @@ describe("UI Tool - nearestTo", () => {
         },
       ]);
 
-      // Find with nearestTo
-      await handleUiTool(
+      await handleUiQueryTool(
         { operation: "find", selector: { text: "button", nearestTo: "Anchor" } },
         mockContext
       );
 
-      // Tap first element
       mockContext.ui.tap.mockResolvedValue(undefined);
-      const tapResult = await handleUiTool(
+      const tapResult = await handleUiActionTool(
         { operation: "tap", elementIndex: 0 },
         mockContext
       );

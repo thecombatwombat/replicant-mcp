@@ -6,7 +6,6 @@ export const adbAppInputSchema = z.object({
   operation: z.enum(["install", "uninstall", "launch", "stop", "clear-data", "list"]),
   apkPath: z.string().optional(),
   packageName: z.string().optional(),
-  // List operation options
   limit: z.number().min(1).max(100).optional(),
   filter: z.string().optional(),
   offset: z.number().min(0).optional(),
@@ -136,8 +135,7 @@ export async function handleAdbAppTool(
 
 export const adbAppToolDefinition = {
   name: "adb-app",
-  description:
-    "Manage applications. Auto-selects device if only one connected. Operations: install, uninstall, launch, stop, clear-data, list.",
+  description: "Manage applications.",
   inputSchema: {
     type: "object",
     properties: {
@@ -145,19 +143,19 @@ export const adbAppToolDefinition = {
         type: "string",
         enum: ["install", "uninstall", "launch", "stop", "clear-data", "list"],
       },
-      apkPath: { type: "string", description: "Path to APK file (for install)" },
-      packageName: { type: "string", description: "Package name (for other operations)" },
+      apkPath: { type: "string", description: "APK path" },
+      packageName: { type: "string" },
       limit: {
         type: "number",
-        description: "Max packages to return (default: 20, max: 100). For list operation.",
+        description: "Default: 20, max: 100",
       },
       filter: {
         type: "string",
-        description: "Filter packages by name (case-insensitive contains). For list operation.",
+        description: "Filter by name (case-insensitive)",
       },
       offset: {
         type: "number",
-        description: "Skip first N packages for pagination. For list operation.",
+        description: "Pagination offset",
       },
     },
     required: ["operation"],

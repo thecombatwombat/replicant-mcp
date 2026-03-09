@@ -8,9 +8,15 @@ import {
   FindWithFallbacksResult,
   GridElement,
 } from "../types/icon-recognition.js";
-import { UiInput } from "./ui.js";
 
-// Type guards for different element types
+export interface FindInput {
+  selector?: { resourceId?: string; text?: string; textContains?: string; className?: string; nearestTo?: string };
+  debug?: boolean;
+  maxTier?: number;
+  gridCell?: number;
+  gridPosition?: number;
+}
+
 export function isAccessibilityNode(el: FindElement): el is AccessibilityNode {
   return "centerX" in el && "className" in el;
 }
@@ -154,7 +160,7 @@ async function resolveAnchorCenter(
   return null;
 }
 
-function buildFindOptions(input: UiInput, debug: boolean, config: UiConfig): FindOptions {
+function buildFindOptions(input: FindInput, debug: boolean, config: UiConfig): FindOptions {
   const maxTier = input.maxTier as FindTier | undefined;
   const options: FindOptions = {
     debug,
@@ -219,7 +225,7 @@ function appendNearestToMetadata(
 }
 
 export async function handleFind(
-  input: UiInput,
+  input: FindInput,
   context: ServerContext,
   config: UiConfig,
   deviceId: string
@@ -243,7 +249,7 @@ export async function handleFind(
 }
 
 async function handleTextFind(
-  input: UiInput,
+  input: FindInput,
   context: ServerContext,
   config: UiConfig,
   deviceId: string,
@@ -288,7 +294,7 @@ async function handleTextFind(
 }
 
 async function handleSelectorFind(
-  input: UiInput,
+  input: FindInput,
   context: ServerContext,
   config: UiConfig,
   deviceId: string

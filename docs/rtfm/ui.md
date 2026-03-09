@@ -1,17 +1,13 @@
 # UI Automation Tools
 
-## ui
+## ui-query
 
-Interact with app UI via accessibility tree with intelligent fallback.
+Query the UI accessibility tree and find elements.
 
 **Operations:**
 - `dump` - Get full accessibility tree
 - `find` - Find elements by selector (with OCR/visual fallback)
-- `tap` - Tap at coordinates, element index, or grid cell
-- `input` - Enter text
-- `screenshot` - Capture screen to file
 - `accessibility-check` - Quick accessibility assessment
-- `visual-snapshot` - Get screenshot + screen/app metadata
 
 **Selectors (for find):**
 - `resourceId`: Match resource ID (partial)
@@ -20,18 +16,6 @@ Interact with app UI via accessibility tree with intelligent fallback.
 - `className`: Match class name
 - `nearestTo`: Find elements nearest to this text (spatial proximity)
 
-**Tap options:**
-- `x`, `y`: Direct coordinates
-- `elementIndex`: Index from previous find result
-- `gridCell`: Grid cell 1-24 (6x4 grid overlay)
-- `gridPosition`: Position within cell (1=TL, 2=TR, 3=Center, 4=BL, 5=BR)
-
-**Optional parameters:**
-- `debug`: Include source (accessibility/ocr) and confidence scores
-- `inline`: Return base64 screenshot in response (for screenshot op)
-- `localPath`: Custom path for screenshot output
-- `maxTier`: For `find`, maximum fallback tier to attempt (1-5). Use `3` to avoid visual/grid image payloads.
-
 **Fallback chain:**
 1. Accessibility tree (fast, reliable)
 2. ResourceId pattern match (icon/button patterns)
@@ -39,18 +23,20 @@ Interact with app UI via accessibility tree with intelligent fallback.
 4. Visual candidates (cropped unlabeled clickables)
 5. Grid fallback (large payload; use only when needed)
 
+**Optional parameters:**
+- `debug`: Include source (accessibility/ocr) and confidence scores
+- `maxTier`: Maximum fallback tier to attempt (1-5). Use `3` to avoid visual/grid image payloads.
+
 **Recommended caller pattern:**
 ```json
 { "operation": "find", "selector": { "text": "Login" }, "maxTier": 3 }
 ```
 This keeps routine searches text-first and avoids tier 4/5 visual payloads unless you explicitly opt in.
 
-**Example - Find and tap:**
+**Example - Find elements:**
 ```json
 { "operation": "find", "selector": { "text": "Login" } }
 // Returns: { elements: [{ index: 0, centerX: 540, centerY: 1200, ... }] }
-
-{ "operation": "tap", "elementIndex": 0 }
 ```
 
 **Example - Spatial proximity:**
@@ -59,19 +45,48 @@ This keeps routine searches text-first and avoids tier 4/5 visual payloads unles
 // Returns elements containing "edit", sorted by distance to "John"
 ```
 
+## ui-action
+
+Tap, input text, and scroll on the device UI.
+
+**Operations:**
+- `tap` - Tap at coordinates, element index, or grid cell
+- `input` - Enter text
+- `scroll` - Scroll the screen
+
+**Tap options:**
+- `x`, `y`: Direct coordinates
+- `elementIndex`: Index from previous find result
+- `gridCell`: Grid cell 1-24 (6x4 grid overlay)
+- `gridPosition`: Position within cell (1=TL, 2=TR, 3=Center, 4=BL, 5=BR)
+
+**Example - Cross-tool find and tap:**
+```json
+// Step 1: Use ui-query to find the element
+ui-query: { "operation": "find", "selector": { "text": "Login" } }
+// Returns: { elements: [{ index: 0, centerX: 540, centerY: 1200, ... }] }
+
+// Step 2: Use ui-action to tap it
+ui-action: { "operation": "tap", "elementIndex": 0 }
+```
+
 **Example - Grid-based tap (for icons):**
 ```json
 { "operation": "tap", "gridCell": 12, "gridPosition": 3 }
 // Taps center of cell 12 in the 24-cell grid overlay
 ```
 
-## Screenshot Scaling
+## ui-capture
 
-Screenshots are automatically scaled to fit within 800px (longest side) by default.
-This prevents API context limits and reduces token usage.
+Capture screenshots and visual snapshots of the device screen.
 
-**All coordinates are in image space.** Tap coordinates are automatically converted
-to device coordinates. You don't need to do any math.
+**Operations:**
+- `screenshot` - Capture screen to file
+- `visual-snapshot` - Get screenshot + screen/app metadata
+
+**Optional parameters:**
+- `inline`: Return base64 screenshot in response
+- `localPath`: Custom path for screenshot output
 
 ### Scaling Modes
 
@@ -80,12 +95,6 @@ to device coordinates. You don't need to do any math.
 | Default | (none) | Scale to 800px max |
 | Custom | `maxDimension: 1500` | Scale to specified size |
 | Raw | `raw: true` | No scaling (may exceed API limits) |
-
-### When to Use Raw Mode
-
-- Non-Anthropic models with different limits
-- External context management (compaction, agent respawning)
-- Debugging coordinate issues
 
 ### Response Format
 
@@ -100,6 +109,20 @@ Screenshot responses now include scaling metadata:
   "scaleFactor": 3
 }
 ```
+
+## Screenshot Scaling
+
+Screenshots are automatically scaled to fit within 800px (longest side) by default.
+This prevents API context limits and reduces token usage.
+
+**All coordinates are in image space.** Tap coordinates are automatically converted
+to device coordinates. You don't need to do any math.
+
+### When to Use Raw Mode
+
+- Non-Anthropic models with different limits
+- External context management (compaction, agent respawning)
+- Debugging coordinate issues
 
 ## Context Management
 

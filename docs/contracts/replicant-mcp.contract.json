@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-02-26T15:01:57.702Z",
+  "generatedAt": "2026-03-09T18:40:20.027Z",
   "tools": {
     "cache": {
       "inputSchema": {
@@ -17,7 +17,7 @@
           },
           "key": {
             "type": "string",
-            "description": "Specific cache key to clear"
+            "description": "Key to clear (optional)"
           },
           "config": {
             "type": "object",
@@ -200,8 +200,7 @@
             ]
           },
           "deviceId": {
-            "type": "string",
-            "description": "Device ID for select/wait/properties"
+            "type": "string"
           }
         },
         "required": [
@@ -458,23 +457,22 @@
           },
           "apkPath": {
             "type": "string",
-            "description": "Path to APK file (for install)"
+            "description": "APK path"
           },
           "packageName": {
-            "type": "string",
-            "description": "Package name (for other operations)"
+            "type": "string"
           },
           "limit": {
             "type": "number",
-            "description": "Max packages to return (default: 20, max: 100). For list operation."
+            "description": "Default: 20, max: 100"
           },
           "filter": {
             "type": "string",
-            "description": "Filter packages by name (case-insensitive contains). For list operation."
+            "description": "Filter by name (case-insensitive)"
           },
           "offset": {
             "type": "number",
-            "description": "Skip first N packages for pagination. For list operation."
+            "description": "Pagination offset"
           }
         },
         "required": [
@@ -619,18 +617,16 @@
         "properties": {
           "lines": {
             "type": "number",
-            "description": "Number of lines (default: 100)"
+            "description": "Default: 100"
           },
           "package": {
-            "type": "string",
-            "description": "Filter by package name"
+            "type": "string"
           },
           "tags": {
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "description": "Filter by log tags"
+            }
           },
           "level": {
             "type": "string",
@@ -643,12 +639,11 @@
             ]
           },
           "rawFilter": {
-            "type": "string",
-            "description": "Raw logcat filter string"
+            "type": "string"
           },
           "since": {
             "type": "string",
-            "description": "Time filter in adb logcat -T format (e.g., '01-20 15:30:00.000')"
+            "description": "e.g., '01-20 15:30:00.000'"
           }
         }
       },
@@ -702,24 +697,23 @@
         "type": "object",
         "properties": {
           "command": {
-            "type": "string",
-            "description": "Shell command to execute"
+            "type": "string"
           },
           "timeout": {
             "type": "number",
-            "description": "Timeout in ms (default: 30s, max: 120s)"
+            "description": "ms, default: 30000, max: 120000"
           },
           "maxChars": {
             "type": "number",
-            "description": "Truncate stdout/stderr to at most this many characters"
+            "description": "Truncate output to N chars"
           },
           "summaryOnly": {
             "type": "boolean",
-            "description": "Return only compact previews and counts, omitting full stdout/stderr"
+            "description": "Compact preview only"
           },
           "previewChars": {
             "type": "number",
-            "description": "For summaryOnly: preview length in characters (default: 200)"
+            "description": "Preview length (default: 200)"
           }
         },
         "required": [
@@ -789,24 +783,20 @@
             ]
           },
           "avdName": {
-            "type": "string",
-            "description": "AVD name"
+            "type": "string"
           },
           "device": {
             "type": "string",
-            "description": "Device profile (e.g., 'pixel_7')"
+            "description": "e.g., 'pixel_7'"
           },
           "systemImage": {
-            "type": "string",
-            "description": "System image"
+            "type": "string"
           },
           "snapshotName": {
-            "type": "string",
-            "description": "Snapshot name"
+            "type": "string"
           },
           "emulatorId": {
-            "type": "string",
-            "description": "Running emulator ID"
+            "type": "string"
           }
         },
         "required": [
@@ -985,11 +975,10 @@
           },
           "module": {
             "type": "string",
-            "description": "Module path (e.g., ':app')"
+            "description": "e.g., ':app'"
           },
           "flavor": {
-            "type": "string",
-            "description": "Product flavor"
+            "type": "string"
           }
         },
         "required": [
@@ -1056,12 +1045,11 @@
             ]
           },
           "module": {
-            "type": "string",
-            "description": "Module path"
+            "type": "string"
           },
           "filter": {
             "type": "string",
-            "description": "Test filter (e.g., '*LoginTest*')"
+            "description": "e.g., '*LoginTest*'"
           },
           "taskName": {
             "type": "string",
@@ -1235,7 +1223,7 @@
           },
           "module": {
             "type": "string",
-            "description": "Module path (for variants/tasks)"
+            "description": "e.g., ':app'"
           }
         },
         "required": [
@@ -1357,8 +1345,7 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "description": "Build or test ID from previous operation"
+            "type": "string"
           },
           "detailType": {
             "type": "string",
@@ -1367,12 +1354,11 @@
               "errors",
               "tasks",
               "all"
-            ],
-            "description": "Type of details to retrieve"
+            ]
           },
           "maxChars": {
             "type": "number",
-            "description": "Truncate large text fields to at most this many characters"
+            "description": "Truncate to N chars"
           },
           "summaryOnly": {
             "type": "boolean",
@@ -1625,7 +1611,7 @@
         }
       }
     },
-    "ui": {
+    "ui-query": {
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1634,12 +1620,7 @@
             "enum": [
               "dump",
               "find",
-              "tap",
-              "input",
-              "scroll",
-              "screenshot",
-              "accessibility-check",
-              "visual-snapshot"
+              "accessibility-check"
             ]
           },
           "selector": {
@@ -1661,97 +1642,40 @@
                 "type": "string",
                 "description": "Find elements nearest to this text (spatial proximity)"
               }
-            },
-            "description": "Element selector (for find)"
-          },
-          "x": {
-            "type": "number",
-            "description": "X coordinate (for tap)"
-          },
-          "y": {
-            "type": "number",
-            "description": "Y coordinate (for tap)"
-          },
-          "elementIndex": {
-            "type": "number",
-            "description": "Element index from last find (for tap)"
-          },
-          "text": {
-            "type": "string",
-            "description": "Text to input"
-          },
-          "localPath": {
-            "type": "string",
-            "description": "Local path for screenshot (default: .replicant/screenshots/screenshot-{timestamp}.png)"
-          },
-          "inline": {
-            "type": "boolean",
-            "description": "Return base64 image data (default: false). Set to true to inline image content."
+            }
           },
           "debug": {
-            "type": "boolean",
-            "description": "Include source (accessibility/ocr) and confidence in response"
+            "type": "boolean"
           },
           "maxTier": {
             "type": "number",
             "minimum": 1,
             "maximum": 5,
-            "description": "For find: maximum fallback tier to attempt (1-5). Use 3 to stop before visual/grid payloads."
+            "description": "Max fallback tier (1-5). Use 3 to stop before visual/grid payloads."
           },
           "gridCell": {
             "type": "number",
             "minimum": 1,
-            "maximum": 24,
-            "description": "Grid cell number (1-24) for Tier 5 refinement"
+            "maximum": 24
           },
           "gridPosition": {
             "type": "number",
             "minimum": 1,
-            "maximum": 5,
-            "description": "Position within cell (1=TL, 2=TR, 3=Center, 4=BL, 5=BR)"
-          },
-          "deviceSpace": {
-            "type": "boolean",
-            "description": "For tap: treat x/y as device coordinates (skip image→device scaling). Use when coordinates come from adb shell input tap testing."
-          },
-          "maxDimension": {
-            "type": "number",
-            "description": "Max image dimension in pixels (default: 800). Higher = better quality, more tokens."
-          },
-          "raw": {
-            "type": "boolean",
-            "description": "Skip scaling, return full device resolution. Warning: may exceed API limits."
+            "maximum": 5
           },
           "compact": {
             "type": "boolean",
-            "description": "For dump: return paginated flat list of interactive elements (default: true). Set to false for full tree."
-          },
-          "direction": {
-            "type": "string",
-            "enum": [
-              "up",
-              "down",
-              "left",
-              "right"
-            ],
-            "description": "Scroll direction (for scroll operation)"
-          },
-          "amount": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1,
-            "description": "Scroll amount as fraction of screen (0-1, default: 0.5)"
+            "description": "Paginated flat list (default: true). false for full tree."
           },
           "limit": {
             "type": "number",
             "minimum": 1,
             "maximum": 100,
-            "description": "For dump with compact: max elements to return (default: 20)."
+            "description": "Default: 20"
           },
           "offset": {
             "type": "number",
-            "minimum": 0,
-            "description": "For dump with compact: skip first N elements for pagination."
+            "minimum": 0
           }
         },
         "required": [
@@ -2177,6 +2101,70 @@
           ],
           "additionalProperties": false
         },
+        "UiAccessibilityCheckOutput": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "deviceId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "deviceId"
+          ],
+          "additionalProperties": {}
+        }
+      }
+    },
+    "ui-action": {
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "tap",
+              "input",
+              "scroll"
+            ]
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "elementIndex": {
+            "type": "number"
+          },
+          "text": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down",
+              "left",
+              "right"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Scroll fraction (0-1, default: 0.5)"
+          },
+          "deviceSpace": {
+            "type": "boolean",
+            "description": "Treat x/y as device coordinates (skip scaling)"
+          }
+        },
+        "required": [
+          "operation"
+        ]
+      },
+      "outputSchemas": {
         "UiTapOutput": {
           "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
@@ -2263,7 +2251,40 @@
             "deviceId"
           ],
           "additionalProperties": false
+        }
+      }
+    },
+    "ui-capture": {
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "screenshot",
+              "visual-snapshot"
+            ]
+          },
+          "localPath": {
+            "type": "string"
+          },
+          "inline": {
+            "type": "boolean"
+          },
+          "maxDimension": {
+            "type": "number",
+            "description": "Max image dimension in pixels (default: 800). Higher = better quality, more tokens."
+          },
+          "raw": {
+            "type": "boolean",
+            "description": "Skip scaling, full device resolution."
+          }
         },
+        "required": [
+          "operation"
+        ]
+      },
+      "outputSchemas": {
         "UiScreenshotOutput": {
           "$schema": "https://json-schema.org/draft/2020-12/schema",
           "type": "object",
@@ -2280,19 +2301,6 @@
             "height": {
               "type": "number"
             },
-            "deviceId": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "deviceId"
-          ],
-          "additionalProperties": {}
-        },
-        "UiAccessibilityCheckOutput": {
-          "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "type": "object",
-          "properties": {
             "deviceId": {
               "type": "string"
             }

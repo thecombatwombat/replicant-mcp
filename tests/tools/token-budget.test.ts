@@ -46,8 +46,8 @@ describe("Token budget", () => {
     // Log actual values for visibility when updating ceiling
     console.log(`Schema chars: ${schemaJson.length}, Instructions chars: ${instructions.length}, Total chars: ${totalChars}, Est. tokens: ${estimatedTokens}`);
 
-    // CEILING: Set after measuring post-compression value + 10% headroom
-    // If this test fails, someone added schema bloat — compress before raising the ceiling
+    // CEILING: ~22 tokens above measured value (1,678). Tight by design.
+    // If this test fails, someone added schema bloat — compress before raising the ceiling.
     const TOKEN_CEILING = 1700;
 
     expect(estimatedTokens).toBeLessThanOrEqual(TOKEN_CEILING);

@@ -1,40 +1,36 @@
-# Agent Instructions
+# replicant-mcp
 
-This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
+Android MCP server for AI-assisted Android development. Published to npm as `replicant-mcp`.
 
-## Quick Reference
+## Decision Log
 
-```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --status in_progress  # Claim work
-bd close <id>         # Complete work
-bd sync               # Sync with git
-```
+Check `DECISIONS.md` before making architectural or workflow choices. Add entries for significant decisions.
 
-## Landing the Plane (Session Completion)
+## MCP Resources
 
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+- **Context7**: Use for library/API docs, code examples, and configuration guidance.
+- **Linear**: Scope all issues to the **replicant-mcp** project only.
 
-**MANDATORY WORKFLOW:**
+## Code Health
 
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd sync
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
+- File limit: 500 lines. Function limit: 80 lines. CLI command builders (`src/cli/`) excluded.
+- Tool operations are separate named functions; main handler dispatches.
+- No module-level mutable state. Use ServerContext.
+- Use ReplicantError. Never swallow errors silently.
 
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
+## Testing
 
+- Coverage enforced via thresholds in `vitest.config.ts`. Run `npm run test:coverage` before PR.
+- Test before implement. Unit tests in `tests/<category>/`, integration in `tests/integration/`.
+- Cover happy paths, error cases, edge cases, retries, boundaries, and mock external deps.
+
+## PR & Branches
+
+- No direct pushes to master. Use `/create-pr` for all PRs.
+- Branch format: `<prefix>/<short-description>`
+- Prefixes: `feature/`, `fix/`, `docs/`, `refactor/`, `chore/`, `trivial/`
+- Monitor for Greptile review. Wait for human approval before merging.
+
+## Releasing
+
+Use `/release` — never manually bump, tag, or publish.

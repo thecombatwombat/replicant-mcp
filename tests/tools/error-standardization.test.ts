@@ -11,7 +11,7 @@ import { createServerContext, ServerContext } from "../../src/server.js";
 import { handleEmulatorDeviceTool } from "../../src/tools/emulator-device.js";
 import { handleAdbAppTool } from "../../src/tools/adb-app.js";
 import { handleAdbDeviceTool } from "../../src/tools/adb-device.js";
-import { handleUiTool } from "../../src/tools/ui.js";
+import { handleUiActionTool } from "../../src/tools/ui-action.js";
 import { handleCacheTool } from "../../src/tools/cache.js";
 import { CacheManager } from "../../src/services/index.js";
 
@@ -227,7 +227,7 @@ describe("Error Standardization", () => {
     });
   });
 
-  describe("ui", () => {
+  describe("ui-action", () => {
     // Pre-set device to bypass ensureDevice's adb path resolution (fails on Windows)
     beforeEach(() => {
       context.deviceState.setCurrentDevice({ id: "emulator-5554", type: "emulator", status: "online" });
@@ -235,7 +235,7 @@ describe("Error Standardization", () => {
 
     it("throws INPUT_VALIDATION_FAILED for missing text on input", async () => {
       try {
-        await handleUiTool({ operation: "input" }, context);
+        await handleUiActionTool({ operation: "input" }, context);
         expect.fail("should have thrown");
       } catch (e) {
         expectReplicantError(e, ErrorCode.INPUT_VALIDATION_FAILED);
@@ -244,7 +244,7 @@ describe("Error Standardization", () => {
 
     it("throws INPUT_VALIDATION_FAILED for missing direction on scroll", async () => {
       try {
-        await handleUiTool({ operation: "scroll" }, context);
+        await handleUiActionTool({ operation: "scroll" }, context);
         expect.fail("should have thrown");
       } catch (e) {
         expectReplicantError(e, ErrorCode.INPUT_VALIDATION_FAILED);
@@ -253,7 +253,7 @@ describe("Error Standardization", () => {
 
     it("throws INPUT_VALIDATION_FAILED for missing coordinates and elementIndex on tap", async () => {
       try {
-        await handleUiTool({ operation: "tap" }, context);
+        await handleUiActionTool({ operation: "tap" }, context);
         expect.fail("should have thrown");
       } catch (e) {
         expectReplicantError(e, ErrorCode.INPUT_VALIDATION_FAILED);
@@ -262,7 +262,7 @@ describe("Error Standardization", () => {
 
     it("throws ELEMENT_NOT_FOUND for invalid elementIndex on tap", async () => {
       try {
-        await handleUiTool({ operation: "tap", elementIndex: 99 }, context);
+        await handleUiActionTool({ operation: "tap", elementIndex: 99 }, context);
         expect.fail("should have thrown");
       } catch (e) {
         expectReplicantError(e, ErrorCode.ELEMENT_NOT_FOUND);

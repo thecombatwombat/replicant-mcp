@@ -145,7 +145,7 @@ export async function handleAdbDeviceTool(
 
 export const adbDeviceToolDefinition = {
   name: "adb-device",
-  description: "Manage device connections. Operations: list, select, wait, properties, health-check.",
+  description: "Manage device connections.",
   inputSchema: {
     type: "object",
     properties: {
@@ -153,7 +153,7 @@ export const adbDeviceToolDefinition = {
         type: "string",
         enum: ["list", "select", "wait", "properties", "health-check"],
       },
-      deviceId: { type: "string", description: "Device ID for select/wait/properties" },
+      deviceId: { type: "string" },
     },
     required: ["operation"],
   },

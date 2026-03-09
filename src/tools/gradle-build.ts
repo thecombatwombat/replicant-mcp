@@ -44,7 +44,7 @@ export async function handleGradleBuildTool(
 
 export const gradleBuildToolDefinition = {
   name: "gradle-build",
-  description: "Build an Android application. Returns summary with buildId for full logs.",
+  description: "Build. Returns summary with buildId.",
   inputSchema: {
     type: "object",
     properties: {
@@ -52,8 +52,8 @@ export const gradleBuildToolDefinition = {
         type: "string",
         enum: ["assembleDebug", "assembleRelease", "bundle"],
       },
-      module: { type: "string", description: "Module path (e.g., ':app')" },
-      flavor: { type: "string", description: "Product flavor" },
+      module: { type: "string", description: "e.g., ':app'" },
+      flavor: { type: "string" },
     },
     required: ["operation"],
   },

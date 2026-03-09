@@ -41,7 +41,9 @@ export async function handleRtfmTool(input: RtfmInput): Promise<{ content: strin
       "adb-logcat": "adb",
       "adb-shell": "adb",
       "emulator-device": "emulator",
-      "ui": "ui",
+      "ui-query": "ui",
+      "ui-action": "ui",
+      "ui-capture": "ui",
       "cache": "cache",
       "rtfm": "index",
     };

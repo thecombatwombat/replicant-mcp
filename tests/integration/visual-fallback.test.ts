@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { handleUiTool } from "../../src/tools/ui.js";
+import { handleUiQueryTool } from "../../src/tools/ui-query.js";
+import { handleUiCaptureTool } from "../../src/tools/ui-capture.js";
 
 describe("Visual Fallback", () => {
   let mockContext: any;
@@ -35,7 +36,7 @@ describe("Visual Fallback", () => {
         app: { packageName: "com.example", activityName: ".MainActivity" },
       });
 
-      const result = await handleUiTool(
+      const result = await handleUiCaptureTool(
         { operation: "visual-snapshot" },
         mockContext,
         defaultUiConfig
@@ -55,7 +56,7 @@ describe("Visual Fallback", () => {
         app: { packageName: "com.example", activityName: ".MainActivity" },
       });
 
-      const result = await handleUiTool(
+      const result = await handleUiCaptureTool(
         { operation: "visual-snapshot", inline: true },
         mockContext,
         defaultUiConfig
@@ -79,7 +80,7 @@ describe("Visual Fallback", () => {
         },
       });
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { text: "NonExistent" } },
         mockContext,
         defaultUiConfig
@@ -97,7 +98,7 @@ describe("Visual Fallback", () => {
         source: "ocr",
       });
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { text: "NonExistent" } },
         mockContext,
         { ...defaultUiConfig, autoFallbackScreenshot: false }
@@ -115,7 +116,7 @@ describe("Visual Fallback", () => {
         source: "accessibility",
       });
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { text: "Login" } },
         mockContext,
         defaultUiConfig
@@ -135,7 +136,7 @@ describe("Visual Fallback", () => {
         app: { packageName: "com.example", activityName: ".MainActivity" },
       });
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { resourceId: "nonexistent" } },
         mockContext,
         defaultUiConfig
@@ -151,7 +152,7 @@ describe("Visual Fallback", () => {
         { text: "", resourceId: "btn", className: "Button", centerX: 100, centerY: 100, bounds: {}, clickable: true },
       ]);
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { resourceId: "btn" } },
         mockContext,
         defaultUiConfig

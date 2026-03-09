@@ -71,16 +71,16 @@ export async function handleAdbLogcatTool(
 
 export const adbLogcatToolDefinition = {
   name: "adb-logcat",
-  description: "Read device logs. Auto-selects device if only one connected. Returns summary with logId for full output.",
+  description: "Read device logs. Returns summary with logId.",
   inputSchema: {
     type: "object",
     properties: {
-      lines: { type: "number", description: "Number of lines (default: 100)" },
-      package: { type: "string", description: "Filter by package name" },
-      tags: { type: "array", items: { type: "string" }, description: "Filter by log tags" },
+      lines: { type: "number", description: "Default: 100" },
+      package: { type: "string" },
+      tags: { type: "array", items: { type: "string" } },
       level: { type: "string", enum: ["verbose", "debug", "info", "warn", "error"] },
-      rawFilter: { type: "string", description: "Raw logcat filter string" },
-      since: { type: "string", description: "Time filter in adb logcat -T format (e.g., '01-20 15:30:00.000')" },
+      rawFilter: { type: "string" },
+      since: { type: "string", description: "e.g., '01-20 15:30:00.000'" },
     },
   },
 };

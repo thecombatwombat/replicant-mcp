@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { handleUiTool } from "../../src/tools/ui.js";
+import { handleUiQueryTool } from "../../src/tools/ui-query.js";
+import { handleUiActionTool } from "../../src/tools/ui-action.js";
 
 describe("UI Tool - OCR Fallback", () => {
   let mockContext: any;
@@ -30,7 +31,7 @@ describe("UI Tool - OCR Fallback", () => {
         source: "accessibility",
       });
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { text: "Login" } },
         mockContext
       );
@@ -52,7 +53,7 @@ describe("UI Tool - OCR Fallback", () => {
         fallbackReason: "accessibility tree had no matching text",
       });
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { text: "Chobani" }, debug: true },
         mockContext
       );
@@ -67,7 +68,7 @@ describe("UI Tool - OCR Fallback", () => {
         source: "ocr",
       });
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { text: "NotFound" } },
         mockContext
       );
@@ -87,7 +88,7 @@ describe("UI Tool - OCR Fallback", () => {
         stopReason: "maxTier limit reached",
       });
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { text: "NotFound" }, maxTier: 3 },
         mockContext
       );
@@ -111,15 +112,15 @@ describe("UI Tool - OCR Fallback", () => {
         source: "ocr",
       });
 
-      await handleUiTool(
+      await handleUiQueryTool(
         { operation: "find", selector: { text: "Chobani" } },
         mockContext
       );
 
-      // Now tap should work
+      // Now tap should work via ui-action
       mockContext.ui.tap.mockResolvedValue(undefined);
 
-      await handleUiTool(
+      await handleUiActionTool(
         { operation: "tap", elementIndex: 0 },
         mockContext
       );
@@ -132,7 +133,7 @@ describe("UI Tool - OCR Fallback", () => {
         { text: "", resourceId: "com.example:id/btn", className: "Button", centerX: 100, centerY: 100, bounds: { left: 50, top: 50, right: 150, bottom: 150 }, clickable: true },
       ]);
 
-      const result = await handleUiTool(
+      const result = await handleUiQueryTool(
         { operation: "find", selector: { resourceId: "btn" } },
         mockContext
       );

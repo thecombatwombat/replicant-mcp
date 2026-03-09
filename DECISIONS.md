@@ -183,3 +183,12 @@ Context: Package is `replicant-mcp` but the CLI bin was `replicant` (pointing to
 Decision: Make `src/index.ts` a smart router — `process.argv.length > 2` (has args) dynamically imports `cli.js`, otherwise starts the MCP server. Single bin entry `replicant-mcp` points to `dist/index.js`. Commander `.name()` updated to `replicant-mcp`. Dynamic imports prevent loading CLI dependencies when running as MCP server and vice versa.
 Alternatives: Separate bins with both pointing to CLI (breaks MCP server usage), wrapper shell script (adds complexity), keeping mismatched `replicant` bin name (confusing package name mismatch).
 Refs: src/index.ts, src/cli.ts, package.json
+
+---
+
+## [2026-03-10] Token cost optimization: schema compression + UI tool split
+Tags: architecture, token-optimization, mcp
+Context: replicant-mcp sends ~2,423 tokens/turn to eager-loading MCP clients (Claude Desktop, Cursor, Windsurf, Cline, Aider) even when the user isn't doing Android work. Over a 50-turn session, this burns ~125K idle tokens occupying context window space every turn.
+Decision: Two changes shipped together: (1) Split `ui` into `ui-query`, `ui-action`, `ui-capture` — each tool only exposes the schema fields relevant to its operations (~276 tokens saved). (2) Compress all tool descriptions and server instructions — drop redundant "Operations: ...", "Auto-selects device...", self-explanatory param descriptions (~662 tokens saved). No deprecated `ui` alias — MCP tool names are not a public API guarantee. Target: ~2,423 → ~1,485 tokens/turn (~39% reduction).
+Alternatives: Keep single `ui` tool and only compress descriptions (less savings, ~26%), add `ui` deprecated alias (costs tokens to maintain, no consumers rely on tool names), lazy tool loading (MCP protocol doesn't support it yet).
+Refs: docs/plans/2026-03-09-token-cost-optimization-design.md, docs/plans/2026-03-09-token-cost-research.md

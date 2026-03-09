@@ -51,7 +51,7 @@ export async function handleCacheTool(
 
 export const cacheToolDefinition = {
   name: "cache",
-  description: "Manage the cache. Operations: get-stats, clear, get-config, set-config. See rtfm for details.",
+  description: "Manage the cache. See rtfm for details.",
   inputSchema: {
     type: "object",
     properties: {
@@ -59,7 +59,7 @@ export const cacheToolDefinition = {
         type: "string",
         enum: ["get-stats", "clear", "get-config", "set-config"],
       },
-      key: { type: "string", description: "Specific cache key to clear" },
+      key: { type: "string", description: "Key to clear (optional)" },
       config: {
         type: "object",
         properties: {

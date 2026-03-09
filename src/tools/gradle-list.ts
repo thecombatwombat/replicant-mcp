@@ -59,7 +59,7 @@ export async function handleGradleListTool(
 
 export const gradleListToolDefinition = {
   name: "gradle-list",
-  description: "Introspect project structure. Operations: modules, variants, tasks.",
+  description: "Introspect project structure.",
   inputSchema: {
     type: "object",
     properties: {
@@ -67,7 +67,7 @@ export const gradleListToolDefinition = {
         type: "string",
         enum: ["variants", "modules", "tasks"],
       },
-      module: { type: "string", description: "Module path (for variants/tasks)" },
+      module: { type: "string", description: "e.g., ':app'" },
     },
     required: ["operation"],
   },

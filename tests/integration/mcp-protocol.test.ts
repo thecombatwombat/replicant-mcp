@@ -55,9 +55,9 @@ describe("MCP Protocol Compliance", () => {
   });
 
   describe("tools/list", () => {
-    it("should return all 12 tools", async () => {
+    it("should return all 14 tools", async () => {
       const result = await client.listTools();
-      expect(result.tools.length).toBe(12);
+      expect(result.tools.length).toBe(14);
     });
 
     it("should include all expected tool names", async () => {
@@ -75,7 +75,9 @@ describe("MCP Protocol Compliance", () => {
       expect(toolNames).toContain("gradle-test");
       expect(toolNames).toContain("gradle-list");
       expect(toolNames).toContain("gradle-get-details");
-      expect(toolNames).toContain("ui");
+      expect(toolNames).toContain("ui-query");
+      expect(toolNames).toContain("ui-action");
+      expect(toolNames).toContain("ui-capture");
     });
 
     it("should have valid input schemas for all tools", async () => {
@@ -365,23 +367,20 @@ describe("Tool Input Schema Validation", () => {
     });
   });
 
-  describe("ui schema", () => {
-    it("should have all UI operations", async () => {
+  describe("ui-query schema", () => {
+    it("should have query operations", async () => {
       const tools = await client.listTools();
-      const tool = tools.tools.find((t) => t.name === "ui");
+      const tool = tools.tools.find((t) => t.name === "ui-query");
 
       const ops = tool?.inputSchema.properties?.operation?.enum;
       expect(ops).toContain("dump");
       expect(ops).toContain("find");
-      expect(ops).toContain("tap");
-      expect(ops).toContain("input");
-      expect(ops).toContain("screenshot");
       expect(ops).toContain("accessibility-check");
     });
 
     it("should have selector properties", async () => {
       const tools = await client.listTools();
-      const tool = tools.tools.find((t) => t.name === "ui");
+      const tool = tools.tools.find((t) => t.name === "ui-query");
 
       const selectorProps = tool?.inputSchema.properties?.selector?.properties;
       expect(selectorProps?.resourceId).toBeDefined();
@@ -392,13 +391,35 @@ describe("Tool Input Schema Validation", () => {
 
     it("should expose maxTier control for find fallback depth", async () => {
       const tools = await client.listTools();
-      const tool = tools.tools.find((t) => t.name === "ui");
+      const tool = tools.tools.find((t) => t.name === "ui-query");
 
       const maxTier = tool?.inputSchema.properties?.maxTier;
       expect(maxTier).toBeDefined();
       expect(maxTier?.minimum).toBe(1);
       expect(maxTier?.maximum).toBe(5);
-      expect(maxTier?.description).toContain("maximum fallback tier");
+    });
+  });
+
+  describe("ui-action schema", () => {
+    it("should have action operations", async () => {
+      const tools = await client.listTools();
+      const tool = tools.tools.find((t) => t.name === "ui-action");
+
+      const ops = tool?.inputSchema.properties?.operation?.enum;
+      expect(ops).toContain("tap");
+      expect(ops).toContain("input");
+      expect(ops).toContain("scroll");
+    });
+  });
+
+  describe("ui-capture schema", () => {
+    it("should have capture operations", async () => {
+      const tools = await client.listTools();
+      const tool = tools.tools.find((t) => t.name === "ui-capture");
+
+      const ops = tool?.inputSchema.properties?.operation?.enum;
+      expect(ops).toContain("screenshot");
+      expect(ops).toContain("visual-snapshot");
     });
   });
 

@@ -199,15 +199,14 @@ export const gradleGetDetailsToolDefinition = {
   inputSchema: {
     type: "object",
     properties: {
-      id: { type: "string", description: "Build or test ID from previous operation" },
+      id: { type: "string" },
       detailType: {
         type: "string",
         enum: ["logs", "errors", "tasks", "all"],
-        description: "Type of details to retrieve",
       },
       maxChars: {
         type: "number",
-        description: "Truncate large text fields to at most this many characters",
+        description: "Truncate to N chars",
       },
       summaryOnly: {
         type: "boolean",

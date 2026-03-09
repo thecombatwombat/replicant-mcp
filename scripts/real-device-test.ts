@@ -134,7 +134,7 @@ async function runTests() {
   // Test 6: ui dump
   await test("ui dump (compact by default)", async () => {
     const result = await client.callTool({
-      name: "ui",
+      name: "ui-query",
       arguments: { operation: "dump" },
     });
     const data = JSON.parse(result.content[0].text as string);
@@ -147,7 +147,7 @@ async function runTests() {
   // Test 7: ui find
   await test("ui find (clickable elements)", async () => {
     const result = await client.callTool({
-      name: "ui",
+      name: "ui-query",
       arguments: {
         operation: "find",
         selector: { className: "android.widget.TextView" },

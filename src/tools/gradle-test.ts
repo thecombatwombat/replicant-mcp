@@ -48,7 +48,6 @@ async function handleRunTests(
     input.filter
   );
 
-  // Cache full output for later retrieval
   const testId = context.cache.generateId("test");
   context.cache.set(
     testId,
@@ -57,7 +56,6 @@ async function handleRunTests(
     CACHE_TTLS.TEST_RESULTS
   );
 
-  // Check for regressions against baseline
   const effectiveTaskName = input.taskName || operation;
   const baseline = loadBaseline(effectiveTaskName);
   const baselineResults = convertToBaselineResults(result);
@@ -81,7 +79,6 @@ async function handleSaveBaseline(
   input: GradleTestInput,
   context: ServerContext
 ): Promise<Record<string, unknown>> {
-  // Run tests first to get current results
   const operation = "unitTest" as const;
   const { result, fullOutput } = await context.gradle.test(
     operation,

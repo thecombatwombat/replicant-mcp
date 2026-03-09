@@ -34,7 +34,7 @@ type OperationHandler = (
 
 const operations: Record<string, OperationHandler> = {
   dump: handleDump,
-  find: handleFindWrapper,
+  find: handleFind,
   "accessibility-check": handleAccessibilityCheck,
 };
 
@@ -146,15 +146,6 @@ function handleFullDump(
     deviceId,
     warning: emptyWarning,
   };
-}
-
-async function handleFindWrapper(
-  input: UiQueryInput,
-  context: ServerContext,
-  config: UiConfig,
-  deviceId: string,
-): Promise<Record<string, unknown>> {
-  return handleFind(input, context, config, deviceId);
 }
 
 async function handleAccessibilityCheck(

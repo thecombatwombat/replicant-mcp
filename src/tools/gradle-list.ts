@@ -27,11 +27,9 @@ export async function handleGradleListTool(
     case "tasks": {
       const tasks = await context.gradle.listTasks(input.module);
 
-      // Cache full task list
       const listId = context.cache.generateId("tasks");
       context.cache.set(listId, { tasks }, "tasks", CACHE_TTLS.GRADLE_VARIANTS);
 
-      // Return categorized summary
       const buildTasks = tasks.filter((t) => t.includes("assemble") || t.includes("bundle"));
       const testTasks = tasks.filter((t) => t.includes("test") || t.includes("Test"));
       const cleanTasks = tasks.filter((t) => t.includes("clean"));

@@ -17,7 +17,6 @@ export interface FindInput {
   gridPosition?: number;
 }
 
-// Type guards for different element types
 export function isAccessibilityNode(el: FindElement): el is AccessibilityNode {
   return "centerX" in el && "className" in el;
 }

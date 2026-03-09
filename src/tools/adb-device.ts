@@ -41,20 +41,20 @@ async function handleSelect(input: AdbDeviceInput, context: ServerContext): Prom
   return { selected: device };
 }
 
+async function resolveDeviceId(input: AdbDeviceInput, context: ServerContext): Promise<string> {
+  if (input.deviceId) return input.deviceId;
+  const device = await context.deviceState.ensureDevice(context.adb);
+  return device.id;
+}
+
 async function handleWait(input: AdbDeviceInput, context: ServerContext): Promise<Record<string, unknown>> {
-  const device = input.deviceId
-    ? { id: input.deviceId }
-    : await context.deviceState.ensureDevice(context.adb);
-  const deviceId = device.id;
+  const deviceId = await resolveDeviceId(input, context);
   await context.adb.waitForDevice(deviceId);
   return { status: "device ready", deviceId };
 }
 
 async function handleProperties(input: AdbDeviceInput, context: ServerContext): Promise<Record<string, unknown>> {
-  const device = input.deviceId
-    ? { id: input.deviceId }
-    : await context.deviceState.ensureDevice(context.adb);
-  const deviceId = device.id;
+  const deviceId = await resolveDeviceId(input, context);
   const props = await context.adb.getProperties(deviceId);
 
   const cacheId = context.cache.generateId("device-props");

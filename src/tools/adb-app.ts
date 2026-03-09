@@ -6,7 +6,6 @@ export const adbAppInputSchema = z.object({
   operation: z.enum(["install", "uninstall", "launch", "stop", "clear-data", "list"]),
   apkPath: z.string().optional(),
   packageName: z.string().optional(),
-  // List operation options
   limit: z.number().min(1).max(100).optional(),
   filter: z.string().optional(),
   offset: z.number().min(0).optional(),

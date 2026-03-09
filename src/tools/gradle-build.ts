@@ -20,7 +20,6 @@ export async function handleGradleBuildTool(
     input.flavor
   );
 
-  // Cache full output for later retrieval
   const buildId = context.cache.generateId("build");
   context.cache.set(
     buildId,

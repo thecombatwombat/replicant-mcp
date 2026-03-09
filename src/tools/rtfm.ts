@@ -13,9 +13,25 @@ export const rtfmInputSchema = z.object({
 
 export type RtfmInput = z.infer<typeof rtfmInputSchema>;
 
+const TOOL_TO_CATEGORY: Record<string, string> = {
+  "gradle-build": "build",
+  "gradle-test": "build",
+  "gradle-list": "build",
+  "gradle-get-details": "build",
+  "adb-device": "adb",
+  "adb-app": "adb",
+  "adb-logcat": "adb",
+  "adb-shell": "adb",
+  "emulator-device": "emulator",
+  "ui-query": "ui",
+  "ui-action": "ui",
+  "ui-capture": "ui",
+  "cache": "cache",
+  "rtfm": "index",
+};
+
 export async function handleRtfmTool(input: RtfmInput): Promise<{ content: string }> {
   if (!input.category && !input.tool) {
-    // Return index
     const content = await readFile(join(RTFM_DIR, "index.md"), "utf-8");
     return { content };
   }
@@ -29,38 +45,14 @@ export async function handleRtfmTool(input: RtfmInput): Promise<{ content: strin
     }
   }
 
-  if (input.tool) {
-    // Map tool to category
-    const toolToCategory: Record<string, string> = {
-      "gradle-build": "build",
-      "gradle-test": "build",
-      "gradle-list": "build",
-      "gradle-get-details": "build",
-      "adb-device": "adb",
-      "adb-app": "adb",
-      "adb-logcat": "adb",
-      "adb-shell": "adb",
-      "emulator-device": "emulator",
-      "ui-query": "ui",
-      "ui-action": "ui",
-      "ui-capture": "ui",
-      "cache": "cache",
-      "rtfm": "index",
-    };
-
-    const category = toolToCategory[input.tool] || "index";
-    try {
-      const content = await readFile(join(RTFM_DIR, `${category}.md`), "utf-8");
-
-      // Try to extract just the relevant section
-      const toolSection = extractToolSection(content, input.tool);
-      return { content: toolSection || content };
-    } catch {
-      return { content: `Tool '${input.tool}' not found.` };
-    }
+  const category = TOOL_TO_CATEGORY[input.tool!] || "index";
+  try {
+    const content = await readFile(join(RTFM_DIR, `${category}.md`), "utf-8");
+    const toolSection = extractToolSection(content, input.tool!);
+    return { content: toolSection || content };
+  } catch {
+    return { content: `Tool '${input.tool}' not found.` };
   }
-
-  return { content: "No documentation found." };
 }
 
 function extractToolSection(content: string, toolName: string): string | null {

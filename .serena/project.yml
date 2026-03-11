@@ -122,6 +122,15 @@ symbol_info_budget:
 # is activated post-init, an error will be returned.
 language_backend:
 
+# line ending convention to use when writing source files.
+# Possible values: unset (use global setting), "lf", "crlf", or "native" (platform default)
+# This does not affect Serena's own files (e.g. memories and configuration files), which always use native line endings.
+line_ending:
+
+# list of regex patterns which, when matched, mark a memory entry as read‑only.
+# Extends the list from the global configuration, merging the two lists.
+read_only_memory_patterns: []
+
 # time budget (seconds) per tool call for the retrieval of additional symbol information
 # such as docstrings or parameter information.
 # This overrides the corresponding setting in the global configuration; see the documentation there.

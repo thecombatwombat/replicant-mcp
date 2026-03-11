@@ -26,7 +26,7 @@ Check `DECISIONS.md` before making architectural or workflow choices. Add entrie
 
 ## PR & Branches
 
-- No direct pushes to master. Use `/create-pr` for all PRs.
+- **Never push directly to master. No exceptions, no matter how small the change.** Always create a branch and use `/create-pr`.
 - Branch format: `<prefix>/<short-description>`
 - Prefixes: `feature/`, `fix/`, `docs/`, `refactor/`, `chore/`, `trivial/`
 - Monitor for Greptile review. Wait for human approval before merging.

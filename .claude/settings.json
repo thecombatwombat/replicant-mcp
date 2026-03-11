@@ -1,25 +1,6 @@
 {
   "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Task",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "entire hooks claude-code post-task"
-          }
-        ]
-      },
-      {
-        "matcher": "TodoWrite",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "entire hooks claude-code post-todo"
-          }
-        ]
-      }
-    ],
+    "PostToolUse": [],
     "PreToolUse": [
       {
         "matcher": "Bash",
@@ -27,15 +8,6 @@
           {
             "type": "command",
             "command": "bash scripts/pre-pr-gate.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Task",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "entire hooks claude-code pre-task"
           }
         ]
       }
@@ -46,11 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/beads-sync-end.sh 2\u003e\u00261 || true"
-          },
-          {
-            "type": "command",
-            "command": "entire hooks claude-code session-end"
+            "command": "bash scripts/beads-sync-end.sh 2>&1 || true"
           }
         ]
       }
@@ -61,49 +29,23 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/install-dev-tools.sh 2\u003e\u00261"
+            "command": "bash scripts/install-dev-tools.sh 2>&1"
           },
           {
             "type": "command",
-            "command": "bash scripts/check-env.sh --quick 2\u003e\u00261 || true"
+            "command": "bash scripts/check-env.sh --quick 2>&1 || true"
           },
           {
             "type": "command",
-            "command": "bash scripts/beads-sync-start.sh 2\u003e\u00261 || true"
-          },
-          {
-            "type": "command",
-            "command": "entire hooks claude-code session-start"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "entire hooks claude-code stop"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "entire hooks claude-code user-prompt-submit"
+            "command": "bash scripts/beads-sync-start.sh 2>&1 || true"
           }
         ]
       }
     ]
   },
   "permissions": {
-    "deny": [
-      "Read(./.entire/metadata/**)"
+    "allow": [
+      "mcp__plugin_serena_serena__*"
     ]
   }
 }

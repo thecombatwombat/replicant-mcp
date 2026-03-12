@@ -8,7 +8,7 @@ Beads is a git-backed issue tracker designed for **cross-session agent working m
 
 We use beads as the **primary project management system** for replicant-mcp:
 
-- **175 total issues** (90 open, 85 closed, 11 epics)
+- **175 total issues** (89 open, 85 closed, 13 epics) at time of export
 - **72 "ready to work" items** in `bd ready`
 - Full epic hierarchy with dependency chains
 - Session hooks for auto-sync on start/end (`scripts/beads-sync-start.sh`, `scripts/beads-sync-end.sh`)

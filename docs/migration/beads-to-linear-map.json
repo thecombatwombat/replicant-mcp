@@ -1,4 +1,5 @@
 {
+  "_note_THE-60": "THE-60 is a duplicate of replicant-mcp-9ok created during an MCP connection drop. The canonical mapping is THE-62. THE-60 should be deleted from Linear during Phase 4 cleanup.",
   "replicant-mcp-0ia": { "id": "15014fa6-9b71-4723-a741-d6a4aeaedda4", "identifier": "THE-5" },
   "replicant-mcp-0y8": { "id": "5bc42f27-2299-4d18-b005-fccd7d4f152f", "identifier": "THE-6" },
   "replicant-mcp-0y8.2": { "id": "914f8478-386b-4216-ae8e-6b9edbe5ca49", "identifier": "THE-7" },

@@ -13,16 +13,16 @@ Requirements for full marketplace distribution. Each maps to roadmap phases.
 - [x] **CFG-02**: `mcpName` field added to `package.json` matching registry name
 - [x] **CFG-03**: `smithery.yaml` created with stdio config, commandFunction, and optional projectRoot schema
 - [x] **CFG-04**: `glama.json` created with schema URL and maintainer
-- [ ] **CFG-05**: `.cursor-plugin/plugin.json` created with plugin manifest
-- [ ] **CFG-06**: `.mcp.json` created with MCP server config for Cursor
+- [x] **CFG-05**: `.cursor-plugin/plugin.json` created with plugin manifest
+- [x] **CFG-06**: `.mcp.json` created with MCP server config for Cursor
 
 ### Pull Requests (per project rules — never push to master)
 
 - [x] **PR-01**: PR for MCP Registry config (`chore/mcp-registry-listing`)
 - [x] **PR-02**: PR for Smithery config (`chore/smithery-listing`)
 - [x] **PR-03**: PR for Glama config (`chore/glama-listing`)
-- [ ] **PR-04**: PR for Cursor config (`chore/cursor-marketplace`)
-- [ ] **PR-05**: PR to awesome-mcp-servers adding replicant-mcp to Developer Tools section
+- [x] **PR-04**: PR for Cursor config (`chore/cursor-marketplace`)
+- [x] **PR-05**: PR to awesome-mcp-servers adding replicant-mcp to Developer Tools section
 
 ### Form Submissions (manual user action, content prepared by Claude)
 
@@ -72,13 +72,13 @@ Deferred to future. Not in current roadmap.
 | CFG-02 | Phase 1 | Complete |
 | CFG-03 | Phase 1 | Complete |
 | CFG-04 | Phase 1 | Complete |
-| CFG-05 | Phase 1 | Pending |
-| CFG-06 | Phase 1 | Pending |
+| CFG-05 | Phase 1 | Complete |
+| CFG-06 | Phase 1 | Complete |
 | PR-01 | Phase 1 | Complete |
 | PR-02 | Phase 1 | Complete |
 | PR-03 | Phase 1 | Complete |
-| PR-04 | Phase 1 | Pending |
-| PR-05 | Phase 1 | Pending |
+| PR-04 | Phase 1 | Complete |
+| PR-05 | Phase 1 | Complete |
 | FORM-01 | Phase 2 | Pending |
 | FORM-02 | Phase 2 | Pending |
 | PUB-01 | Phase 3 | Pending |

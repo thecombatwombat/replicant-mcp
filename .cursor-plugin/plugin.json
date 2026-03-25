@@ -1,0 +1,21 @@
+{
+  "name": "replicant-mcp",
+  "description": "Android MCP server for AI-assisted Android development. Build APKs, launch emulators, manage devices, automate UI, and analyze logs.",
+  "version": "1.6.0",
+  "author": {
+    "name": "Archit Joshi"
+  },
+  "homepage": "https://github.com/thecombatwombat/replicant-mcp",
+  "repository": "https://github.com/thecombatwombat/replicant-mcp",
+  "license": "MIT",
+  "keywords": [
+    "android",
+    "mcp",
+    "adb",
+    "gradle",
+    "emulator",
+    "ui-automation",
+    "mobile"
+  ],
+  "mcpServers": ".mcp.json"
+}

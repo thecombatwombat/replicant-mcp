@@ -88,11 +88,24 @@ npm test -- --run
 echo "📦 Bumping to $NEW_VERSION..."
 npm version $NEW_VERSION --no-git-tag-version >/dev/null
 
+# Sync version in .mcp/server.json (MCP Registry manifest)
+if [[ -f .mcp/server.json ]]; then
+  node -e "
+    const fs = require('fs');
+    const s = JSON.parse(fs.readFileSync('.mcp/server.json', 'utf8'));
+    s.version = '$NEW_VERSION';
+    if (s.packages) s.packages.forEach(p => p.version = '$NEW_VERSION');
+    fs.writeFileSync('.mcp/server.json', JSON.stringify(s, null, 2) + '\n');
+  "
+  echo "   Synced .mcp/server.json → $NEW_VERSION"
+fi
+
 echo "🔨 Building..."
 npm run build
 
 echo "📝 Committing..."
 git add package.json package-lock.json
+[[ -f .mcp/server.json ]] && git add .mcp/server.json
 git commit -m "chore: release v$NEW_VERSION"
 
 echo "🏷️  Tagging v$NEW_VERSION..."

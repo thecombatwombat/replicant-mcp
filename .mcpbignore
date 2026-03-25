@@ -1,0 +1,46 @@
+# Source (dist/ has compiled output)
+src/
+tsconfig.json
+eslint.config.js
+
+# Tests
+tests/
+vitest.config.ts
+coverage/
+
+# Development
+.beads/
+.claude/
+.cursor-plugin/
+.github/
+.githooks/
+.gitattributes
+.mcp/
+.mcp.json
+.planning/
+.serena/
+.tool-versions
+scripts/
+greptile.json
+smithery.yaml
+glama.json
+
+# Docs (except README and LICENSE)
+docs/
+AGENTS.md
+CHANGELOG.md
+CLAUDE.md
+CONTRIBUTING.md
+DECISIONS.md
+SECURITY.md
+SUPPORT.md
+
+# Large assets
+demo.gif
+
+# Package lock (node_modules bundled)
+package-lock.json
+
+# Build artifacts
+*.mcpb
+.worktrees/

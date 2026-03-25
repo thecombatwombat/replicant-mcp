@@ -44,10 +44,10 @@ Plans:
   1. Anthropic Connectors Google Form answers are prepared with description, example prompts, and safety information ready for user to submit
   2. Claude Code Plugin Directory form answers are prepared with description, features, and example prompts ready for user to submit
   3. User has submitted both forms (confirmation received or screenshot captured)
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 02-01: TBD
+- [ ] 02-01-PLAN.md — Prepare form answers and submit both marketplace forms (FORM-01, FORM-02)
 
 ### Phase 3: Registry Publishing
 **Goal**: replicant-mcp is submitted to all 4 CLI/web-publish marketplaces
@@ -87,6 +87,6 @@ Note: Phase 2 can execute in parallel with Phase 1 since it has no dependency on
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Config Files and Pull Requests | 0/4 | Planned | - |
-| 2. Form Submissions | 0/? | Not started | - |
+| 2. Form Submissions | 0/1 | Planned | - |
 | 3. Registry Publishing | 0/? | Not started | - |
 | 4. Verification | 0/? | Not started | - |

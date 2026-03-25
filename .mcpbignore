@@ -11,6 +11,9 @@ coverage/
 # Development
 .beads/
 .claude/
+.entire/
+.replicant/
+.git/
 .cursor-plugin/
 .github/
 .githooks/

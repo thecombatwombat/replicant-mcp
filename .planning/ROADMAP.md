@@ -58,10 +58,11 @@ Plans:
   2. Smithery submission is accepted via web or CLI
   3. Glama ownership is claimed via GitHub auth at glama.ai
   4. Cursor plugin is submitted at cursor.com/marketplace/publish
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01-PLAN.md — npm release prerequisite and MCP Registry publish via mcp-publisher CLI (PUB-01)
+- [ ] 03-02-PLAN.md — Smithery and Cursor web submissions, Glama listing confirmation (PUB-02, PUB-03, PUB-04)
 
 ### Phase 4: Verification
 **Goal**: Every marketplace listing is confirmed live (or confirmed submitted for those with external review)
@@ -86,7 +87,7 @@ Note: Phase 2 can execute in parallel with Phase 1 since it has no dependency on
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Config Files and Pull Requests | 0/4 | Planned | - |
-| 2. Form Submissions | 0/1 | Planned | - |
-| 3. Registry Publishing | 0/? | Not started | - |
+| 1. Config Files and Pull Requests | 4/4 | Complete | 2026-03-25 |
+| 2. Form Submissions | 1/1 | Complete | 2026-03-26 |
+| 3. Registry Publishing | 0/2 | Planned | - |
 | 4. Verification | 0/? | Not started | - |

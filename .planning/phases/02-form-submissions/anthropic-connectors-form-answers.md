@@ -34,10 +34,10 @@ archit.joshi@gmail.com
 ### 4. MCP Server Description (required, 50 words max)
 
 ```
-Android MCP server for AI-assisted development. 14 tools for building APKs via Gradle, managing emulators, installing apps, automating UI through accessibility services, and analyzing device logs. All operations run locally against the user's Android SDK — no cloud accounts or API keys needed.
+MCP server for controlling Android devices and emulators through conversation. Build and install apps, automate screen interactions, capture screenshots, read device logs, and manage emulators — no command-line knowledge needed. All operations run locally.
 ```
 
-> 42 words — under the 50-word limit.
+> 38 words — under the 50-word limit.
 
 ### 5. Desktop Extension GitHub Link (required, pre-filled)
 

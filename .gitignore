@@ -35,4 +35,3 @@ coverage/
 !.claude/settings.json
 .beads/
 .replicant/
-.mcp.json

@@ -1,0 +1,96 @@
+{
+  "manifest_version": "0.3",
+  "name": "replicant-mcp",
+  "display_name": "Replicant MCP",
+  "version": "1.6.0",
+  "description": "Android MCP server for AI-assisted Android development. Build APKs, launch emulators, manage devices, automate UI, and analyze logs.",
+  "long_description": "Replicant MCP provides 14 tools across 6 categories for complete Android development automation. Build and test with Gradle, manage emulators and devices via ADB, automate UI interactions through accessibility services, capture screenshots, and analyze logcat output — all through natural conversation with Claude.",
+  "author": {
+    "name": "Archit Joshi",
+    "url": "https://github.com/thecombatwombat"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/index.js"],
+      "env": {}
+    }
+  },
+  "tools": [
+    {
+      "name": "adb-device",
+      "description": "Manage device connections"
+    },
+    {
+      "name": "adb-app",
+      "description": "Manage applications"
+    },
+    {
+      "name": "adb-logcat",
+      "description": "Read device logs"
+    },
+    {
+      "name": "adb-shell",
+      "description": "Execute shell commands with safety guards"
+    },
+    {
+      "name": "emulator-device",
+      "description": "Manage Android emulators"
+    },
+    {
+      "name": "gradle-build",
+      "description": "Build APKs and app bundles"
+    },
+    {
+      "name": "gradle-test",
+      "description": "Run tests with regression detection"
+    },
+    {
+      "name": "gradle-list",
+      "description": "Introspect project structure"
+    },
+    {
+      "name": "gradle-get-details",
+      "description": "Fetch full output for previous build or test"
+    },
+    {
+      "name": "ui-query",
+      "description": "Query app UI via accessibility services"
+    },
+    {
+      "name": "ui-action",
+      "description": "Interact with app UI: tap, input, scroll"
+    },
+    {
+      "name": "ui-capture",
+      "description": "Capture screenshots"
+    },
+    {
+      "name": "cache",
+      "description": "Manage the response cache"
+    },
+    {
+      "name": "rtfm",
+      "description": "Get documentation and usage guides"
+    }
+  ],
+  "keywords": [
+    "android",
+    "adb",
+    "gradle",
+    "emulator",
+    "ui-automation",
+    "mobile"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thecombatwombat/replicant-mcp"
+  },
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": ["darwin", "win32", "linux"]
+  }
+}

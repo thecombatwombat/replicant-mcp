@@ -26,7 +26,7 @@ Requirements for full marketplace distribution. Each maps to roadmap phases.
 
 ### Form Submissions (manual user action, content prepared by Claude)
 
-- [ ] **FORM-01**: MCPB Desktop Extensions form submitted with .mcpb bundle and description
+- [x] **FORM-01**: MCPB Desktop Extensions form submitted with .mcpb bundle and description
 - [ ] ~~**FORM-02**: Claude Code Plugin Directory~~ — Deferred (requires building a Claude Code plugin, not just a form)
 
 ### Publishing (post-merge CLI/web actions)
@@ -80,8 +80,8 @@ Deferred to future. Not in current roadmap.
 | PR-03 | Phase 1 | Complete |
 | PR-04 | Phase 1 | Complete |
 | PR-05 | Phase 1 | Complete |
-| FORM-01 | Phase 2 | Pending |
-| FORM-02 | Phase 2 | Pending |
+| FORM-01 | Phase 2 | Complete |
+| FORM-02 | Phase 2 | Deferred to v2 |
 | PUB-01 | Phase 3 | Pending |
 | PUB-02 | Phase 3 | Pending |
 | PUB-03 | Phase 3 | Pending |

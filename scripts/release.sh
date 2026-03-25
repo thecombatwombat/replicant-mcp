@@ -100,12 +100,24 @@ if [[ -f .mcp/server.json ]]; then
   echo "   Synced .mcp/server.json → $NEW_VERSION"
 fi
 
+# Sync version in manifest.json (MCPB Desktop Extensions manifest)
+if [[ -f manifest.json ]]; then
+  node -e "
+    const fs = require('fs');
+    const m = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+    m.version = '$NEW_VERSION';
+    fs.writeFileSync('manifest.json', JSON.stringify(m, null, 2) + '\n');
+  "
+  echo "   Synced manifest.json → $NEW_VERSION"
+fi
+
 echo "🔨 Building..."
 npm run build
 
 echo "📝 Committing..."
 git add package.json package-lock.json
 [[ -f .mcp/server.json ]] && git add .mcp/server.json
+[[ -f manifest.json ]] && git add manifest.json
 git commit -m "chore: release v$NEW_VERSION"
 
 echo "🏷️  Tagging v$NEW_VERSION..."

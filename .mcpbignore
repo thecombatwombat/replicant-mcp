@@ -38,7 +38,8 @@ SUPPORT.md
 # Large assets
 demo.gif
 
-# Package lock (node_modules bundled)
+# Dependencies (mcpb handles install at runtime)
+node_modules/
 package-lock.json
 
 # Build artifacts

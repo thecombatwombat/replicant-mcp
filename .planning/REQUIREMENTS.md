@@ -26,8 +26,8 @@ Requirements for full marketplace distribution. Each maps to roadmap phases.
 
 ### Form Submissions (manual user action, content prepared by Claude)
 
-- [ ] **FORM-01**: Anthropic Connectors Google Form answers prepared with description, prompts, and safety notes
-- [ ] **FORM-02**: Claude Code Plugin Directory form answers prepared with description, features, and example prompts
+- [ ] **FORM-01**: MCPB Desktop Extensions form submitted with .mcpb bundle and description
+- [ ] ~~**FORM-02**: Claude Code Plugin Directory~~ — Deferred (requires building a Claude Code plugin, not just a form)
 
 ### Publishing (post-merge CLI/web actions)
 
@@ -53,6 +53,7 @@ Deferred to future. Not in current roadmap.
 - **REL-01**: Automate version sync in `.mcp/server.json` during `/release`
 - **REL-02**: Add `mcp-publisher publish` to release script
 - **CURSOR-01**: Add Cursor-specific skills, rules, or agents to plugin
+- **PLUGIN-01**: Package replicant-mcp as Claude Code plugin and submit to Plugin Directory (FORM-02)
 - **BRAND-01**: Create logo/icon for marketplace listings
 
 ## Out of Scope

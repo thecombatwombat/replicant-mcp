@@ -1,0 +1,17 @@
+# Smithery configuration: https://smithery.ai/docs/config#smitheryyaml
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    required: []
+    properties:
+      projectRoot:
+        type: string
+        description: "Absolute path to the Android project root (optional, for Gradle builds)"
+  commandFunction:
+    |-
+    (config) => ({
+      command: 'npx',
+      args: ['-y', 'replicant-mcp@latest'],
+      env: config.projectRoot ? { REPLICANT_PROJECT_ROOT: config.projectRoot } : {}
+    })

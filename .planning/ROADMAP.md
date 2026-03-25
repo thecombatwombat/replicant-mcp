@@ -28,11 +28,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. The awesome-mcp-servers PR is open against punkpeye/awesome-mcp-servers with replicant-mcp in the Developer Tools section
   3. All 5 PRs pass CI checks and contain only the files specified in the per-marketplace plan docs
   4. Config files follow each marketplace's documented schema (validated against plan docs)
-**Plans**: TBD
+**Plans:** 4 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md — MCP Registry config files and PR (CFG-01, CFG-02, PR-01)
+- [ ] 01-02-PLAN.md — Smithery and Glama config files and PRs (CFG-03, CFG-04, PR-02, PR-03)
+- [ ] 01-03-PLAN.md — Cursor marketplace plugin files and PR (CFG-05, CFG-06, PR-04)
+- [ ] 01-04-PLAN.md — awesome-mcp-servers fork and PR (PR-05)
 
 ### Phase 2: Form Submissions
 **Goal**: Users (marketplaces with manual form submission) have received complete, accurate applications for replicant-mcp
@@ -84,7 +86,7 @@ Note: Phase 2 can execute in parallel with Phase 1 since it has no dependency on
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Config Files and Pull Requests | 0/? | Not started | - |
+| 1. Config Files and Pull Requests | 0/4 | Planned | - |
 | 2. Form Submissions | 0/? | Not started | - |
 | 3. Registry Publishing | 0/? | Not started | - |
 | 4. Verification | 0/? | Not started | - |

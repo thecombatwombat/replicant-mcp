@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.thecombatwombat/replicant-mcp",
+  "title": "replicant-mcp",
+  "description": "Android MCP server for AI-assisted development. Build, test, emulate, and automate.",
+  "repository": {
+    "url": "https://github.com/thecombatwombat/replicant-mcp",
+    "source": "github"
+  },
+  "version": "1.6.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "replicant-mcp",
+      "version": "1.6.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": []
+    }
+  ]
+}

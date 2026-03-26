@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e94560"/>
+      <stop offset="100%" style="stop-color:#ff6b6b"/>
+    </linearGradient>
+    <linearGradient id="android" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3ddc84"/>
+      <stop offset="100%" style="stop-color:#2bb573"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background plate -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+
+  <!-- Outer ring - replicant scanner aesthetic -->
+  <circle cx="256" cy="270" r="155" fill="none" stroke="url(#glow)" stroke-width="3" opacity="0.3"/>
+  <circle cx="256" cy="270" r="140" fill="none" stroke="url(#glow)" stroke-width="1.5" opacity="0.15"/>
+
+  <!-- Android head - rounded rectangle -->
+  <rect x="156" y="220" width="200" height="150" rx="32" fill="url(#android)"/>
+
+  <!-- Android head top curve -->
+  <path d="M180 220 Q256 160 332 220" fill="url(#android)"/>
+
+  <!-- Antennae -->
+  <line x1="200" y1="175" x2="212" y2="195" stroke="#3ddc84" stroke-width="6" stroke-linecap="round"/>
+  <line x1="312" y1="175" x2="300" y2="195" stroke="#3ddc84" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Eyes - replicant glow -->
+  <ellipse cx="213" cy="275" rx="22" ry="22" fill="#1a1a2e"/>
+  <ellipse cx="299" cy="275" rx="22" ry="22" fill="#1a1a2e"/>
+  <ellipse cx="213" cy="275" rx="14" ry="14" fill="url(#glow)"/>
+  <ellipse cx="299" cy="275" rx="14" ry="14" fill="url(#glow)"/>
+  <ellipse cx="213" cy="275" rx="6" ry="6" fill="#fff" opacity="0.9"/>
+  <ellipse cx="299" cy="275" rx="6" ry="6" fill="#fff" opacity="0.9"/>
+
+  <!-- Eye glow effect -->
+  <ellipse cx="213" cy="275" rx="18" ry="18" fill="none" stroke="#e94560" stroke-width="2" opacity="0.5"/>
+  <ellipse cx="299" cy="275" rx="18" ry="18" fill="none" stroke="#e94560" stroke-width="2" opacity="0.5"/>
+
+  <!-- Scan line across eyes -->
+  <line x1="170" y1="275" x2="342" y2="275" stroke="#e94560" stroke-width="1" opacity="0.3"/>
+
+  <!-- Text -->
+  <text x="256" y="435" text-anchor="middle" font-family="monospace, 'Courier New'" font-size="36" font-weight="bold" fill="#e8e8e8" letter-spacing="4">REPLICANT</text>
+  <text x="256" y="462" text-anchor="middle" font-family="monospace, 'Courier New'" font-size="18" fill="#3ddc84" letter-spacing="2" opacity="0.8">MCP</text>
+</svg>

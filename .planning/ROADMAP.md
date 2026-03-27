@@ -74,10 +74,10 @@ Plans:
   3. Glama server page exists at expected URL with correct tool list
   4. awesome-mcp-servers README and mcpservers.org both show replicant-mcp entry
   5. Anthropic Connectors, Claude Code Plugin Directory, and Cursor submissions are confirmed sent (listing may be pending external review)
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 04-01: TBD
+- [ ] 04-01-PLAN.md — Verify all 7 marketplace listings via API checks, browser verification, and document evidence (VER-01 through VER-07)
 
 ## Progress
 
@@ -90,4 +90,4 @@ Note: Phase 2 can execute in parallel with Phase 1 since it has no dependency on
 | 1. Config Files and Pull Requests | 4/4 | Complete | 2026-03-25 |
 | 2. Form Submissions | 1/1 | Complete | 2026-03-26 |
 | 3. Registry Publishing | 0/2 | Planned | - |
-| 4. Verification | 0/? | Not started | - |
+| 4. Verification | 0/1 | Not started | - |

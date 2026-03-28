@@ -39,9 +39,9 @@ Requirements for full marketplace distribution. Each maps to roadmap phases.
 ### Verification (confirm listings are live)
 
 - [x] **VER-01**: MCP Registry listing returns correct metadata via API query
-- [ ] **VER-02**: Smithery listing appears in search with accurate description
+- [ ] **VER-02**: Smithery listing appears in search with accurate description -- PARTIAL PASS: listing exists at smithery.ai but is unlisted (no description, no capabilities, not in search)
 - [x] **VER-03**: Glama listing shows at expected URL with correct tool list
-- [ ] **VER-04**: awesome-mcp-servers entry visible on GitHub and mcpservers.org
+- [ ] **VER-04**: awesome-mcp-servers entry visible on GitHub and mcpservers.org -- BLOCKED: upstream repo punkpeye/awesome-mcp-servers deleted (404), PR #3919 dead, needs re-submission to successor repo
 - [x] **VER-05**: Anthropic Connectors form submitted (review timing is external) -- form submitted, review external
 - [ ] ~~**VER-06**: Claude Code Plugin Directory form submitted~~ -- Deferred (FORM-02 deferred to v2)
 - [x] **VER-07**: Cursor plugin submitted for review (review timing is external) -- submitted, review external
@@ -87,9 +87,9 @@ Deferred to future. Not in current roadmap.
 | PUB-03 | Phase 3 | Complete |
 | PUB-04 | Phase 3 | Complete |
 | VER-01 | Phase 4 | Complete (PASS -- API verified) |
-| VER-02 | Phase 4 | Pending human verification |
+| VER-02 | Phase 4 | Partial Pass (listing exists, unlisted/unconfigured) |
 | VER-03 | Phase 4 | Complete (PASS -- HTTP 200) |
-| VER-04 | Phase 4 | Pending human verification |
+| VER-04 | Phase 4 | Blocked (upstream repo deleted, PR dead) |
 | VER-05 | Phase 4 | Complete (form submitted, review external) |
 | VER-06 | Phase 4 | Deferred to v2 (FORM-02 deferred) |
 | VER-07 | Phase 4 | Complete (submitted, review external) |
@@ -101,4 +101,4 @@ Deferred to future. Not in current roadmap.
 
 ---
 *Requirements defined: 2026-03-25*
-*Last updated: 2026-03-28 after Phase 4 verification (VER-01 through VER-07 status updated)*
+*Last updated: 2026-03-28 after Phase 4 human verification (VER-02 partial pass, VER-04 blocked)*

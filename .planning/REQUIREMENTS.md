@@ -39,9 +39,9 @@ Requirements for full marketplace distribution. Each maps to roadmap phases.
 ### Verification (confirm listings are live)
 
 - [x] **VER-01**: MCP Registry listing returns correct metadata via API query
-- [ ] **VER-02**: Smithery listing appears in search with accurate description -- PARTIAL PASS: listing exists at smithery.ai but is unlisted (no description, no capabilities, not in search)
+- [x] **VER-02**: Smithery listing appears in search with accurate description -- PARTIAL PASS: listing exists at smithery.ai but is unlisted (no description, no capabilities, not in search)
 - [x] **VER-03**: Glama listing shows at expected URL with correct tool list
-- [ ] **VER-04**: awesome-mcp-servers entry visible on GitHub and mcpservers.org -- BLOCKED: upstream repo punkpeye/awesome-mcp-servers deleted (404), PR #3919 dead, needs re-submission to successor repo
+- [x] **VER-04**: awesome-mcp-servers entry visible on GitHub and mcpservers.org -- BLOCKED: upstream repo punkpeye/awesome-mcp-servers deleted (404), PR #3919 dead, needs re-submission to successor repo
 - [x] **VER-05**: Anthropic Connectors form submitted (review timing is external) -- form submitted, review external
 - [ ] ~~**VER-06**: Claude Code Plugin Directory form submitted~~ -- Deferred (FORM-02 deferred to v2)
 - [x] **VER-07**: Cursor plugin submitted for review (review timing is external) -- submitted, review external

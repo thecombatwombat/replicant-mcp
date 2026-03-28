@@ -12,10 +12,10 @@ Get replicant-mcp listed on all 7 viable MCP marketplaces. The work moves throug
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Config Files and Pull Requests** - Add marketplace config files to the repo and open PRs for all 4 code-change marketplaces plus awesome-mcp-servers
-- [ ] **Phase 2: Form Submissions** - Prepare and submit Anthropic Connectors and Claude Code Plugin Directory forms
-- [ ] **Phase 3: Registry Publishing** - Publish to MCP Registry, Smithery, Glama, and Cursor after PRs are merged
-- [ ] **Phase 4: Verification** - Confirm all 7 marketplace listings are live and correct
+- [x] **Phase 1: Config Files and Pull Requests** - Add marketplace config files to the repo and open PRs for all 4 code-change marketplaces plus awesome-mcp-servers (completed 2026-03-25)
+- [x] **Phase 2: Form Submissions** - Prepare and submit Anthropic Connectors and Claude Code Plugin Directory forms (completed 2026-03-26)
+- [x] **Phase 3: Registry Publishing** - Publish to MCP Registry, Smithery, Glama, and Cursor after PRs are merged (completed 2026-03-27)
+- [x] **Phase 4: Verification** - Confirm all 7 marketplace listings are live and correct (completed 2026-03-28)
 
 ## Phase Details
 
@@ -31,10 +31,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — MCP Registry config files and PR (CFG-01, CFG-02, PR-01)
-- [ ] 01-02-PLAN.md — Smithery and Glama config files and PRs (CFG-03, CFG-04, PR-02, PR-03)
-- [ ] 01-03-PLAN.md — Cursor marketplace plugin files and PR (CFG-05, CFG-06, PR-04)
-- [ ] 01-04-PLAN.md — awesome-mcp-servers fork and PR (PR-05)
+- [x] 01-01-PLAN.md — MCP Registry config files and PR (CFG-01, CFG-02, PR-01)
+- [x] 01-02-PLAN.md — Smithery and Glama config files and PRs (CFG-03, CFG-04, PR-02, PR-03)
+- [x] 01-03-PLAN.md — Cursor marketplace plugin files and PR (CFG-05, CFG-06, PR-04)
+- [x] 01-04-PLAN.md — awesome-mcp-servers fork and PR (PR-05)
 
 ### Phase 2: Form Submissions
 **Goal**: Users (marketplaces with manual form submission) have received complete, accurate applications for replicant-mcp
@@ -47,7 +47,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 02-01-PLAN.md — Prepare form answers and submit both marketplace forms (FORM-01, FORM-02)
+- [x] 02-01-PLAN.md — Prepare form answers and submit both marketplace forms (FORM-01, FORM-02)
 
 ### Phase 3: Registry Publishing
 **Goal**: replicant-mcp is submitted to all 4 CLI/web-publish marketplaces
@@ -61,8 +61,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — npm release prerequisite and MCP Registry publish via mcp-publisher CLI (PUB-01)
-- [ ] 03-02-PLAN.md — Smithery and Cursor web submissions, Glama listing confirmation (PUB-02, PUB-03, PUB-04)
+- [x] 03-01-PLAN.md — npm release prerequisite and MCP Registry publish via mcp-publisher CLI (PUB-01)
+- [x] 03-02-PLAN.md — Smithery and Cursor web submissions, Glama listing confirmation (PUB-02, PUB-03, PUB-04)
 
 ### Phase 4: Verification
 **Goal**: Every marketplace listing is confirmed live (or confirmed submitted for those with external review)
@@ -74,10 +74,10 @@ Plans:
   3. Glama server page exists at expected URL with correct tool list
   4. awesome-mcp-servers README and mcpservers.org both show replicant-mcp entry
   5. Anthropic Connectors, Claude Code Plugin Directory, and Cursor submissions are confirmed sent (listing may be pending external review)
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 04-01-PLAN.md — Verify all 7 marketplace listings via API checks, browser verification, and document evidence (VER-01 through VER-07)
+- [x] 04-01-PLAN.md — Verify all 7 marketplace listings via API checks, browser verification, and document evidence (VER-01 through VER-07)
 
 ## Progress
 
@@ -89,5 +89,5 @@ Note: Phase 2 can execute in parallel with Phase 1 since it has no dependency on
 |-------|----------------|--------|-----------|
 | 1. Config Files and Pull Requests | 4/4 | Complete | 2026-03-25 |
 | 2. Form Submissions | 1/1 | Complete | 2026-03-26 |
-| 3. Registry Publishing | 0/2 | Planned | - |
-| 4. Verification | 0/1 | Not started | - |
+| 3. Registry Publishing | 2/2 | Complete | 2026-03-27 |
+| 4. Verification | 1/1 | Complete   | 2026-03-28 |

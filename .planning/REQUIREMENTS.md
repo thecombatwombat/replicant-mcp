@@ -38,13 +38,13 @@ Requirements for full marketplace distribution. Each maps to roadmap phases.
 
 ### Verification (confirm listings are live)
 
-- [ ] **VER-01**: MCP Registry listing returns correct metadata via API query
+- [x] **VER-01**: MCP Registry listing returns correct metadata via API query
 - [ ] **VER-02**: Smithery listing appears in search with accurate description
-- [ ] **VER-03**: Glama listing shows at expected URL with correct tool list
+- [x] **VER-03**: Glama listing shows at expected URL with correct tool list
 - [ ] **VER-04**: awesome-mcp-servers entry visible on GitHub and mcpservers.org
-- [ ] **VER-05**: Anthropic Connectors form submitted (review timing is external)
-- [ ] **VER-06**: Claude Code Plugin Directory form submitted (review timing is external)
-- [ ] **VER-07**: Cursor plugin submitted for review (review timing is external)
+- [x] **VER-05**: Anthropic Connectors form submitted (review timing is external) -- form submitted, review external
+- [ ] ~~**VER-06**: Claude Code Plugin Directory form submitted~~ -- Deferred (FORM-02 deferred to v2)
+- [x] **VER-07**: Cursor plugin submitted for review (review timing is external) -- submitted, review external
 
 ## v2 Requirements
 
@@ -82,17 +82,17 @@ Deferred to future. Not in current roadmap.
 | PR-05 | Phase 1 | Complete |
 | FORM-01 | Phase 2 | Complete |
 | FORM-02 | Phase 2 | Deferred to v2 |
-| PUB-01 | Phase 3 | Pending |
-| PUB-02 | Phase 3 | Pending |
-| PUB-03 | Phase 3 | Pending |
-| PUB-04 | Phase 3 | Pending |
-| VER-01 | Phase 4 | Pending |
-| VER-02 | Phase 4 | Pending |
-| VER-03 | Phase 4 | Pending |
-| VER-04 | Phase 4 | Pending |
-| VER-05 | Phase 4 | Pending |
-| VER-06 | Phase 4 | Pending |
-| VER-07 | Phase 4 | Pending |
+| PUB-01 | Phase 3 | Complete |
+| PUB-02 | Phase 3 | Complete |
+| PUB-03 | Phase 3 | Complete |
+| PUB-04 | Phase 3 | Complete |
+| VER-01 | Phase 4 | Complete (PASS -- API verified) |
+| VER-02 | Phase 4 | Pending human verification |
+| VER-03 | Phase 4 | Complete (PASS -- HTTP 200) |
+| VER-04 | Phase 4 | Pending human verification |
+| VER-05 | Phase 4 | Complete (form submitted, review external) |
+| VER-06 | Phase 4 | Deferred to v2 (FORM-02 deferred) |
+| VER-07 | Phase 4 | Complete (submitted, review external) |
 
 **Coverage:**
 - v1 requirements: 24 total
@@ -101,4 +101,4 @@ Deferred to future. Not in current roadmap.
 
 ---
 *Requirements defined: 2026-03-25*
-*Last updated: 2026-03-25 after initial definition*
+*Last updated: 2026-03-28 after Phase 4 verification (VER-01 through VER-07 status updated)*

@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Form Submissions** - Prepare and submit Anthropic Connectors and Claude Code Plugin Directory forms (completed 2026-03-26)
 - [x] **Phase 3: Registry Publishing** - Publish to MCP Registry, Smithery, Glama, and Cursor after PRs are merged (completed 2026-03-27)
 - [x] **Phase 4: Verification** - Confirm all 7 marketplace listings are live and correct (completed 2026-03-28)
-- [ ] **Phase 5: Audit Gap Closure & Cleanup** - Fix FORM-01 orphan, stale checkboxes, version drift, and release script gap (Gap Closure)
+- [x] **Phase 5: Audit Gap Closure & Cleanup** - Fix FORM-01 orphan, stale checkboxes, version drift, and release script gap (Gap Closure) (completed 2026-04-01)
 
 ## Phase Details
 
@@ -90,10 +90,10 @@ Plans:
   2. PUB-01 through PUB-04 checkboxes are marked [x] in REQUIREMENTS.md
   3. `.cursor-plugin/plugin.json` version matches current release (1.6.1)
   4. `scripts/release.sh` syncs `.cursor-plugin/plugin.json` version on release
-**Plans:** 0/1 plans complete
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 05-01-PLAN.md — Phase 2 retroactive verification, REQUIREMENTS.md cleanup, version sync fix (FORM-01, tech debt)
+- [x] 05-01-PLAN.md — Phase 2 retroactive verification, REQUIREMENTS.md cleanup, version sync fix (FORM-01, tech debt)
 
 ## Progress
 
@@ -106,4 +106,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 2. Form Submissions | 1/1 | Complete | 2026-03-26 |
 | 3. Registry Publishing | 2/2 | Complete | 2026-03-27 |
 | 4. Verification | 1/1 | Complete | 2026-03-29 |
-| 5. Audit Gap Closure & Cleanup | 0/1 | Not Started | — |
+| 5. Audit Gap Closure & Cleanup | 1/1 | Complete | 2026-04-01 |

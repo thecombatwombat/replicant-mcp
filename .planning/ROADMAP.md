@@ -16,6 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Form Submissions** - Prepare and submit Anthropic Connectors and Claude Code Plugin Directory forms (completed 2026-03-26)
 - [x] **Phase 3: Registry Publishing** - Publish to MCP Registry, Smithery, Glama, and Cursor after PRs are merged (completed 2026-03-27)
 - [x] **Phase 4: Verification** - Confirm all 7 marketplace listings are live and correct (completed 2026-03-28)
+- [ ] **Phase 5: Audit Gap Closure & Cleanup** - Fix FORM-01 orphan, stale checkboxes, version drift, and release script gap (Gap Closure)
 
 ## Phase Details
 
@@ -79,15 +80,30 @@ Plans:
 Plans:
 - [x] 04-01-PLAN.md — Verify all 7 marketplace listings via API checks, browser verification, and document evidence (VER-01 through VER-07)
 
+### Phase 5: Audit Gap Closure & Cleanup
+**Goal**: Close the FORM-01 orphan gap (missing Phase 2 VERIFICATION.md), fix stale documentation, and prevent future version drift
+**Depends on**: Phase 4 (audit must be complete)
+**Requirements**: FORM-01 (re-verify)
+**Gap Closure**: Closes gaps from v1.0 milestone audit (2026-04-01)
+**Success Criteria** (what must be TRUE):
+  1. Phase 2 VERIFICATION.md exists and covers FORM-01 in its requirements table
+  2. PUB-01 through PUB-04 checkboxes are marked [x] in REQUIREMENTS.md
+  3. `.cursor-plugin/plugin.json` version matches current release (1.6.1)
+  4. `scripts/release.sh` syncs `.cursor-plugin/plugin.json` version on release
+**Plans:** 0/1 plans complete
+
+Plans:
+- [ ] 05-01-PLAN.md — Phase 2 retroactive verification, REQUIREMENTS.md cleanup, version sync fix (FORM-01, tech debt)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4
-Note: Phase 2 can execute in parallel with Phase 1 since it has no dependency on merged code.
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Config Files and Pull Requests | 4/4 | Complete | 2026-03-25 |
 | 2. Form Submissions | 1/1 | Complete | 2026-03-26 |
 | 3. Registry Publishing | 2/2 | Complete | 2026-03-27 |
-| 4. Verification | 1/1 | Complete   | 2026-03-28 |
+| 4. Verification | 1/1 | Complete | 2026-03-29 |
+| 5. Audit Gap Closure & Cleanup | 0/1 | Not Started | — |

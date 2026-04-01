@@ -26,7 +26,7 @@ Requirements for full marketplace distribution. Each maps to roadmap phases.
 
 ### Form Submissions (manual user action, content prepared by Claude)
 
-- [x] **FORM-01**: MCPB Desktop Extensions form submitted with .mcpb bundle and description
+- [ ] **FORM-01**: MCPB Desktop Extensions form submitted with .mcpb bundle and description
 - [ ] ~~**FORM-02**: Claude Code Plugin Directory~~ — Deferred (requires building a Claude Code plugin, not just a form)
 
 ### Publishing (post-merge CLI/web actions)
@@ -55,6 +55,8 @@ Deferred to future. Not in current roadmap.
 - **CURSOR-01**: Add Cursor-specific skills, rules, or agents to plugin
 - **PLUGIN-01**: Package replicant-mcp as Claude Code plugin and submit to Plugin Directory (FORM-02)
 - **BRAND-01**: Create logo/icon for marketplace listings
+- **SMITH-01**: Configure Smithery dashboard — add description, capabilities, and make listing visible in search (currently unlisted at smithery.ai/@replicant-co/replicant-mcp)
+- **AWESOME-01**: Re-submit to awesome-mcp-servers successor repo (appcypher/awesome-mcp-servers ~5.3k stars or wong2/awesome-mcp-servers ~3.8k stars) — original punkpeye repo deleted
 
 ## Out of Scope
 
@@ -80,7 +82,7 @@ Deferred to future. Not in current roadmap.
 | PR-03 | Phase 1 | Complete |
 | PR-04 | Phase 1 | Complete |
 | PR-05 | Phase 1 | Complete |
-| FORM-01 | Phase 2 | Complete |
+| FORM-01 | Phase 5 (gap closure) | Pending (orphaned — needs Phase 2 VERIFICATION.md) |
 | FORM-02 | Phase 2 | Deferred to v2 |
 | PUB-01 | Phase 3 | Complete |
 | PUB-02 | Phase 3 | Complete |
@@ -98,7 +100,8 @@ Deferred to future. Not in current roadmap.
 - v1 requirements: 24 total
 - Mapped to phases: 24
 - Unmapped: 0 ✓
+- Unsatisfied (audit): 1 (FORM-01 orphaned — reassigned to Phase 5)
 
 ---
 *Requirements defined: 2026-03-25*
-*Last updated: 2026-03-28 after Phase 4 human verification (VER-02 partial pass, VER-04 blocked)*
+*Last updated: 2026-04-01 after milestone audit gap closure planning (FORM-01 reassigned to Phase 5, SMITH-01 and AWESOME-01 added to v2)*

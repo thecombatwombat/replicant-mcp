@@ -26,15 +26,15 @@ Requirements for full marketplace distribution. Each maps to roadmap phases.
 
 ### Form Submissions (manual user action, content prepared by Claude)
 
-- [ ] **FORM-01**: MCPB Desktop Extensions form submitted with .mcpb bundle and description
+- [x] **FORM-01**: MCPB Desktop Extensions form submitted with .mcpb bundle and description
 - [ ] ~~**FORM-02**: Claude Code Plugin Directory~~ — Deferred (requires building a Claude Code plugin, not just a form)
 
 ### Publishing (post-merge CLI/web actions)
 
-- [ ] **PUB-01**: MCP Registry published via `mcp-publisher publish`
-- [ ] **PUB-02**: Smithery submitted via web (smithery.ai/new) or CLI
-- [ ] **PUB-03**: Glama ownership claimed on glama.ai with GitHub auth
-- [ ] **PUB-04**: Cursor plugin submitted at cursor.com/marketplace/publish
+- [x] **PUB-01**: MCP Registry published via `mcp-publisher publish`
+- [x] **PUB-02**: Smithery submitted via web (smithery.ai/new) or CLI
+- [x] **PUB-03**: Glama ownership claimed on glama.ai with GitHub auth
+- [x] **PUB-04**: Cursor plugin submitted at cursor.com/marketplace/publish
 
 ### Verification (confirm listings are live)
 
@@ -82,7 +82,7 @@ Deferred to future. Not in current roadmap.
 | PR-03 | Phase 1 | Complete |
 | PR-04 | Phase 1 | Complete |
 | PR-05 | Phase 1 | Complete |
-| FORM-01 | Phase 5 (gap closure) | Pending (orphaned — needs Phase 2 VERIFICATION.md) |
+| FORM-01 | Phase 2 | Complete (verified retroactively in Phase 5) |
 | FORM-02 | Phase 2 | Deferred to v2 |
 | PUB-01 | Phase 3 | Complete |
 | PUB-02 | Phase 3 | Complete |
@@ -100,7 +100,7 @@ Deferred to future. Not in current roadmap.
 - v1 requirements: 24 total
 - Mapped to phases: 24
 - Unmapped: 0 ✓
-- Unsatisfied (audit): 1 (FORM-01 orphaned — reassigned to Phase 5)
+- Unsatisfied (audit): 0 (FORM-01 verified retroactively in Phase 5)
 
 ---
 *Requirements defined: 2026-03-25*

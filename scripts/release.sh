@@ -111,6 +111,17 @@ if [[ -f manifest.json ]]; then
   echo "   Synced manifest.json → $NEW_VERSION"
 fi
 
+# Sync version in .cursor-plugin/plugin.json (Cursor marketplace manifest)
+if [[ -f .cursor-plugin/plugin.json ]]; then
+  node -e "
+    const fs = require('fs');
+    const p = JSON.parse(fs.readFileSync('.cursor-plugin/plugin.json', 'utf8'));
+    p.version = '$NEW_VERSION';
+    fs.writeFileSync('.cursor-plugin/plugin.json', JSON.stringify(p, null, 2) + '\n');
+  "
+  echo "   Synced .cursor-plugin/plugin.json → $NEW_VERSION"
+fi
+
 echo "🔨 Building..."
 npm run build
 
@@ -118,6 +129,7 @@ echo "📝 Committing..."
 git add package.json package-lock.json
 [[ -f .mcp/server.json ]] && git add .mcp/server.json
 [[ -f manifest.json ]] && git add manifest.json
+[[ -f .cursor-plugin/plugin.json ]] && git add .cursor-plugin/plugin.json
 git commit -m "chore: release v$NEW_VERSION"
 
 echo "🏷️  Tagging v$NEW_VERSION..."

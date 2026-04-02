@@ -6,6 +6,12 @@ Android MCP server for AI-assisted Android development. Published to npm as `rep
 
 Check `DECISIONS.md` before making architectural or workflow choices. Add entries for significant decisions.
 
+## Issue Tracking
+
+- **Backlog lives in Linear. Never create backlog items, epics, or feature requests in beads.**
+- **Beads is working memory only.** Use it for cross-session tasks you are actively working on — 3-5 items max. Close immediately when done. Do not accumulate issues.
+- Scope all Linear issues to the **replicant-mcp** project only.
+
 ## MCP Resources
 
 - **Context7**: Use for library/API docs, code examples, and configuration guidance.

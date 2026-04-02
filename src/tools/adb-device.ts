@@ -159,7 +159,7 @@ export const adbDeviceToolDefinition = {
   },
   annotations: {
     readOnlyHint: false,
-    destructiveHint: true,
+    destructiveHint: false,
     idempotentHint: false,
     openWorldHint: false,
   },

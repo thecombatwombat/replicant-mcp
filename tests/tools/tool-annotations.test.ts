@@ -85,6 +85,10 @@ describe("Tool annotations", () => {
     const destructiveTools = [
       uiActionToolDefinition,
       adbShellToolDefinition,
+      adbAppToolDefinition,
+      cacheToolDefinition,
+      emulatorDeviceToolDefinition,
+      gradleTestToolDefinition,
     ];
 
     it.each(destructiveTools)(
@@ -95,5 +99,28 @@ describe("Tool annotations", () => {
         expect(annotations.readOnlyHint).toBe(false);
       },
     );
+  });
+
+  describe("non-destructive stateful tools", () => {
+    const statefulNonDestructive = [
+      adbDeviceToolDefinition,
+      gradleBuildToolDefinition,
+    ];
+
+    it.each(statefulNonDestructive)(
+      "$name has readOnlyHint: false and destructiveHint: false",
+      (tool) => {
+        const annotations = (tool as Record<string, unknown>).annotations as Record<string, boolean>;
+        expect(annotations.readOnlyHint).toBe(false);
+        expect(annotations.destructiveHint).toBe(false);
+      },
+    );
+  });
+
+  describe("open-world tools", () => {
+    it("adb-shell has openWorldHint: true", () => {
+      const annotations = (adbShellToolDefinition as Record<string, unknown>).annotations as Record<string, boolean>;
+      expect(annotations.openWorldHint).toBe(true);
+    });
   });
 });

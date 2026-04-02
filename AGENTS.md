@@ -15,7 +15,7 @@ Check `DECISIONS.md` before making architectural or workflow choices. Add entrie
 ## MCP Resources
 
 - **Context7**: Use for library/API docs, code examples, and configuration guidance.
-- **Linear**: Scope all issues to the **replicant-mcp** project only.
+- **Linear**: Use for backlog and roadmap (see Issue Tracking above).
 
 ## Code Health
 

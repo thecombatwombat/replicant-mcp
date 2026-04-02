@@ -3,8 +3,11 @@
 **Let AI build, test, and debug your Android apps.**
 
 [![CI](https://github.com/thecombatwombat/replicant-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/thecombatwombat/replicant-mcp/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/replicant-mcp)](https://www.npmjs.com/package/replicant-mcp)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/thecombatwombat/replicant-mcp)
+[![replicant-mcp MCP server](https://glama.ai/mcp/servers/thecombatwombat/replicant-mcp/badges/card.svg)](https://glama.ai/mcp/servers/thecombatwombat/replicant-mcp)
 
 replicant-mcp is a [Model Context Protocol](https://modelcontextprotocol.io/) server that gives AI assistants like Claude the ability to interact with your Android development environment. Build APKs, launch emulators, install apps, navigate UIs, and debug crashes—all through natural conversation.
 

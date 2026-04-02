@@ -8,6 +8,13 @@
     "source": "github"
   },
   "version": "1.6.2",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/thecombatwombat/replicant-mcp/master/icon.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"]
+    }
+  ],
   "packages": [
     {
       "registryType": "npm",

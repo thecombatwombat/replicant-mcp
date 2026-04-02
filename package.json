@@ -53,7 +53,8 @@
     "docs/rtfm/",
     "docs/contracts/",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "icon.png"
   ],
   "engines": {
     "node": ">=18.0.0"

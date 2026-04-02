@@ -92,9 +92,9 @@ export const uiCaptureToolDefinition = {
     required: ["operation"],
   },
   annotations: {
-    readOnlyHint: true,
+    readOnlyHint: false,
     destructiveHint: false,
-    idempotentHint: true,
+    idempotentHint: false,
     openWorldHint: false,
   },
 };

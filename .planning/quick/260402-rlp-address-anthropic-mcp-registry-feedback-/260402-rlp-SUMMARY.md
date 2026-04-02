@@ -54,18 +54,18 @@ Added `annotations` object to all 14 exported tool definitions following MCP spe
 |------|----------|-------------|------------|-----------|
 | rtfm | true | false | true | false |
 | cache | false | true | false | false |
-| adb-device | false | true | false | false |
+| adb-device | false | false | false | false |
 | adb-app | false | true | false | false |
 | adb-logcat | true | false | true | false |
 | adb-shell | false | true | false | true |
 | emulator-device | false | true | false | false |
 | gradle-build | false | false | false | false |
-| gradle-test | false | false | false | false |
+| gradle-test | false | true | false | false |
 | gradle-list | true | false | true | false |
 | gradle-get-details | true | false | true | false |
 | ui-query | true | false | true | false |
 | ui-action | false | true | false | false |
-| ui-capture | true | false | true | false |
+| ui-capture | false | false | false | false |
 
 Created `tests/tools/tool-annotations.test.ts` (36 tests) verifying:
 - Every tool has an annotations object

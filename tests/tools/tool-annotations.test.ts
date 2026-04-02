@@ -68,7 +68,6 @@ describe("Tool annotations", () => {
       gradleListToolDefinition,
       gradleGetDetailsToolDefinition,
       uiQueryToolDefinition,
-      uiCaptureToolDefinition,
     ];
 
     it.each(readOnlyTools)(
@@ -105,6 +104,7 @@ describe("Tool annotations", () => {
     const statefulNonDestructive = [
       adbDeviceToolDefinition,
       gradleBuildToolDefinition,
+      uiCaptureToolDefinition,
     ];
 
     it.each(statefulNonDestructive)(

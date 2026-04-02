@@ -46,9 +46,10 @@ describe("Token budget", () => {
     // Log actual values for visibility when updating ceiling
     console.log(`Schema chars: ${schemaJson.length}, Instructions chars: ${instructions.length}, Total chars: ${totalChars}, Est. tokens: ${estimatedTokens}`);
 
-    // CEILING: ~22 tokens above measured value (1,678). Tight by design.
+    // CEILING: ~26 tokens above measured value (2,044). Tight by design.
     // If this test fails, someone added schema bloat — compress before raising the ceiling.
-    const TOKEN_CEILING = 1700;
+    // Raised from 1700 to 2070 to accommodate MCP annotations on all 14 tools.
+    const TOKEN_CEILING = 2070;
 
     expect(estimatedTokens).toBeLessThanOrEqual(TOKEN_CEILING);
   });

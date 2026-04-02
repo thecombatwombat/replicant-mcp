@@ -56,4 +56,10 @@ export const gradleBuildToolDefinition = {
     },
     required: ["operation"],
   },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
 };

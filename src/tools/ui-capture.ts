@@ -91,4 +91,10 @@ export const uiCaptureToolDefinition = {
     },
     required: ["operation"],
   },
+  annotations: {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
 };

@@ -71,4 +71,10 @@ export const rtfmToolDefinition = {
       tool: { type: "string", description: "Tool name for specific docs" },
     },
   },
+  annotations: {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
 };

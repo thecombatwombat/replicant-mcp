@@ -219,4 +219,10 @@ export const gradleGetDetailsToolDefinition = {
     },
     required: ["id"],
   },
+  annotations: {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
 };

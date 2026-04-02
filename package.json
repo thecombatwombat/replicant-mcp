@@ -1,6 +1,6 @@
 {
   "name": "replicant-mcp",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "Android MCP server for AI-assisted Android development",
   "mcpName": "io.github.thecombatwombat/replicant-mcp",
   "type": "module",

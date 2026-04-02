@@ -7,13 +7,13 @@
     "url": "https://github.com/thecombatwombat/replicant-mcp",
     "source": "github"
   },
-  "version": "1.6.1",
+  "version": "1.6.2",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "replicant-mcp",
-      "version": "1.6.1",
+      "version": "1.6.2",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"

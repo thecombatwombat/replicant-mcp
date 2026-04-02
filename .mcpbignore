@@ -40,10 +40,14 @@ SUPPORT.md
 
 # Large assets
 demo.gif
+icon.svg
 
 # Dependencies (mcpb handles install at runtime)
 node_modules/
 package-lock.json
+
+# Secrets
+.mcpregistry_*
 
 # Build artifacts
 *.mcpb

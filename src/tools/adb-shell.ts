@@ -70,4 +70,10 @@ export const adbShellToolDefinition = {
     },
     required: ["command"],
   },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+    openWorldHint: true,
+  },
 };

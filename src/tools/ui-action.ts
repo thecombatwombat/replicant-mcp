@@ -132,4 +132,10 @@ export const uiActionToolDefinition = {
     },
     required: ["operation"],
   },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
 };

@@ -81,4 +81,10 @@ export const adbLogcatToolDefinition = {
       since: { type: "string", description: "e.g., '01-20 15:30:00.000'" },
     },
   },
+  annotations: {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
 };

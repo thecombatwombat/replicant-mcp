@@ -201,4 +201,10 @@ export const emulatorDeviceToolDefinition = {
     },
     required: ["operation"],
   },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
 };

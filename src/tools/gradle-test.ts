@@ -152,4 +152,10 @@ export const gradleTestToolDefinition = {
     },
     required: ["operation"],
   },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
 };

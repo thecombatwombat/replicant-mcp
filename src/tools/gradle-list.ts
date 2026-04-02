@@ -69,4 +69,10 @@ export const gradleListToolDefinition = {
     },
     required: ["operation"],
   },
+  annotations: {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
 };

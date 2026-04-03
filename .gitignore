@@ -8,6 +8,9 @@ dist/
 .env
 .env.local
 
+# Credentials
+.mcpregistry_*
+
 # Logs
 *.log
 

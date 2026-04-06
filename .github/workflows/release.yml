@@ -55,6 +55,7 @@ jobs:
       - run: npm test -- --run
 
       - name: Rebuild and verify MCPB bundle
+        if: hashFiles('manifest.json') != ''
         env:
           EXPECTED_VERSION: ${{ env.VERSION }}
         run: |

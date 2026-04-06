@@ -54,6 +54,18 @@ jobs:
       - run: npm run build
       - run: npm test -- --run
 
+      - name: Rebuild and verify MCPB bundle
+        env:
+          EXPECTED_VERSION: ${{ env.VERSION }}
+        run: |
+          npx mcpb pack . replicant-mcp.mcpb
+          BUNDLE_VERSION=$(unzip -p replicant-mcp.mcpb package.json | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>process.stdout.write(JSON.parse(d).version))")
+          if [[ "$BUNDLE_VERSION" != "$EXPECTED_VERSION" ]]; then
+            echo "❌ MCPB bundle version mismatch: bundle=$BUNDLE_VERSION, expected=$EXPECTED_VERSION"
+            exit 1
+          fi
+          echo "✅ MCPB bundle verified at v$EXPECTED_VERSION"
+
       - name: Publish to npm
         run: npm publish --provenance --access public
 

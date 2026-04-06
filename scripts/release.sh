@@ -125,11 +125,25 @@ fi
 echo "🔨 Building..."
 npm run build
 
+# Rebuild MCPB Desktop Extensions bundle (includes fresh dist/ + updated manifest)
+if [[ -f manifest.json ]]; then
+  echo "📦 Rebuilding MCPB bundle..."
+  npx mcpb pack . replicant-mcp.mcpb
+  # Verify bundle version matches
+  BUNDLE_VERSION=$(unzip -p replicant-mcp.mcpb package.json | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>process.stdout.write(JSON.parse(d).version))")
+  if [[ "$BUNDLE_VERSION" != "$NEW_VERSION" ]]; then
+    echo "❌ Bundle version mismatch: bundle=$BUNDLE_VERSION, expected=$NEW_VERSION"
+    exit 1
+  fi
+  echo "   ✅ Bundle verified at v$NEW_VERSION"
+fi
+
 echo "📝 Committing..."
 git add package.json package-lock.json
 [[ -f .mcp/server.json ]] && git add .mcp/server.json
 [[ -f manifest.json ]] && git add manifest.json
 [[ -f .cursor-plugin/plugin.json ]] && git add .cursor-plugin/plugin.json
+[[ -f replicant-mcp.mcpb ]] && git add replicant-mcp.mcpb
 git commit -m "chore: release v$NEW_VERSION"
 
 echo "🏷️  Tagging v$NEW_VERSION..."

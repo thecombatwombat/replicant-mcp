@@ -30,6 +30,17 @@ Check `DECISIONS.md` before making architectural or workflow choices. Add entrie
 - Test before implement. Unit tests in `tests/<category>/`, integration in `tests/integration/`.
 - Cover happy paths, error cases, edge cases, retries, boundaries, and mock external deps.
 
+## Privacy Policy
+
+`PRIVACY.md` documents what data replicant-mcp accesses and where it goes. Review and update it when:
+- Adding new data sources (new ADB data types, network traffic, file system access)
+- Adding any external network calls, telemetry, or analytics
+- Changing data persistence behavior (caching, logging to disk)
+- Adding new third-party dependencies that process user data
+- Changing how data flows to the AI assistant
+
+When in doubt, flag the PR with a comment noting the privacy policy may need review.
+
 ## PR & Branches
 
 - **Never push directly to master. No exceptions, no matter how small the change.** Always create a branch and use `/create-pr`.

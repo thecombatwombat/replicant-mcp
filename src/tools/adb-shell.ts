@@ -1,12 +1,14 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
+import { booleanInput, numberInput, toolSchema } from "../schemas/inputs.js";
+import { toMcpJsonSchema } from "../schemas/derive.js";
 
-export const adbShellInputSchema = z.object({
+export const adbShellInputSchema = toolSchema({
   command: z.string(),
-  timeout: z.number().optional(),
-  maxChars: z.number().min(1).optional(),
-  summaryOnly: z.boolean().optional(),
-  previewChars: z.number().min(1).optional(),
+  timeout: numberInput().optional().describe("ms, default: 30000, max: 120000"),
+  maxChars: numberInput().min(1).optional().describe("Truncate output to N chars"),
+  summaryOnly: booleanInput().optional().describe("Compact preview only"),
+  previewChars: numberInput().min(1).optional().describe("Preview length (default: 200)"),
 });
 
 export type AdbShellInput = z.infer<typeof adbShellInputSchema>;
@@ -59,17 +61,7 @@ export async function handleAdbShellTool(
 export const adbShellToolDefinition = {
   name: "adb-shell",
   description: "Execute shell commands with safety guards.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      command: { type: "string" },
-      timeout: { type: "number", description: "ms, default: 30000, max: 120000" },
-      maxChars: { type: "number", description: "Truncate output to N chars" },
-      summaryOnly: { type: "boolean", description: "Compact preview only" },
-      previewChars: { type: "number", description: "Preview length (default: 200)" },
-    },
-    required: ["command"],
-  },
+  inputSchema: toMcpJsonSchema(adbShellInputSchema),
   annotations: {
     readOnlyHint: false,
     destructiveHint: true,

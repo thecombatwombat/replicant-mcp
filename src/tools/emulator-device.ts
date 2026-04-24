@@ -1,8 +1,10 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
 import { ReplicantError, ErrorCode } from "../types/index.js";
+import { toolSchema } from "../schemas/inputs.js";
+import { toMcpJsonSchema } from "../schemas/derive.js";
 
-export const emulatorDeviceInputSchema = z.object({
+export const emulatorDeviceInputSchema = toolSchema({
   operation: z.enum([
     "list",
     "create",
@@ -15,7 +17,7 @@ export const emulatorDeviceInputSchema = z.object({
     "snapshot-delete",
   ]),
   avdName: z.string().optional(),
-  device: z.string().optional(),
+  device: z.string().optional().describe("e.g., 'pixel_7'"),
   systemImage: z.string().optional(),
   snapshotName: z.string().optional(),
   emulatorId: z.string().optional(),
@@ -176,31 +178,7 @@ export async function handleEmulatorDeviceTool(
 export const emulatorDeviceToolDefinition = {
   name: "emulator-device",
   description: "Manage Android emulators.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      operation: {
-        type: "string",
-        enum: [
-          "list",
-          "create",
-          "start",
-          "kill",
-          "wipe",
-          "snapshot-save",
-          "snapshot-load",
-          "snapshot-list",
-          "snapshot-delete",
-        ],
-      },
-      avdName: { type: "string" },
-      device: { type: "string", description: "e.g., 'pixel_7'" },
-      systemImage: { type: "string" },
-      snapshotName: { type: "string" },
-      emulatorId: { type: "string" },
-    },
-    required: ["operation"],
-  },
+  inputSchema: toMcpJsonSchema(emulatorDeviceInputSchema),
   annotations: {
     readOnlyHint: false,
     destructiveHint: true,

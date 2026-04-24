@@ -4,23 +4,39 @@ import { CACHE_TTLS, UiConfig, ReplicantError, ErrorCode } from "../types/index.
 import { AccessibilityNode, flattenTree } from "../parsers/ui-dump.js";
 import { DEFAULT_CONFIG } from "../types/config.js";
 import { handleFind } from "./ui-find.js";
+import {
+  booleanInput,
+  jsonObjectInput,
+  numberInput,
+  toolSchema,
+} from "../schemas/inputs.js";
+import { toMcpJsonSchema } from "../schemas/derive.js";
 
-export const uiQueryInputSchema = z.object({
+export const uiQueryInputSchema = toolSchema({
   operation: z.enum(["dump", "find", "accessibility-check"]),
-  selector: z.object({
+  selector: jsonObjectInput({
     resourceId: z.string().optional(),
     text: z.string().optional(),
     textContains: z.string().optional(),
     className: z.string().optional(),
-    nearestTo: z.string().optional(),
+    nearestTo: z
+      .string()
+      .optional()
+      .describe("Find elements nearest to this text (spatial proximity)"),
   }).optional(),
-  debug: z.boolean().optional(),
-  maxTier: z.number().min(1).max(5).optional(),
-  gridCell: z.number().min(1).max(24).optional(),
-  gridPosition: z.number().min(1).max(5).optional(),
-  compact: z.boolean().optional(),
-  limit: z.number().min(1).max(100).optional(),
-  offset: z.number().min(0).optional(),
+  debug: booleanInput().optional(),
+  maxTier: numberInput()
+    .min(1)
+    .max(5)
+    .optional()
+    .describe("Max fallback tier (1-5). Use 3 to stop before visual/grid payloads."),
+  gridCell: numberInput().min(1).max(24).optional(),
+  gridPosition: numberInput().min(1).max(5).optional(),
+  compact: booleanInput()
+    .optional()
+    .describe("Paginated flat list (default: true). false for full tree."),
+  limit: numberInput().min(1).max(100).optional().describe("Default: 20"),
+  offset: numberInput().min(0).optional(),
 });
 
 export type UiQueryInput = z.infer<typeof uiQueryInputSchema>;
@@ -161,38 +177,7 @@ async function handleAccessibilityCheck(
 export const uiQueryToolDefinition = {
   name: "ui-query",
   description: "Query app UI. Accessibility-first.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      operation: {
-        type: "string",
-        enum: ["dump", "find", "accessibility-check"],
-      },
-      selector: {
-        type: "object",
-        properties: {
-          resourceId: { type: "string" },
-          text: { type: "string" },
-          textContains: { type: "string" },
-          className: { type: "string" },
-          nearestTo: { type: "string", description: "Find elements nearest to this text (spatial proximity)" },
-        },
-      },
-      debug: { type: "boolean" },
-      maxTier: {
-        type: "number",
-        minimum: 1,
-        maximum: 5,
-        description: "Max fallback tier (1-5). Use 3 to stop before visual/grid payloads.",
-      },
-      gridCell: { type: "number", minimum: 1, maximum: 24 },
-      gridPosition: { type: "number", minimum: 1, maximum: 5 },
-      compact: { type: "boolean", description: "Paginated flat list (default: true). false for full tree." },
-      limit: { type: "number", minimum: 1, maximum: 100, description: "Default: 20" },
-      offset: { type: "number", minimum: 0 },
-    },
-    required: ["operation"],
-  },
+  inputSchema: toMcpJsonSchema(uiQueryInputSchema),
   annotations: {
     readOnlyHint: true,
     destructiveHint: false,

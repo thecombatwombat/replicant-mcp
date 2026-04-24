@@ -1,8 +1,10 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
 import { CACHE_TTLS, ReplicantError, ErrorCode } from "../types/index.js";
+import { toolSchema } from "../schemas/inputs.js";
+import { toMcpJsonSchema } from "../schemas/derive.js";
 
-export const adbDeviceInputSchema = z.object({
+export const adbDeviceInputSchema = toolSchema({
   operation: z.enum(["list", "select", "wait", "properties", "health-check"]),
   deviceId: z.string().optional(),
 });
@@ -146,17 +148,7 @@ export async function handleAdbDeviceTool(
 export const adbDeviceToolDefinition = {
   name: "adb-device",
   description: "Manage device connections.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      operation: {
-        type: "string",
-        enum: ["list", "select", "wait", "properties", "health-check"],
-      },
-      deviceId: { type: "string" },
-    },
-    required: ["operation"],
-  },
+  inputSchema: toMcpJsonSchema(adbDeviceInputSchema),
   annotations: {
     readOnlyHint: false,
     destructiveHint: false,

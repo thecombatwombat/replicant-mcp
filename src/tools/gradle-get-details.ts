@@ -1,13 +1,24 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
 import { ReplicantError, ErrorCode } from "../types/index.js";
+import { booleanInput, numberInput, toolSchema } from "../schemas/inputs.js";
+import { toMcpJsonSchema } from "../schemas/derive.js";
 
-export const gradleGetDetailsInputSchema = z.object({
+export const gradleGetDetailsInputSchema = toolSchema({
   id: z.string(),
   detailType: z.enum(["logs", "errors", "tasks", "all"]).optional().default("all"),
-  maxChars: z.number().min(1).optional(),
-  summaryOnly: z.boolean().optional(),
-  previewChars: z.number().min(1).optional(),
+  maxChars: numberInput().min(1).optional().describe("Truncate to N chars"),
+  summaryOnly: booleanInput()
+    .optional()
+    .describe(
+      "Return compact summary payload for logs/tasks/all detail types (ignored for errors)",
+    ),
+  previewChars: numberInput()
+    .min(1)
+    .optional()
+    .describe(
+      "For summaryOnly with detailType logs/all: preview length in characters (default: 400)",
+    ),
 });
 
 export type GradleGetDetailsInput = z.infer<typeof gradleGetDetailsInputSchema>;
@@ -196,29 +207,7 @@ export async function handleGradleGetDetailsTool(
 export const gradleGetDetailsToolDefinition = {
   name: "gradle-get-details",
   description: "Fetch full output for a previous build/test by ID.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      id: { type: "string" },
-      detailType: {
-        type: "string",
-        enum: ["logs", "errors", "tasks", "all"],
-      },
-      maxChars: {
-        type: "number",
-        description: "Truncate to N chars",
-      },
-      summaryOnly: {
-        type: "boolean",
-        description: "Return compact summary payload for logs/tasks/all detail types (ignored for errors)",
-      },
-      previewChars: {
-        type: "number",
-        description: "For summaryOnly with detailType logs/all: preview length in characters (default: 400)",
-      },
-    },
-    required: ["id"],
-  },
+  inputSchema: toMcpJsonSchema(gradleGetDetailsInputSchema),
   annotations: {
     readOnlyHint: true,
     destructiveHint: false,

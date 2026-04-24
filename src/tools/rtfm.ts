@@ -2,13 +2,18 @@ import { z } from "zod";
 import { readFile } from "fs/promises";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { toolSchema } from "../schemas/inputs.js";
+import { toMcpJsonSchema } from "../schemas/derive.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const RTFM_DIR = join(__dirname, "../../docs/rtfm");
 
-export const rtfmInputSchema = z.object({
-  category: z.string().optional(),
-  tool: z.string().optional(),
+export const rtfmInputSchema = toolSchema({
+  category: z
+    .string()
+    .optional()
+    .describe("Category: build, adb, emulator, ui, cache, index"),
+  tool: z.string().optional().describe("Tool name (e.g., 'ui-query') for tool-specific docs"),
 });
 
 export type RtfmInput = z.infer<typeof rtfmInputSchema>;
@@ -63,14 +68,9 @@ function extractToolSection(content: string, toolName: string): string | null {
 
 export const rtfmToolDefinition = {
   name: "rtfm",
-  description: "Get documentation. Pass category or tool name.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      category: { type: "string", description: "Category: build, adb, emulator, ui, cache" },
-      tool: { type: "string", description: "Tool name for specific docs" },
-    },
-  },
+  description:
+    "Get documentation. Pass category ('build'|'adb'|'emulator'|'ui'|'cache'|'index') or tool (tool name like 'ui-query').",
+  inputSchema: toMcpJsonSchema(rtfmInputSchema),
   annotations: {
     readOnlyHint: true,
     destructiveHint: false,

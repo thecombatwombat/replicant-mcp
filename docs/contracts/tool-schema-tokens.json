@@ -1,0 +1,67 @@
+{
+  "version": "1.0",
+  "generatedAt": "2026-04-24T02:01:33.227Z",
+  "charsPerToken": 4,
+  "instructionsChars": 137,
+  "schemaChars": 8291,
+  "totalChars": 8428,
+  "estimatedTokens": 2107,
+  "perTool": {
+    "cache": {
+      "chars": 542,
+      "estTokens": 136
+    },
+    "rtfm": {
+      "chars": 487,
+      "estTokens": 122
+    },
+    "adb-device": {
+      "chars": 361,
+      "estTokens": 91
+    },
+    "adb-app": {
+      "chars": 654,
+      "estTokens": 164
+    },
+    "adb-logcat": {
+      "chars": 576,
+      "estTokens": 144
+    },
+    "adb-shell": {
+      "chars": 602,
+      "estTokens": 151
+    },
+    "emulator-device": {
+      "chars": 571,
+      "estTokens": 143
+    },
+    "gradle-build": {
+      "chars": 419,
+      "estTokens": 105
+    },
+    "gradle-test": {
+      "chars": 591,
+      "estTokens": 148
+    },
+    "gradle-list": {
+      "chars": 368,
+      "estTokens": 92
+    },
+    "gradle-get-details": {
+      "chars": 744,
+      "estTokens": 186
+    },
+    "ui-query": {
+      "chars": 1081,
+      "estTokens": 271
+    },
+    "ui-action": {
+      "chars": 684,
+      "estTokens": 171
+    },
+    "ui-capture": {
+      "chars": 596,
+      "estTokens": 149
+    }
+  }
+}

@@ -1,10 +1,12 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
 import { CACHE_TTLS, ReplicantError, ErrorCode } from "../types/index.js";
+import { toolSchema } from "../schemas/inputs.js";
+import { toMcpJsonSchema } from "../schemas/derive.js";
 
-export const gradleListInputSchema = z.object({
+export const gradleListInputSchema = toolSchema({
   operation: z.enum(["variants", "modules", "tasks"]),
-  module: z.string().optional(),
+  module: z.string().optional().describe("e.g., ':app'"),
 });
 
 export type GradleListInput = z.infer<typeof gradleListInputSchema>;
@@ -58,17 +60,7 @@ export async function handleGradleListTool(
 export const gradleListToolDefinition = {
   name: "gradle-list",
   description: "Introspect project structure.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      operation: {
-        type: "string",
-        enum: ["variants", "modules", "tasks"],
-      },
-      module: { type: "string", description: "e.g., ':app'" },
-    },
-    required: ["operation"],
-  },
+  inputSchema: toMcpJsonSchema(gradleListInputSchema),
   annotations: {
     readOnlyHint: true,
     destructiveHint: false,

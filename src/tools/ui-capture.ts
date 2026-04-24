@@ -2,13 +2,19 @@ import { z } from "zod";
 import { ServerContext } from "../server.js";
 import { UiConfig, ReplicantError, ErrorCode } from "../types/index.js";
 import { DEFAULT_CONFIG } from "../types/config.js";
+import { booleanInput, numberInput, toolSchema } from "../schemas/inputs.js";
+import { toMcpJsonSchema } from "../schemas/derive.js";
 
-export const uiCaptureInputSchema = z.object({
+export const uiCaptureInputSchema = toolSchema({
   operation: z.enum(["screenshot", "visual-snapshot"]),
   localPath: z.string().optional(),
-  inline: z.boolean().optional(),
-  maxDimension: z.number().optional(),
-  raw: z.boolean().optional(),
+  inline: booleanInput().optional(),
+  maxDimension: numberInput()
+    .optional()
+    .describe(
+      `Max image dimension in pixels (default: ${DEFAULT_CONFIG.ui.maxImageDimension}). Higher = better quality, more tokens.`,
+    ),
+  raw: booleanInput().optional().describe("Skip scaling, full device resolution."),
 });
 
 export type UiCaptureInput = z.infer<typeof uiCaptureInputSchema>;
@@ -74,23 +80,7 @@ async function handleVisualSnapshot(
 export const uiCaptureToolDefinition = {
   name: "ui-capture",
   description: "Capture screenshots or visual snapshots.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      operation: {
-        type: "string",
-        enum: ["screenshot", "visual-snapshot"],
-      },
-      localPath: { type: "string" },
-      inline: { type: "boolean" },
-      maxDimension: {
-        type: "number",
-        description: `Max image dimension in pixels (default: ${DEFAULT_CONFIG.ui.maxImageDimension}). Higher = better quality, more tokens.`,
-      },
-      raw: { type: "boolean", description: "Skip scaling, full device resolution." },
-    },
-    required: ["operation"],
-  },
+  inputSchema: toMcpJsonSchema(uiCaptureInputSchema),
   annotations: {
     readOnlyHint: false,
     destructiveHint: false,

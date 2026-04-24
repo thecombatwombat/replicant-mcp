@@ -1,14 +1,16 @@
 import { z } from "zod";
 import { CacheManager } from "../services/index.js";
 import { ReplicantError, ErrorCode } from "../types/index.js";
+import { jsonObjectInput, numberInput, toolSchema } from "../schemas/inputs.js";
+import { toMcpJsonSchema } from "../schemas/derive.js";
 
-export const cacheInputSchema = z.object({
+export const cacheInputSchema = toolSchema({
   operation: z.enum(["get-stats", "clear", "get-config", "set-config"]),
-  key: z.string().optional(),
-  config: z.object({
-    maxEntries: z.number().optional(),
-    maxEntrySizeBytes: z.number().optional(),
-    defaultTtlMs: z.number().optional(),
+  key: z.string().optional().describe("Key to clear (optional)"),
+  config: jsonObjectInput({
+    maxEntries: numberInput().optional(),
+    maxEntrySizeBytes: numberInput().optional(),
+    defaultTtlMs: numberInput().optional(),
   }).optional(),
 });
 
@@ -52,25 +54,7 @@ export async function handleCacheTool(
 export const cacheToolDefinition = {
   name: "cache",
   description: "Manage the cache. See rtfm for details.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      operation: {
-        type: "string",
-        enum: ["get-stats", "clear", "get-config", "set-config"],
-      },
-      key: { type: "string", description: "Key to clear (optional)" },
-      config: {
-        type: "object",
-        properties: {
-          maxEntries: { type: "number" },
-          maxEntrySizeBytes: { type: "number" },
-          defaultTtlMs: { type: "number" },
-        },
-      },
-    },
-    required: ["operation"],
-  },
+  inputSchema: toMcpJsonSchema(cacheInputSchema),
   annotations: {
     readOnlyHint: false,
     destructiveHint: true,

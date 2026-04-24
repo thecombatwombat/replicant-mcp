@@ -9,12 +9,17 @@ import {
   compareResults,
   BaselineTestResult,
 } from "../services/test-baseline.js";
+import { toolSchema } from "../schemas/inputs.js";
+import { toMcpJsonSchema } from "../schemas/derive.js";
 
-export const gradleTestInputSchema = z.object({
+export const gradleTestInputSchema = toolSchema({
   operation: z.enum(["unitTest", "connectedTest", "saveBaseline", "clearBaseline"]),
   module: z.string().optional(),
-  filter: z.string().optional(),
-  taskName: z.string().optional().describe("Task name for baseline operations. Defaults to operation name."),
+  filter: z.string().optional().describe("e.g., '*LoginTest*'"),
+  taskName: z
+    .string()
+    .optional()
+    .describe("Task name for baseline operations. Defaults to operation name."),
 });
 
 export type GradleTestInput = z.infer<typeof gradleTestInputSchema>;
@@ -136,22 +141,7 @@ export async function handleGradleTestTool(
 export const gradleTestToolDefinition = {
   name: "gradle-test",
   description: "Run tests. Returns summary with testId. With baseline, auto-detects regressions.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      operation: {
-        type: "string",
-        enum: ["unitTest", "connectedTest", "saveBaseline", "clearBaseline"],
-      },
-      module: { type: "string" },
-      filter: { type: "string", description: "e.g., '*LoginTest*'" },
-      taskName: {
-        type: "string",
-        description: "Task name for baseline operations. Defaults to operation name.",
-      },
-    },
-    required: ["operation"],
-  },
+  inputSchema: toMcpJsonSchema(gradleTestInputSchema),
   annotations: {
     readOnlyHint: false,
     destructiveHint: true,

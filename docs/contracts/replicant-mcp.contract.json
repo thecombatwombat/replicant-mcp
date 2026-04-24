@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-03-09T18:40:20.027Z",
+  "generatedAt": "2026-04-24T01:45:30.043Z",
   "tools": {
     "cache": {
       "inputSchema": {
@@ -16,8 +16,8 @@
             ]
           },
           "key": {
-            "type": "string",
-            "description": "Key to clear (optional)"
+            "description": "Key to clear (optional)",
+            "type": "string"
           },
           "config": {
             "type": "object",
@@ -160,12 +160,12 @@
         "type": "object",
         "properties": {
           "category": {
-            "type": "string",
-            "description": "Category: build, adb, emulator, ui, cache"
+            "description": "Category: build, adb, emulator, ui, cache, index",
+            "type": "string"
           },
           "tool": {
-            "type": "string",
-            "description": "Tool name for specific docs"
+            "description": "Tool name (e.g., 'ui-query') for tool-specific docs",
+            "type": "string"
           }
         }
       },
@@ -456,23 +456,26 @@
             ]
           },
           "apkPath": {
-            "type": "string",
-            "description": "APK path"
+            "description": "APK path",
+            "type": "string"
           },
           "packageName": {
             "type": "string"
           },
           "limit": {
+            "description": "Default: 20, max: 100",
             "type": "number",
-            "description": "Default: 20, max: 100"
+            "minimum": 1,
+            "maximum": 100
           },
           "filter": {
-            "type": "string",
-            "description": "Filter by name (case-insensitive)"
+            "description": "Filter by name (case-insensitive)",
+            "type": "string"
           },
           "offset": {
+            "description": "Pagination offset",
             "type": "number",
-            "description": "Pagination offset"
+            "minimum": 0
           }
         },
         "required": [
@@ -616,8 +619,9 @@
         "type": "object",
         "properties": {
           "lines": {
-            "type": "number",
-            "description": "Default: 100"
+            "default": 100,
+            "description": "Default: 100",
+            "type": "number"
           },
           "package": {
             "type": "string"
@@ -642,10 +646,13 @@
             "type": "string"
           },
           "since": {
-            "type": "string",
-            "description": "e.g., '01-20 15:30:00.000'"
+            "description": "e.g., '01-20 15:30:00.000'",
+            "type": "string"
           }
-        }
+        },
+        "required": [
+          "lines"
+        ]
       },
       "outputSchemas": {
         "AdbLogcatOutput": {
@@ -700,20 +707,22 @@
             "type": "string"
           },
           "timeout": {
-            "type": "number",
-            "description": "ms, default: 30000, max: 120000"
+            "description": "ms, default: 30000, max: 120000",
+            "type": "number"
           },
           "maxChars": {
+            "description": "Truncate output to N chars",
             "type": "number",
-            "description": "Truncate output to N chars"
+            "minimum": 1
           },
           "summaryOnly": {
-            "type": "boolean",
-            "description": "Compact preview only"
+            "description": "Compact preview only",
+            "type": "boolean"
           },
           "previewChars": {
+            "description": "Preview length (default: 200)",
             "type": "number",
-            "description": "Preview length (default: 200)"
+            "minimum": 1
           }
         },
         "required": [
@@ -786,8 +795,8 @@
             "type": "string"
           },
           "device": {
-            "type": "string",
-            "description": "e.g., 'pixel_7'"
+            "description": "e.g., 'pixel_7'",
+            "type": "string"
           },
           "systemImage": {
             "type": "string"
@@ -974,8 +983,8 @@
             ]
           },
           "module": {
-            "type": "string",
-            "description": "e.g., ':app'"
+            "description": "e.g., ':app'",
+            "type": "string"
           },
           "flavor": {
             "type": "string"
@@ -1048,12 +1057,12 @@
             "type": "string"
           },
           "filter": {
-            "type": "string",
-            "description": "e.g., '*LoginTest*'"
+            "description": "e.g., '*LoginTest*'",
+            "type": "string"
           },
           "taskName": {
-            "type": "string",
-            "description": "Task name for baseline operations. Defaults to operation name."
+            "description": "Task name for baseline operations. Defaults to operation name.",
+            "type": "string"
           }
         },
         "required": [
@@ -1222,8 +1231,8 @@
             ]
           },
           "module": {
-            "type": "string",
-            "description": "e.g., ':app'"
+            "description": "e.g., ':app'",
+            "type": "string"
           }
         },
         "required": [
@@ -1348,6 +1357,7 @@
             "type": "string"
           },
           "detailType": {
+            "default": "all",
             "type": "string",
             "enum": [
               "logs",
@@ -1357,20 +1367,23 @@
             ]
           },
           "maxChars": {
+            "description": "Truncate to N chars",
             "type": "number",
-            "description": "Truncate to N chars"
+            "minimum": 1
           },
           "summaryOnly": {
-            "type": "boolean",
-            "description": "Return compact summary payload for logs/tasks/all detail types (ignored for errors)"
+            "description": "Return compact summary payload for logs/tasks/all detail types (ignored for errors)",
+            "type": "boolean"
           },
           "previewChars": {
+            "description": "For summaryOnly with detailType logs/all: preview length in characters (default: 400)",
             "type": "number",
-            "description": "For summaryOnly with detailType logs/all: preview length in characters (default: 400)"
+            "minimum": 1
           }
         },
         "required": [
-          "id"
+          "id",
+          "detailType"
         ]
       },
       "outputSchemas": {
@@ -1639,8 +1652,8 @@
                 "type": "string"
               },
               "nearestTo": {
-                "type": "string",
-                "description": "Find elements nearest to this text (spatial proximity)"
+                "description": "Find elements nearest to this text (spatial proximity)",
+                "type": "string"
               }
             }
           },
@@ -1648,10 +1661,10 @@
             "type": "boolean"
           },
           "maxTier": {
+            "description": "Max fallback tier (1-5). Use 3 to stop before visual/grid payloads.",
             "type": "number",
             "minimum": 1,
-            "maximum": 5,
-            "description": "Max fallback tier (1-5). Use 3 to stop before visual/grid payloads."
+            "maximum": 5
           },
           "gridCell": {
             "type": "number",
@@ -1664,14 +1677,14 @@
             "maximum": 5
           },
           "compact": {
-            "type": "boolean",
-            "description": "Paginated flat list (default: true). false for full tree."
+            "description": "Paginated flat list (default: true). false for full tree.",
+            "type": "boolean"
           },
           "limit": {
+            "description": "Default: 20",
             "type": "number",
             "minimum": 1,
-            "maximum": 100,
-            "description": "Default: 20"
+            "maximum": 100
           },
           "offset": {
             "type": "number",
@@ -2150,14 +2163,14 @@
             ]
           },
           "amount": {
+            "description": "Scroll fraction (0-1, default: 0.5)",
             "type": "number",
             "minimum": 0,
-            "maximum": 1,
-            "description": "Scroll fraction (0-1, default: 0.5)"
+            "maximum": 1
           },
           "deviceSpace": {
-            "type": "boolean",
-            "description": "Treat x/y as device coordinates (skip scaling)"
+            "description": "Treat x/y as device coordinates (skip scaling)",
+            "type": "boolean"
           }
         },
         "required": [
@@ -2272,12 +2285,12 @@
             "type": "boolean"
           },
           "maxDimension": {
-            "type": "number",
-            "description": "Max image dimension in pixels (default: 800). Higher = better quality, more tokens."
+            "description": "Max image dimension in pixels (default: 800). Higher = better quality, more tokens.",
+            "type": "number"
           },
           "raw": {
-            "type": "boolean",
-            "description": "Skip scaling, full device resolution."
+            "description": "Skip scaling, full device resolution.",
+            "type": "boolean"
           }
         },
         "required": [

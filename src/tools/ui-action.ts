@@ -2,16 +2,22 @@ import { z } from "zod";
 import { ServerContext } from "../server.js";
 import { ReplicantError, ErrorCode } from "../types/index.js";
 import { getElementCenter } from "./ui-find.js";
+import { booleanInput, numberInput, toolSchema } from "../schemas/inputs.js";
+import { toMcpJsonSchema } from "../schemas/derive.js";
 
-export const uiActionInputSchema = z.object({
+export const uiActionInputSchema = toolSchema({
   operation: z.enum(["tap", "input", "scroll"]),
-  x: z.number().optional(),
-  y: z.number().optional(),
-  elementIndex: z.number().optional(),
+  x: numberInput().optional(),
+  y: numberInput().optional(),
+  elementIndex: numberInput().optional(),
   text: z.string().optional(),
   direction: z.enum(["up", "down", "left", "right"]).optional(),
-  amount: z.number().min(0).max(1).optional(),
-  deviceSpace: z.boolean().optional(),
+  amount: numberInput({ min: 0, max: 1 })
+    .optional()
+    .describe("Scroll fraction (0-1, default: 0.5)"),
+  deviceSpace: booleanInput()
+    .optional()
+    .describe("Treat x/y as device coordinates (skip scaling)"),
 });
 
 export type UiActionInput = z.infer<typeof uiActionInputSchema>;
@@ -115,23 +121,7 @@ async function handleScroll(
 export const uiActionToolDefinition = {
   name: "ui-action",
   description: "Interact with app UI: tap, input, scroll.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      operation: {
-        type: "string",
-        enum: ["tap", "input", "scroll"],
-      },
-      x: { type: "number" },
-      y: { type: "number" },
-      elementIndex: { type: "number" },
-      text: { type: "string" },
-      direction: { type: "string", enum: ["up", "down", "left", "right"] },
-      amount: { type: "number", minimum: 0, maximum: 1, description: "Scroll fraction (0-1, default: 0.5)" },
-      deviceSpace: { type: "boolean", description: "Treat x/y as device coordinates (skip scaling)" },
-    },
-    required: ["operation"],
-  },
+  inputSchema: toMcpJsonSchema(uiActionInputSchema),
   annotations: {
     readOnlyHint: false,
     destructiveHint: true,

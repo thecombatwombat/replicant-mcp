@@ -1,14 +1,18 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
 import { CACHE_TTLS, ReplicantError, ErrorCode } from "../types/index.js";
+import { numberInput, toolSchema } from "../schemas/inputs.js";
+import { toMcpJsonSchema } from "../schemas/derive.js";
 
-export const adbAppInputSchema = z.object({
+export const adbAppInputSchema = toolSchema({
   operation: z.enum(["install", "uninstall", "launch", "stop", "clear-data", "list"]),
-  apkPath: z.string().optional(),
+  apkPath: z.string().optional().describe("APK path"),
   packageName: z.string().optional(),
-  limit: z.number().min(1).max(100).optional(),
-  filter: z.string().optional(),
-  offset: z.number().min(0).optional(),
+  limit: numberInput({ min: 1, max: 100 })
+    .optional()
+    .describe("Default: 20, max: 100"),
+  filter: z.string().optional().describe("Filter by name (case-insensitive)"),
+  offset: numberInput({ min: 0 }).optional().describe("Pagination offset"),
 });
 
 export type AdbAppInput = z.infer<typeof adbAppInputSchema>;
@@ -136,30 +140,7 @@ export async function handleAdbAppTool(
 export const adbAppToolDefinition = {
   name: "adb-app",
   description: "Manage applications.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      operation: {
-        type: "string",
-        enum: ["install", "uninstall", "launch", "stop", "clear-data", "list"],
-      },
-      apkPath: { type: "string", description: "APK path" },
-      packageName: { type: "string" },
-      limit: {
-        type: "number",
-        description: "Default: 20, max: 100",
-      },
-      filter: {
-        type: "string",
-        description: "Filter by name (case-insensitive)",
-      },
-      offset: {
-        type: "number",
-        description: "Pagination offset",
-      },
-    },
-    required: ["operation"],
-  },
+  inputSchema: toMcpJsonSchema(adbAppInputSchema),
   annotations: {
     readOnlyHint: false,
     destructiveHint: true,

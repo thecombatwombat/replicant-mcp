@@ -46,10 +46,16 @@ describe("Token budget", () => {
     // Log actual values for visibility when updating ceiling
     console.log(`Schema chars: ${schemaJson.length}, Instructions chars: ${instructions.length}, Total chars: ${totalChars}, Est. tokens: ${estimatedTokens}`);
 
-    // CEILING: ~26 tokens above measured value (2,044). Tight by design.
+    // CEILING: ~30 tokens above measured value (~2,122). Tight by design.
     // If this test fails, someone added schema bloat — compress before raising the ceiling.
-    // Raised from 1700 to 2070 to accommodate MCP annotations on all 14 tools.
-    const TOKEN_CEILING = 2070;
+    // History:
+    //   1700 → 2070: MCP annotations on all 14 tools.
+    //   2070 → 2150: schemas auto-derived via z.toJSONSchema() (THE-95). Strict-mode
+    //                enforcement moved to runtime (additionalProperties stripped from
+    //                wire payload to offset bloat), but descriptions on numeric/boolean
+    //                fields are now preserved automatically from Zod schemas, adding a
+    //                consistent +50–80 tokens across tools.
+    const TOKEN_CEILING = 2150;
 
     expect(estimatedTokens).toBeLessThanOrEqual(TOKEN_CEILING);
   });

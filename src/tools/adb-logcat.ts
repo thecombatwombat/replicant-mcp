@@ -1,14 +1,16 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
 import { CACHE_TTLS } from "../types/index.js";
+import { numberInput, toolSchema } from "../schemas/inputs.js";
+import { toMcpJsonSchema } from "../schemas/derive.js";
 
-export const adbLogcatInputSchema = z.object({
-  lines: z.number().optional().default(100),
+export const adbLogcatInputSchema = toolSchema({
+  lines: numberInput().optional().default(100).describe("Default: 100"),
   package: z.string().optional(),
   tags: z.array(z.string()).optional(),
   level: z.enum(["verbose", "debug", "info", "warn", "error"]).optional(),
   rawFilter: z.string().optional(),
-  since: z.string().optional(),
+  since: z.string().optional().describe("e.g., '01-20 15:30:00.000'"),
 });
 
 export type AdbLogcatInput = z.infer<typeof adbLogcatInputSchema>;
@@ -70,17 +72,7 @@ export async function handleAdbLogcatTool(
 export const adbLogcatToolDefinition = {
   name: "adb-logcat",
   description: "Read device logs. Returns summary with logId.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      lines: { type: "number", description: "Default: 100" },
-      package: { type: "string" },
-      tags: { type: "array", items: { type: "string" } },
-      level: { type: "string", enum: ["verbose", "debug", "info", "warn", "error"] },
-      rawFilter: { type: "string" },
-      since: { type: "string", description: "e.g., '01-20 15:30:00.000'" },
-    },
-  },
+  inputSchema: toMcpJsonSchema(adbLogcatInputSchema),
   annotations: {
     readOnlyHint: true,
     destructiveHint: false,

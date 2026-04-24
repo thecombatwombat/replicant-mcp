@@ -1,10 +1,12 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
 import { CACHE_TTLS } from "../types/index.js";
+import { toolSchema } from "../schemas/inputs.js";
+import { toMcpJsonSchema } from "../schemas/derive.js";
 
-export const gradleBuildInputSchema = z.object({
+export const gradleBuildInputSchema = toolSchema({
   operation: z.enum(["assembleDebug", "assembleRelease", "bundle"]),
-  module: z.string().optional(),
+  module: z.string().optional().describe("e.g., ':app'"),
   flavor: z.string().optional(),
 });
 
@@ -44,18 +46,7 @@ export async function handleGradleBuildTool(
 export const gradleBuildToolDefinition = {
   name: "gradle-build",
   description: "Build. Returns summary with buildId.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      operation: {
-        type: "string",
-        enum: ["assembleDebug", "assembleRelease", "bundle"],
-      },
-      module: { type: "string", description: "e.g., ':app'" },
-      flavor: { type: "string" },
-    },
-    required: ["operation"],
-  },
+  inputSchema: toMcpJsonSchema(gradleBuildInputSchema),
   annotations: {
     readOnlyHint: false,
     destructiveHint: false,

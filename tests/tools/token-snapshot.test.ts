@@ -3,6 +3,7 @@ import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { generateTokenSnapshot } from "../../scripts/generate-token-snapshot.js";
+import { ALL_TOOL_DEFINITIONS } from "../../src/tools/index.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SNAPSHOT_PATH = join(
@@ -26,10 +27,14 @@ describe("tool-schema token snapshot", () => {
     expect(stripTimestamp(onDisk)).toEqual(stripTimestamp(fresh));
   });
 
-  it("records per-tool entries for every registered tool", () => {
+  it("records per-tool entries for every tool in ALL_TOOL_DEFINITIONS (Codex P2)", () => {
+    // Protects against a tool being added to the server registry but not
+    // picked up by the snapshot generator — previously possible when the
+    // generator maintained its own hand-written list.
     const fresh = generateTokenSnapshot();
-    const toolCount = Object.keys(fresh.perTool).length;
-    expect(toolCount).toBe(14);
+    const snapshotNames = Object.keys(fresh.perTool).sort();
+    const registryNames = ALL_TOOL_DEFINITIONS.map((d) => d.name).sort();
+    expect(snapshotNames).toEqual(registryNames);
   });
 
   it("total chars equal instructionsChars + schemaChars", () => {

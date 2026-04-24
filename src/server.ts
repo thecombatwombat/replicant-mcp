@@ -10,47 +10,34 @@ import { AdbAdapter, EmulatorAdapter, GradleAdapter, UiAutomatorAdapter } from "
 import { ReplicantError, FindElement, ErrorCode } from "./types/index.js";
 import { VERSION } from "./version.js";
 import {
+  ALL_TOOL_DEFINITIONS,
   cacheInputSchema,
-  cacheToolDefinition,
   handleCacheTool,
   rtfmInputSchema,
-  rtfmToolDefinition,
   handleRtfmTool,
   adbDeviceInputSchema,
-  adbDeviceToolDefinition,
   handleAdbDeviceTool,
   adbAppInputSchema,
-  adbAppToolDefinition,
   handleAdbAppTool,
   adbLogcatInputSchema,
-  adbLogcatToolDefinition,
   handleAdbLogcatTool,
   adbShellInputSchema,
-  adbShellToolDefinition,
   handleAdbShellTool,
   emulatorDeviceInputSchema,
-  emulatorDeviceToolDefinition,
   handleEmulatorDeviceTool,
   gradleBuildInputSchema,
-  gradleBuildToolDefinition,
   handleGradleBuildTool,
   gradleTestInputSchema,
-  gradleTestToolDefinition,
   handleGradleTestTool,
   gradleListInputSchema,
-  gradleListToolDefinition,
   handleGradleListTool,
   gradleGetDetailsInputSchema,
-  gradleGetDetailsToolDefinition,
   handleGradleGetDetailsTool,
   uiQueryInputSchema,
-  uiQueryToolDefinition,
   handleUiQueryTool,
   uiActionInputSchema,
-  uiActionToolDefinition,
   handleUiActionTool,
   uiCaptureInputSchema,
-  uiCaptureToolDefinition,
   handleUiCaptureTool,
 } from "./tools/index.js";
 
@@ -86,22 +73,7 @@ export function createServerContext(): ServerContext {
   };
 }
 
-const toolDefinitions = [
-  cacheToolDefinition,
-  rtfmToolDefinition,
-  adbDeviceToolDefinition,
-  adbAppToolDefinition,
-  adbLogcatToolDefinition,
-  adbShellToolDefinition,
-  emulatorDeviceToolDefinition,
-  gradleBuildToolDefinition,
-  gradleTestToolDefinition,
-  gradleListToolDefinition,
-  gradleGetDetailsToolDefinition,
-  uiQueryToolDefinition,
-  uiActionToolDefinition,
-  uiCaptureToolDefinition,
-];
+const toolDefinitions = ALL_TOOL_DEFINITIONS;
 
 async function dispatchToolCall(
   name: string,

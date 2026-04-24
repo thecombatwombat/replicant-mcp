@@ -19,22 +19,7 @@ import { writeFileSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
-import {
-  cacheToolDefinition,
-  rtfmToolDefinition,
-  adbDeviceToolDefinition,
-  adbAppToolDefinition,
-  adbLogcatToolDefinition,
-  adbShellToolDefinition,
-  emulatorDeviceToolDefinition,
-  gradleBuildToolDefinition,
-  gradleTestToolDefinition,
-  gradleListToolDefinition,
-  gradleGetDetailsToolDefinition,
-  uiQueryToolDefinition,
-  uiActionToolDefinition,
-  uiCaptureToolDefinition,
-} from "../src/tools/index.js";
+import { ALL_TOOL_DEFINITIONS } from "../src/tools/index.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SNAPSHOT_PATH = join(
@@ -52,22 +37,7 @@ const INSTRUCTIONS =
 // the heuristic used in tests/tools/token-budget.test.ts.
 const CHARS_PER_TOKEN = 4;
 
-const toolDefinitions = [
-  cacheToolDefinition,
-  rtfmToolDefinition,
-  adbDeviceToolDefinition,
-  adbAppToolDefinition,
-  adbLogcatToolDefinition,
-  adbShellToolDefinition,
-  emulatorDeviceToolDefinition,
-  gradleBuildToolDefinition,
-  gradleTestToolDefinition,
-  gradleListToolDefinition,
-  gradleGetDetailsToolDefinition,
-  uiQueryToolDefinition,
-  uiActionToolDefinition,
-  uiCaptureToolDefinition,
-];
+const toolDefinitions = ALL_TOOL_DEFINITIONS;
 
 interface PerToolEntry {
   chars: number;

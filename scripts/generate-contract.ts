@@ -14,23 +14,10 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { z } from "zod";
 
-// Tool definitions (input schemas are already JSON Schema objects)
-import {
-  cacheToolDefinition,
-  rtfmToolDefinition,
-  adbDeviceToolDefinition,
-  adbAppToolDefinition,
-  adbLogcatToolDefinition,
-  adbShellToolDefinition,
-  emulatorDeviceToolDefinition,
-  gradleBuildToolDefinition,
-  gradleTestToolDefinition,
-  gradleListToolDefinition,
-  gradleGetDetailsToolDefinition,
-  uiQueryToolDefinition,
-  uiActionToolDefinition,
-  uiCaptureToolDefinition,
-} from "../src/tools/index.js";
+// Tool definitions (input schemas are already JSON Schema objects).
+// Sourced from ALL_TOOL_DEFINITIONS so this script can never drift from the
+// set of tools actually registered by the server.
+import { ALL_TOOL_DEFINITIONS } from "../src/tools/index.js";
 
 // Output schemas (Zod schemas that need conversion)
 import {
@@ -202,22 +189,7 @@ const outputSchemasByTool: Record<string, OutputSchemaMap> = {
   },
 };
 
-const toolDefinitions: ToolDef[] = [
-  cacheToolDefinition,
-  rtfmToolDefinition,
-  adbDeviceToolDefinition,
-  adbAppToolDefinition,
-  adbLogcatToolDefinition,
-  adbShellToolDefinition,
-  emulatorDeviceToolDefinition,
-  gradleBuildToolDefinition,
-  gradleTestToolDefinition,
-  gradleListToolDefinition,
-  gradleGetDetailsToolDefinition,
-  uiQueryToolDefinition,
-  uiActionToolDefinition,
-  uiCaptureToolDefinition,
-];
+const toolDefinitions: ToolDef[] = [...ALL_TOOL_DEFINITIONS];
 
 export function generateContract(): Record<string, unknown> {
   const tools: Record<string, ToolContract> = {};

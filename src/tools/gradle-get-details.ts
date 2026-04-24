@@ -7,14 +7,13 @@ import { toMcpJsonSchema } from "../schemas/derive.js";
 export const gradleGetDetailsInputSchema = toolSchema({
   id: z.string(),
   detailType: z.enum(["logs", "errors", "tasks", "all"]).optional().default("all"),
-  maxChars: numberInput().min(1).optional().describe("Truncate to N chars"),
+  maxChars: numberInput({ min: 1 }).optional().describe("Truncate to N chars"),
   summaryOnly: booleanInput()
     .optional()
     .describe(
       "Return compact summary payload for logs/tasks/all detail types (ignored for errors)",
     ),
-  previewChars: numberInput()
-    .min(1)
+  previewChars: numberInput({ min: 1 })
     .optional()
     .describe(
       "For summaryOnly with detailType logs/all: preview length in characters (default: 400)",

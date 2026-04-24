@@ -6,9 +6,11 @@ import { toMcpJsonSchema } from "../schemas/derive.js";
 export const adbShellInputSchema = toolSchema({
   command: z.string(),
   timeout: numberInput().optional().describe("ms, default: 30000, max: 120000"),
-  maxChars: numberInput().min(1).optional().describe("Truncate output to N chars"),
+  maxChars: numberInput({ min: 1 }).optional().describe("Truncate output to N chars"),
   summaryOnly: booleanInput().optional().describe("Compact preview only"),
-  previewChars: numberInput().min(1).optional().describe("Preview length (default: 200)"),
+  previewChars: numberInput({ min: 1 })
+    .optional()
+    .describe("Preview length (default: 200)"),
 });
 
 export type AdbShellInput = z.infer<typeof adbShellInputSchema>;

@@ -25,18 +25,16 @@ export const uiQueryInputSchema = toolSchema({
       .describe("Find elements nearest to this text (spatial proximity)"),
   }).optional(),
   debug: booleanInput().optional(),
-  maxTier: numberInput()
-    .min(1)
-    .max(5)
+  maxTier: numberInput({ min: 1, max: 5 })
     .optional()
     .describe("Max fallback tier (1-5). Use 3 to stop before visual/grid payloads."),
-  gridCell: numberInput().min(1).max(24).optional(),
-  gridPosition: numberInput().min(1).max(5).optional(),
+  gridCell: numberInput({ min: 1, max: 24 }).optional(),
+  gridPosition: numberInput({ min: 1, max: 5 }).optional(),
   compact: booleanInput()
     .optional()
     .describe("Paginated flat list (default: true). false for full tree."),
-  limit: numberInput().min(1).max(100).optional().describe("Default: 20"),
-  offset: numberInput().min(0).optional(),
+  limit: numberInput({ min: 1, max: 100 }).optional().describe("Default: 20"),
+  offset: numberInput({ min: 0 }).optional(),
 });
 
 export type UiQueryInput = z.infer<typeof uiQueryInputSchema>;

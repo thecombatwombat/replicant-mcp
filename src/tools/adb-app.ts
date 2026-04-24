@@ -8,9 +8,11 @@ export const adbAppInputSchema = toolSchema({
   operation: z.enum(["install", "uninstall", "launch", "stop", "clear-data", "list"]),
   apkPath: z.string().optional().describe("APK path"),
   packageName: z.string().optional(),
-  limit: numberInput().min(1).max(100).optional().describe("Default: 20, max: 100"),
+  limit: numberInput({ min: 1, max: 100 })
+    .optional()
+    .describe("Default: 20, max: 100"),
   filter: z.string().optional().describe("Filter by name (case-insensitive)"),
-  offset: numberInput().min(0).optional().describe("Pagination offset"),
+  offset: numberInput({ min: 0 }).optional().describe("Pagination offset"),
 });
 
 export type AdbAppInput = z.infer<typeof adbAppInputSchema>;

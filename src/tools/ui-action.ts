@@ -12,9 +12,7 @@ export const uiActionInputSchema = toolSchema({
   elementIndex: numberInput().optional(),
   text: z.string().optional(),
   direction: z.enum(["up", "down", "left", "right"]).optional(),
-  amount: numberInput()
-    .min(0)
-    .max(1)
+  amount: numberInput({ min: 0, max: 1 })
     .optional()
     .describe("Scroll fraction (0-1, default: 0.5)"),
   deviceSpace: booleanInput()

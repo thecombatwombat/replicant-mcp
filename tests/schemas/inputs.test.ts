@@ -34,12 +34,23 @@ describe("numberInput", () => {
     expect(() => s.parse(NaN)).toThrow();
   });
 
-  it("preserves .min()/.max()/.optional() chains", () => {
-    const bounded = numberInput().min(1).max(100).optional();
+  it("applies {min, max} bounds passed as options", () => {
+    const bounded = numberInput({ min: 1, max: 100 }).optional();
     expect(bounded.parse("50")).toBe(50);
     expect(bounded.parse(undefined)).toBe(undefined);
     expect(() => bounded.parse("0")).toThrow();
     expect(() => bounded.parse("101")).toThrow();
+  });
+
+  it("rejects null, booleans, arrays, objects (Codex P1 guard)", () => {
+    // z.coerce.number() would silently coerce null→0, true→1, []→0.
+    // numberInput() must reject these so e.g. elementIndex: null can't tap element 0.
+    expect(() => s.parse(null)).toThrow();
+    expect(() => s.parse(true)).toThrow();
+    expect(() => s.parse(false)).toThrow();
+    expect(() => s.parse([])).toThrow();
+    expect(() => s.parse([1])).toThrow();
+    expect(() => s.parse({})).toThrow();
   });
 });
 
@@ -89,6 +100,12 @@ describe("jsonObjectInput", () => {
 
   it("rejects JSON that parses but fails inner validation", () => {
     expect(() => s.parse('{"textContains":123}')).toThrow();
+  });
+
+  it("rejects unknown nested fields (Greptile P2 guard — inner object is strict)", () => {
+    // Typos in nested field names should error, not silently drop.
+    expect(() => s.parse({ textContian: "foo" })).toThrow();
+    expect(() => s.parse('{"textContian":"foo"}')).toThrow();
   });
 });
 

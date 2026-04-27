@@ -61,8 +61,14 @@ function collectDescendantLabels(node: AccessibilityNode): string[] {
   const labels: string[] = [];
   for (const child of node.children ?? []) {
     const label = child.text || child.contentDesc;
-    if (label) labels.push(label);
-    labels.push(...collectDescendantLabels(child));
+    if (label) {
+      // The child's label already represents its subtree (post-order: descendants
+      // were either labelled originally, or rolled up into this child's text).
+      // Recursing would double-count.
+      labels.push(label);
+    } else {
+      labels.push(...collectDescendantLabels(child));
+    }
   }
   return labels;
 }

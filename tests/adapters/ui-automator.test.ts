@@ -149,6 +149,26 @@ describe("UI Dump Parsing", () => {
       expect(tree[0].contentDesc).toBe("Search button");
     });
 
+    it("does not double-count grandchildren when the intermediate level is also unlabelled", () => {
+      // Regression for the bug Greptile flagged on PR #120: a 2-level unlabelled stack
+      // would synthesize "A B" onto the middle node, then "A B A B" onto the grandparent
+      // because the recursive collect kept going through children that already had
+      // their own (synthesized) labels.
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy>
+  <node text="" class="android.widget.FrameLayout" bounds="[0,0][1000,1000]">
+    <node text="" class="android.widget.LinearLayout" bounds="[0,0][1000,500]">
+      <node text="A" class="android.widget.TextView" bounds="[0,0][500,250]" />
+      <node text="B" class="android.widget.TextView" bounds="[500,0][1000,250]" />
+    </node>
+  </node>
+</hierarchy>`;
+
+      const tree = parseUiDump(xml);
+      expect(tree[0].children![0].text).toBe("A B");
+      expect(tree[0].text).toBe("A B");
+    });
+
     it("handles a LinkedIn-style bottom-sheet menu", () => {
       const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <hierarchy>

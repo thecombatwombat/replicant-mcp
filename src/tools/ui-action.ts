@@ -169,7 +169,7 @@ function findScrollableAncestor(
 }
 
 function isScrollableContainer(node: AccessibilityNode): boolean {
-  if (node.scrollable === true) return true;
+  if (node.scrollable !== undefined) return node.scrollable;
   const scrollableClassFragments = [
     "ScrollView",
     "RecyclerView",

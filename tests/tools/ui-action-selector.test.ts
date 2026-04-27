@@ -353,6 +353,23 @@ describe("ui-action selector path (THE-99)", () => {
       expect(result.warning).toBeUndefined();
     });
 
+    it("honors semantic scrollable=false over class fallback", async () => {
+      const tree = scrollTree("androidx.recyclerview.widget.RecyclerView", false);
+      ctx.ui.findWithFallbacks.mockResolvedValueOnce({
+        elements: [tree.children[0]],
+        source: "accessibility",
+      });
+      ctx.ui.dump.mockResolvedValueOnce([tree]);
+
+      const result = await handleUiActionTool(
+        { operation: "scroll", direction: "down", selector: { textContains: "Target" } },
+        ctx as any,
+      );
+
+      expect(ctx.ui.scroll).toHaveBeenCalledWith("emulator-5554", "down", 0.5);
+      expect(result.warning).toContain("no scrollable container");
+    });
+
     it("matches Compose and legacy scrollable containers by curated class fragments", async () => {
       for (const containerClass of [
         "androidx.compose.ui.platform.AndroidComposeView",

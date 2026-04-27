@@ -70,17 +70,3 @@ export function boundsToImageSpace(bounds: Bounds, scaleFactor: number): Bounds 
   };
 }
 
-/**
- * Convert bounds from image space to device space.
- */
-export function boundsToDeviceSpace(bounds: Bounds, scaleFactor: number): Bounds {
-  if (scaleFactor === 1.0) {
-    return bounds;
-  }
-  return {
-    left: Math.round(bounds.left * scaleFactor),
-    top: Math.round(bounds.top * scaleFactor),
-    right: Math.round(bounds.right * scaleFactor),
-    bottom: Math.round(bounds.bottom * scaleFactor),
-  };
-}

@@ -69,3 +69,4 @@ export function boundsToImageSpace(bounds: Bounds, scaleFactor: number): Bounds 
     bottom: Math.round(bounds.bottom / scaleFactor),
   };
 }
+

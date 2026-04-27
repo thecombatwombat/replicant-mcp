@@ -46,7 +46,7 @@ describe("Token budget", () => {
     // Log actual values for visibility when updating ceiling
     console.log(`Schema chars: ${schemaJson.length}, Instructions chars: ${instructions.length}, Total chars: ${totalChars}, Est. tokens: ${estimatedTokens}`);
 
-    // CEILING: ~30 tokens above measured value (~2,122). Tight by design.
+    // CEILING: ~30 tokens above measured value. Tight by design.
     // If this test fails, someone added schema bloat — compress before raising the ceiling.
     // History:
     //   1700 → 2070: MCP annotations on all 14 tools.
@@ -55,7 +55,11 @@ describe("Token budget", () => {
     //                wire payload to offset bloat), but descriptions on numeric/boolean
     //                fields are now preserved automatically from Zod schemas, adding a
     //                consistent +50–80 tokens across tools.
-    const TOKEN_CEILING = 2150;
+    //   2150 → 2200: ui-action gains a selector field (THE-99). Five optional
+    //                sub-keys (resourceId/text/textContains/className/nearestTo)
+    //                cost ~20 tokens; descriptions on the field itself were trimmed
+    //                to absorb most of it.
+    const TOKEN_CEILING = 2200;
 
     expect(estimatedTokens).toBeLessThanOrEqual(TOKEN_CEILING);
   });

@@ -125,7 +125,7 @@ describe("UI Tool - OCR Fallback", () => {
         mockContext
       );
 
-      expect(mockContext.ui.tap).toHaveBeenCalledWith("emulator-5554", 105, 125, undefined);
+      expect(mockContext.ui.tap).toHaveBeenCalledWith("emulator-5554", 105, 125, true);
     });
 
     it("uses regular find for non-text selectors", async () => {

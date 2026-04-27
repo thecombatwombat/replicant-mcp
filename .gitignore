@@ -37,4 +37,5 @@ coverage/
 !.claude/commands/
 !.claude/settings.json
 .beads/
+issues.jsonl
 .replicant/

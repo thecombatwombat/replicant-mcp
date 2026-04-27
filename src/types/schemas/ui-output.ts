@@ -28,6 +28,13 @@ const SimplifiedNodeSchema: z.ZodType<{
   })
 );
 
+const DumpCoordMetaShape = {
+  coordinateSpace: z.literal("device"),
+  scaleFactor: z.number(),
+  deviceDimensions: z.object({ width: z.number(), height: z.number() }).optional(),
+  imageDimensions: z.object({ width: z.number(), height: z.number() }).optional(),
+};
+
 /**
  * Output for ui dump operation (full mode)
  */
@@ -35,6 +42,7 @@ export const UiDumpFullOutput = z.object({
   dumpId: z.string(),
   tree: z.array(SimplifiedNodeSchema),
   deviceId: z.string(),
+  ...DumpCoordMetaShape,
   warning: z.string().optional(),
 });
 
@@ -61,6 +69,7 @@ export const UiDumpCompactOutput = z.object({
   offset: z.number(),
   limit: z.number(),
   deviceId: z.string(),
+  ...DumpCoordMetaShape,
   hint: z.string().optional(),
   warning: z.string().optional(),
 });
@@ -128,6 +137,14 @@ export const UiFindOutput = z.object({
   }).optional(),
 });
 
+const SelectorEcho = z.object({
+  resourceId: z.string().optional(),
+  text: z.string().optional(),
+  textContains: z.string().optional(),
+  className: z.string().optional(),
+  nearestTo: z.string().optional(),
+});
+
 /**
  * Output for ui tap operation
  */
@@ -138,6 +155,7 @@ export const UiTapOutput = z.object({
     deviceSpace: z.boolean(),
   }),
   deviceId: z.string(),
+  matchedSelector: SelectorEcho.optional(),
 });
 
 /**
@@ -146,6 +164,7 @@ export const UiTapOutput = z.object({
 export const UiInputOutput = z.object({
   input: z.string(),
   deviceId: z.string(),
+  matchedSelector: SelectorEcho.optional(),
 });
 
 /**
@@ -155,8 +174,11 @@ export const UiScrollOutput = z.object({
   scrolled: z.object({
     direction: z.enum(["up", "down", "left", "right"]),
     amount: z.number(),
+    container: z.string().optional(),
   }),
   deviceId: z.string(),
+  matchedSelector: SelectorEcho.optional(),
+  warning: z.string().optional(),
 });
 
 /**

@@ -493,6 +493,8 @@ describe("ui output schema validation", () => {
         },
       ],
       deviceId: "emulator-5554",
+      coordinateSpace: "device" as const,
+      scaleFactor: 1.0,
     };
     expect(() => UiDumpFullOutput.parse(mockOutput)).not.toThrow();
   });
@@ -510,6 +512,8 @@ describe("ui output schema validation", () => {
       offset: 0,
       limit: 20,
       deviceId: "emulator-5554",
+      coordinateSpace: "device" as const,
+      scaleFactor: 1.0,
       hint: "2 of 15 elements shown. Use 'ui find' for specific elements, or add offset: 2 for more.",
     };
     expect(() => UiDumpCompactOutput.parse(mockOutput)).not.toThrow();
@@ -563,8 +567,53 @@ describe("ui output schema validation", () => {
       dumpId: "ui-dump-abc123-1234567890",
       tree: [],
       deviceId: "emulator-5554",
+      coordinateSpace: "device" as const,
+      scaleFactor: 1.0,
       warning: "No accessibility nodes found. Possible causes: (1) UI still loading - wait and retry, (2) App uses custom rendering (Flutter, games, video players) - use screenshot instead, (3) App blocks accessibility services.",
     };
     expect(() => UiDumpFullOutput.parse(mockOutput)).not.toThrow();
+  });
+
+  it("dump with active scaling carries device + image dimensions", () => {
+    const mockOutput = {
+      dumpId: "ui-dump-x",
+      elements: [],
+      count: 0,
+      totalCount: 0,
+      hasMore: false,
+      offset: 0,
+      limit: 20,
+      deviceId: "emulator-5554",
+      coordinateSpace: "device" as const,
+      scaleFactor: 3.03,
+      deviceDimensions: { width: 1080, height: 2424 },
+      imageDimensions: { width: 356, height: 800 },
+    };
+    expect(() => UiDumpCompactOutput.parse(mockOutput)).not.toThrow();
+  });
+
+  it("tap with selector echo matches schema", () => {
+    const mockOutput = {
+      tapped: { x: 540, y: 1200, deviceSpace: true },
+      deviceId: "emulator-5554",
+      matchedSelector: { textContains: "Connect" },
+    };
+    expect(() => UiTapOutput.parse(mockOutput)).not.toThrow();
+  });
+
+  it("scroll with container + warning matches schema", () => {
+    const mockOutput = {
+      scrolled: { direction: "down" as const, amount: 0.5, container: "androidx.recyclerview.widget.RecyclerView" },
+      deviceId: "emulator-5554",
+      matchedSelector: { textContains: "Row 5" },
+    };
+    expect(() => UiScrollOutput.parse(mockOutput)).not.toThrow();
+
+    const fallbackOutput = {
+      scrolled: { direction: "up" as const, amount: 0.5 },
+      deviceId: "emulator-5554",
+      warning: "no scrollable ancestor found; scrolled the screen center.",
+    };
+    expect(() => UiScrollOutput.parse(fallbackOutput)).not.toThrow();
   });
 });

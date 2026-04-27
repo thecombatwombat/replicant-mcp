@@ -43,8 +43,8 @@ describe("UI cross-tool state via ServerContext", () => {
       mockContext
     );
 
-    expect(mockContext.ui.tap).toHaveBeenCalledWith("emulator-5554", 300, 500, undefined);
-    expect(tapResult.tapped).toEqual({ x: 300, y: 500, deviceSpace: false });
+    expect(mockContext.ui.tap).toHaveBeenCalledWith("emulator-5554", 300, 500, true);
+    expect(tapResult.tapped).toEqual({ x: 300, y: 500, deviceSpace: true });
   });
 
   it("ui-action tap fails when lastFindResults is empty", async () => {

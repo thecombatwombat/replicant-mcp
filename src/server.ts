@@ -131,7 +131,7 @@ async function dispatchToolCall(
     case "ui-query":
       return handleUiQueryTool(parseOrThrow("ui-query", uiQueryInputSchema), context, context.config.getUiConfig());
     case "ui-action":
-      return handleUiActionTool(parseOrThrow("ui-action", uiActionInputSchema), context);
+      return handleUiActionTool(parseOrThrow("ui-action", uiActionInputSchema), context, context.config.getUiConfig());
     case "ui-capture":
       return handleUiCaptureTool(parseOrThrow("ui-capture", uiCaptureInputSchema), context, context.config.getUiConfig());
     default:

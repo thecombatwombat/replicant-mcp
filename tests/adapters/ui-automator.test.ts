@@ -84,6 +84,120 @@ describe("UI Dump Parsing", () => {
     expect(tree[0].centerX).toBe(200);
     expect(tree[0].centerY).toBe(300);
   });
+
+  describe("propagates descendant labels (THE-98)", () => {
+    it("surfaces inner TextView text on a label-less parent button", () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy>
+  <node index="0" text="" resource-id="bottom_sheet_container" class="android.widget.Button" bounds="[0,600][1080,700]">
+    <node index="0" text="Connect" class="android.widget.TextView" bounds="[100,620][400,660]" />
+  </node>
+</hierarchy>`;
+
+      const tree = parseUiDump(xml);
+      expect(tree[0].text).toBe("Connect");
+      expect(tree[0].children?.[0].text).toBe("Connect");
+    });
+
+    it("joins multiple descendant labels in DOM order", () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy>
+  <node text="" class="android.widget.LinearLayout" bounds="[0,0][1080,200]">
+    <node text="Aditya Advani" class="android.widget.TextView" bounds="[0,0][1080,80]" />
+    <node text="Senior Engineer" class="android.widget.TextView" bounds="[0,80][1080,160]" />
+  </node>
+</hierarchy>`;
+
+      const tree = parseUiDump(xml);
+      expect(tree[0].text).toBe("Aditya Advani Senior Engineer");
+    });
+
+    it("falls back to content-desc when descendant text is empty", () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy>
+  <node text="" content-desc="" class="android.widget.Button" bounds="[0,0][100,100]">
+    <node text="" content-desc="More options" class="android.widget.ImageView" bounds="[20,20][80,80]" />
+  </node>
+</hierarchy>`;
+
+      const tree = parseUiDump(xml);
+      expect(tree[0].text).toBe("More options");
+    });
+
+    it("does not overwrite a parent's existing text", () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy>
+  <node text="Genuine Label" class="android.widget.Button" bounds="[0,0][100,100]">
+    <node text="Inner Junk" class="android.widget.TextView" bounds="[20,20][80,80]" />
+  </node>
+</hierarchy>`;
+
+      const tree = parseUiDump(xml);
+      expect(tree[0].text).toBe("Genuine Label");
+    });
+
+    it("does not overwrite a parent's existing content-desc", () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy>
+  <node text="" content-desc="Search button" class="android.widget.Button" bounds="[0,0][100,100]">
+    <node text="Magnifier" class="android.widget.ImageView" bounds="[20,20][80,80]" />
+  </node>
+</hierarchy>`;
+
+      const tree = parseUiDump(xml);
+      expect(tree[0].text).toBe("");
+      expect(tree[0].contentDesc).toBe("Search button");
+    });
+
+    it("does not double-count grandchildren when the intermediate level is also unlabelled", () => {
+      // Regression for the bug Greptile flagged on PR #120: a 2-level unlabelled stack
+      // would synthesize "A B" onto the middle node, then "A B A B" onto the grandparent
+      // because the recursive collect kept going through children that already had
+      // their own (synthesized) labels.
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy>
+  <node text="" class="android.widget.FrameLayout" bounds="[0,0][1000,1000]">
+    <node text="" class="android.widget.LinearLayout" bounds="[0,0][1000,500]">
+      <node text="A" class="android.widget.TextView" bounds="[0,0][500,250]" />
+      <node text="B" class="android.widget.TextView" bounds="[500,0][1000,250]" />
+    </node>
+  </node>
+</hierarchy>`;
+
+      const tree = parseUiDump(xml);
+      expect(tree[0].children![0].text).toBe("A B");
+      expect(tree[0].text).toBe("A B");
+    });
+
+    it("handles a LinkedIn-style bottom-sheet menu", () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy>
+  <node text="" resource-id="bottom_sheet" class="android.widget.LinearLayout" bounds="[0,500][1080,1500]">
+    <node text="" resource-id="bottom_sheet_container" class="android.widget.Button" bounds="[0,520][1080,600]">
+      <node text="Share via" class="android.widget.TextView" bounds="[100,540][400,580]" />
+    </node>
+    <node text="" resource-id="bottom_sheet_container" class="android.widget.Button" bounds="[0,600][1080,680]">
+      <node text="Connect" class="android.widget.TextView" bounds="[100,620][400,660]" />
+    </node>
+    <node text="" resource-id="bottom_sheet_container" class="android.widget.Button" bounds="[0,680][1080,760]">
+      <node text="Unfollow Aditya" class="android.widget.TextView" bounds="[100,700][400,740]" />
+    </node>
+    <node text="" resource-id="bottom_sheet_container" class="android.widget.Button" bounds="[0,760][1080,840]">
+      <node text="Report or block" class="android.widget.TextView" bounds="[100,780][400,820]" />
+    </node>
+  </node>
+</hierarchy>`;
+
+      const tree = parseUiDump(xml);
+      const rows = tree[0].children!;
+      expect(rows.map((r) => r.text)).toEqual([
+        "Share via",
+        "Connect",
+        "Unfollow Aditya",
+        "Report or block",
+      ]);
+    });
+  });
 });
 
 describe("UiAutomatorAdapter", () => {
@@ -715,9 +829,9 @@ describe("UiAutomatorAdapter", () => {
     });
   });
 
-  describe("dump with scaling", () => {
-    it("converts bounds to image space when scaling state exists", async () => {
-      // First take a screenshot to set scaling state
+  describe("dump coordinate space (THE-96)", () => {
+    it("returns device-space bounds even when scaling state exists", async () => {
+      // First take a screenshot to set scaling state.
       vi.mocked(sharp).mockImplementation(() => ({
         metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
         resize: vi.fn().mockReturnThis(),
@@ -728,8 +842,8 @@ describe("UiAutomatorAdapter", () => {
       mockAdb.pull.mockResolvedValue(undefined);
 
       await adapter.screenshot("emulator-5554", { maxDimension: 1000 });
+      expect(adapter.getScalingState()?.scaleFactor).toBeGreaterThan(1);
 
-      // Now dump should return converted bounds
       mockAdb.shell
         .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // uiautomator dump
         .mockResolvedValueOnce({
@@ -744,10 +858,10 @@ describe("UiAutomatorAdapter", () => {
 
       const tree = await adapter.dump("emulator-5554");
 
-      // With scaleFactor 2.4: [240,480][480,720] -> [100,200][200,300]
-      expect(tree[0].bounds).toEqual({ left: 100, top: 200, right: 200, bottom: 300 });
-      expect(tree[0].centerX).toBe(150);
-      expect(tree[0].centerY).toBe(250);
+      // Bounds match the raw uiautomator output (device-space).
+      expect(tree[0].bounds).toEqual({ left: 240, top: 480, right: 480, bottom: 720 });
+      expect(tree[0].centerX).toBe(360);
+      expect(tree[0].centerY).toBe(600);
     });
 
     it("returns original bounds when no scaling state exists", async () => {
@@ -765,14 +879,12 @@ describe("UiAutomatorAdapter", () => {
 
       const tree = await adapter.dump("emulator-5554");
 
-      // No scaling state, bounds should be unchanged
       expect(tree[0].bounds).toEqual({ left: 240, top: 480, right: 480, bottom: 720 });
       expect(tree[0].centerX).toBe(360);
       expect(tree[0].centerY).toBe(600);
     });
 
-    it("converts nested children bounds recursively", async () => {
-      // First take a screenshot to set scaling state
+    it("preserves device-space bounds across nested children", async () => {
       vi.mocked(sharp).mockImplementation(() => ({
         metadata: vi.fn().mockResolvedValue({ width: 1080, height: 2400 }),
         resize: vi.fn().mockReturnThis(),
@@ -784,9 +896,8 @@ describe("UiAutomatorAdapter", () => {
 
       await adapter.screenshot("emulator-5554", { maxDimension: 1000 });
 
-      // Now dump should return converted bounds for nested nodes
       mockAdb.shell
-        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // uiautomator dump
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 })
         .mockResolvedValueOnce({
           stdout: `<?xml version="1.0"?>
 <hierarchy>
@@ -796,17 +907,15 @@ describe("UiAutomatorAdapter", () => {
 </hierarchy>`,
           stderr: "",
           exitCode: 0,
-        }) // cat dump
-        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // rm dump
+        })
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 });
 
       const tree = await adapter.dump("emulator-5554");
 
-      // Parent should be scaled: [0,0][1080,2400] -> [0,0][450,1000]
-      expect(tree[0].bounds).toEqual({ left: 0, top: 0, right: 450, bottom: 1000 });
-      // Child should be scaled: [240,480][480,720] -> [100,200][200,300]
-      expect(tree[0].children![0].bounds).toEqual({ left: 100, top: 200, right: 200, bottom: 300 });
-      expect(tree[0].children![0].centerX).toBe(150);
-      expect(tree[0].children![0].centerY).toBe(250);
+      expect(tree[0].bounds).toEqual({ left: 0, top: 0, right: 1080, bottom: 2400 });
+      expect(tree[0].children![0].bounds).toEqual({ left: 240, top: 480, right: 480, bottom: 720 });
+      expect(tree[0].children![0].centerX).toBe(360);
+      expect(tree[0].children![0].centerY).toBe(600);
     });
   });
 
@@ -1104,10 +1213,11 @@ describe("UiAutomatorAdapter", () => {
         expect(result.elements.length).toBe(1);
         expect(result.source).toBe("grid");
         expect(result.tier).toBe(5);
-        // With scaling active, should use IMAGE dimensions (450x1000), not device (1080x2400)
+        // Grid math still uses image dimensions internally (overlay is drawn on the image),
+        // but the returned coordinates are converted to device-space for ui-action.tap.
         expect(calculateGridCellBounds).toHaveBeenCalledWith(1, 450, 1000);
-        // Coordinates should be in image space
-        expect((result.elements[0] as any).center).toEqual({ x: 56, y: 83 });
+        // 56 * 2.4 ≈ 134, 83 * 2.4 ≈ 199 — device-space.
+        expect((result.elements[0] as any).center).toEqual({ x: 134, y: 199 });
       });
     });
 

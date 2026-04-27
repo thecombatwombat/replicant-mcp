@@ -146,12 +146,11 @@ function findScrollableAncestor(
   target: AccessibilityNode,
 ): AccessibilityNode | null {
   const flat = flattenTree(tree);
-  const SCROLLABLE = ["ScrollView", "RecyclerView", "ListView", "ViewPager"];
 
   let best: AccessibilityNode | null = null;
   let smallestArea = Infinity;
   for (const node of flat) {
-    if (!SCROLLABLE.some((s) => node.className.includes(s))) continue;
+    if (!isScrollableContainer(node)) continue;
     const { bounds: b } = node;
     if (
       target.centerX >= b.left &&
@@ -167,6 +166,22 @@ function findScrollableAncestor(
     }
   }
   return best;
+}
+
+function isScrollableContainer(node: AccessibilityNode): boolean {
+  if (node.scrollable === true) return true;
+  const scrollableClassFragments = [
+    "ScrollView",
+    "RecyclerView",
+    "ListView",
+    "ViewPager",
+    "AndroidComposeView",
+    "ComposeView",
+    "GridView",
+    "Gallery",
+    "NumberPicker",
+  ];
+  return scrollableClassFragments.some((fragment) => node.className.includes(fragment));
 }
 
 async function handleTap(
@@ -282,7 +297,7 @@ async function handleScroll(
       return {
         scrolled: { direction: input.direction, amount },
         deviceId,
-        warning: "no scrollable ancestor (ScrollView/RecyclerView/ListView/ViewPager) found; scrolled the screen center.",
+        warning: "no scrollable container found; scrolled the screen center.",
       };
     }
     await context.ui.scroll(deviceId, input.direction, amount, scrollable.bounds);

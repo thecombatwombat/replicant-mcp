@@ -16,6 +16,7 @@ export interface AccessibilityNode {
   centerY: number;
   clickable: boolean;
   focusable: boolean;
+  scrollable?: boolean;
   children?: AccessibilityNode[];
 }
 
@@ -43,7 +44,7 @@ function parseBounds(boundsStr: string): Bounds {
 function parseNodeFromAttrs(attrs: Record<string, string>): AccessibilityNode {
   const bounds = parseBounds(attrs.bounds || "[0,0][0,0]");
 
-  return {
+  const node: AccessibilityNode = {
     index: parseInt(attrs.index || "0", 10),
     text: attrs.text || "",
     resourceId: attrs["resource-id"] || "",
@@ -55,6 +56,10 @@ function parseNodeFromAttrs(attrs: Record<string, string>): AccessibilityNode {
     clickable: attrs.clickable === "true",
     focusable: attrs.focusable === "true",
   };
+  if (attrs.scrollable !== undefined) {
+    node.scrollable = attrs.scrollable === "true";
+  }
+  return node;
 }
 
 function collectDescendantLabels(node: AccessibilityNode): string[] {

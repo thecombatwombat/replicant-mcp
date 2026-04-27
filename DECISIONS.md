@@ -192,3 +192,10 @@ Context: replicant-mcp sends ~2,423 tokens/turn to eager-loading MCP clients (Cl
 Decision: Two changes shipped together: (1) Split `ui` into `ui-query`, `ui-action`, `ui-capture` — each tool only exposes the schema fields relevant to its operations (~276 tokens saved). (2) Compress all tool descriptions and server instructions — drop redundant "Operations: ...", "Auto-selects device...", self-explanatory param descriptions (~662 tokens saved). No deprecated `ui` alias — MCP tool names are not a public API guarantee. Target: ~2,423 → ~1,485 tokens/turn (~39% reduction).
 Alternatives: Keep single `ui` tool and only compress descriptions (less savings, ~26%), add `ui` deprecated alias (costs tokens to maintain, no consumers rely on tool names), lazy tool loading (MCP protocol doesn't support it yet).
 Refs: docs/plans/2026-03-09-token-cost-optimization-design.md, docs/plans/2026-03-09-token-cost-research.md
+
+## [2026-04-27] Semantic-first scrollable container detection
+Tags: ui, automation, android, heuristics
+Context: `ui-action.scroll` with a selector scoped swipes to the nearest scrollable ancestor, but class-name detection missed Compose hosts and several Android widgets. UIAutomator dumps already expose `scrollable="true"` for many native containers, while Compose hosts often need class-based fallback detection.
+Decision: Treat `scrollable="true"` as the primary signal, then fall back to curated class fragments for `ScrollView`, `RecyclerView`, `ListView`, `ViewPager`, Compose hosts, `GridView`, `Gallery`, and `NumberPicker`. Keep the parser field internal and do not add a `ui-action` override parameter.
+Alternatives: Class-name matching only (misses generic scrollable containers), exposing a `containerClassName` override now (schema/token cost without a concrete nested-scroll failure), adding `WebView` immediately (internal scrolling behavior needs a dedicated use case).
+Refs: THE-103

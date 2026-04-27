@@ -85,6 +85,20 @@ describe("UI Dump Parsing", () => {
     expect(tree[0].centerY).toBe(300);
   });
 
+  it("parses scrollable attribute without defaulting missing nodes", () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy>
+  <node class="android.view.ViewGroup" bounds="[0,0][100,100]" scrollable="true" />
+  <node class="android.view.ViewGroup" bounds="[0,100][100,200]" scrollable="false" />
+  <node class="android.view.ViewGroup" bounds="[0,200][100,300]" />
+</hierarchy>`;
+
+    const tree = parseUiDump(xml);
+    expect(tree[0].scrollable).toBe(true);
+    expect(tree[1].scrollable).toBe(false);
+    expect(tree[2].scrollable).toBeUndefined();
+  });
+
   describe("propagates descendant labels (THE-98)", () => {
     it("surfaces inner TextView text on a label-less parent button", () => {
       const xml = `<?xml version="1.0" encoding="UTF-8"?>

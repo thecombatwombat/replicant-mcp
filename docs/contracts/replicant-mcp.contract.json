@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-04-27T18:57:46.610Z",
+  "generatedAt": "2026-04-27T21:43:15.187Z",
   "tools": {
     "cache": {
       "inputSchema": {
@@ -1712,6 +1712,45 @@
             "deviceId": {
               "type": "string"
             },
+            "coordinateSpace": {
+              "type": "string",
+              "const": "device"
+            },
+            "scaleFactor": {
+              "type": "number"
+            },
+            "deviceDimensions": {
+              "type": "object",
+              "properties": {
+                "width": {
+                  "type": "number"
+                },
+                "height": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "width",
+                "height"
+              ],
+              "additionalProperties": false
+            },
+            "imageDimensions": {
+              "type": "object",
+              "properties": {
+                "width": {
+                  "type": "number"
+                },
+                "height": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "width",
+                "height"
+              ],
+              "additionalProperties": false
+            },
             "warning": {
               "type": "string"
             }
@@ -1719,7 +1758,9 @@
           "required": [
             "dumpId",
             "tree",
-            "deviceId"
+            "deviceId",
+            "coordinateSpace",
+            "scaleFactor"
           ],
           "additionalProperties": false,
           "$defs": {
@@ -1808,6 +1849,45 @@
             "deviceId": {
               "type": "string"
             },
+            "coordinateSpace": {
+              "type": "string",
+              "const": "device"
+            },
+            "scaleFactor": {
+              "type": "number"
+            },
+            "deviceDimensions": {
+              "type": "object",
+              "properties": {
+                "width": {
+                  "type": "number"
+                },
+                "height": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "width",
+                "height"
+              ],
+              "additionalProperties": false
+            },
+            "imageDimensions": {
+              "type": "object",
+              "properties": {
+                "width": {
+                  "type": "number"
+                },
+                "height": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "width",
+                "height"
+              ],
+              "additionalProperties": false
+            },
             "hint": {
               "type": "string"
             },
@@ -1823,7 +1903,9 @@
             "hasMore",
             "offset",
             "limit",
-            "deviceId"
+            "deviceId",
+            "coordinateSpace",
+            "scaleFactor"
           ],
           "additionalProperties": false
         },
@@ -2224,6 +2306,27 @@
             },
             "deviceId": {
               "type": "string"
+            },
+            "matchedSelector": {
+              "type": "object",
+              "properties": {
+                "resourceId": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "textContains": {
+                  "type": "string"
+                },
+                "className": {
+                  "type": "string"
+                },
+                "nearestTo": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
             }
           },
           "required": [
@@ -2241,6 +2344,27 @@
             },
             "deviceId": {
               "type": "string"
+            },
+            "matchedSelector": {
+              "type": "object",
+              "properties": {
+                "resourceId": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "textContains": {
+                  "type": "string"
+                },
+                "className": {
+                  "type": "string"
+                },
+                "nearestTo": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
             }
           },
           "required": [
@@ -2267,6 +2391,9 @@
                 },
                 "amount": {
                   "type": "number"
+                },
+                "container": {
+                  "type": "string"
                 }
               },
               "required": [
@@ -2276,6 +2403,30 @@
               "additionalProperties": false
             },
             "deviceId": {
+              "type": "string"
+            },
+            "matchedSelector": {
+              "type": "object",
+              "properties": {
+                "resourceId": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "textContains": {
+                  "type": "string"
+                },
+                "className": {
+                  "type": "string"
+                },
+                "nearestTo": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "warning": {
               "type": "string"
             }
           },

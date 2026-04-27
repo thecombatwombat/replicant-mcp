@@ -80,15 +80,65 @@ function describeMatches(matches: FindElement[]): Array<Record<string, unknown>>
   });
 }
 
+interface SelectorResolution {
+  elements: FindElement[];
+  candidates?: unknown;
+  visualFallback?: unknown;
+}
+
 async function resolveSelector(
   input: UiActionInput,
   context: ServerContext,
   config: UiConfig,
   deviceId: string,
-): Promise<FindElement[]> {
-  if (!input.selector) return [];
-  await handleFind({ selector: input.selector }, context, config, deviceId);
-  return context.lastFindResults;
+): Promise<SelectorResolution> {
+  if (!input.selector) return { elements: [] };
+  const response = await handleFind({ selector: input.selector }, context, config, deviceId);
+  return {
+    elements: context.lastFindResults,
+    candidates: response.candidates,
+    visualFallback: response.visualFallback,
+  };
+}
+
+/**
+ * Resolves a selector match for an action operation.
+ * - 0   matches → ELEMENT_NOT_FOUND, preserving any fallback candidates the
+ *                 resolver already produced (so the caller doesn't pay the
+ *                 screenshot/dump/crop cost twice).
+ * - 1   match   → take it
+ * - 1+  matches with `nearestTo` set → take matches[0]; the find resolver
+ *                                     already proximity-sorted them.
+ * - 1+  matches without `nearestTo`  → AMBIGUOUS_MATCH with candidate list.
+ */
+function pickSelectorMatch(
+  resolution: SelectorResolution,
+  selector: NonNullable<UiActionInput["selector"]>,
+  operation: "tap" | "input" | "scroll",
+): FindElement {
+  const { elements: matches, candidates, visualFallback } = resolution;
+  if (matches.length === 0) {
+    const hasFallbackPayload = candidates !== undefined || visualFallback !== undefined;
+    throw new ReplicantError(
+      ErrorCode.ELEMENT_NOT_FOUND,
+      `No element matched selector: ${JSON.stringify(selector)}`,
+      hasFallbackPayload
+        ? "Inspect the candidates/visualFallback in error details, or refine the selector."
+        : operation === "scroll"
+          ? "Selector must resolve to an element inside a scrollable container."
+          : "Try a broader selector (textContains), or use ui-query find for fallback tiers.",
+      hasFallbackPayload ? { buildResult: { candidates, visualFallback } } : undefined,
+    );
+  }
+  if (matches.length > 1 && !selector.nearestTo) {
+    throw new ReplicantError(
+      ErrorCode.AMBIGUOUS_MATCH,
+      `Selector matched ${matches.length} elements; cannot decide which to ${operation}.`,
+      "Disambiguate via 'nearestTo', a tighter resourceId, or use ui-query find + elementIndex.",
+      { buildResult: { matches: describeMatches(matches) } },
+    );
+  }
+  return matches[0];
 }
 
 function findScrollableAncestor(
@@ -129,23 +179,9 @@ async function handleTap(
   let usedSelector = false;
 
   if (input.selector) {
-    const matches = await resolveSelector(input, context, config, deviceId);
-    if (matches.length === 0) {
-      throw new ReplicantError(
-        ErrorCode.ELEMENT_NOT_FOUND,
-        `No element matched selector: ${JSON.stringify(input.selector)}`,
-        "Try a broader selector (textContains), capture a screenshot, or use ui-query find for fallback tiers.",
-      );
-    }
-    if (matches.length > 1) {
-      throw new ReplicantError(
-        ErrorCode.AMBIGUOUS_MATCH,
-        `Selector matched ${matches.length} elements; cannot decide which to tap.`,
-        "Disambiguate via 'nearestTo', a tighter resourceId, or use ui-query find + elementIndex.",
-        { buildResult: { matches: describeMatches(matches) } },
-      );
-    }
-    const center = getElementCenter(matches[0]);
+    const resolution = await resolveSelector(input, context, config, deviceId);
+    const match = pickSelectorMatch(resolution, input.selector, "tap");
+    const center = getElementCenter(match);
     x = center.x;
     y = center.y;
     usedSelector = true;
@@ -198,23 +234,9 @@ async function handleInput(
   }
 
   if (input.selector) {
-    const matches = await resolveSelector(input, context, config, deviceId);
-    if (matches.length === 0) {
-      throw new ReplicantError(
-        ErrorCode.ELEMENT_NOT_FOUND,
-        `No element matched selector: ${JSON.stringify(input.selector)}`,
-        "Provide a selector that resolves to a single focusable input field.",
-      );
-    }
-    if (matches.length > 1) {
-      throw new ReplicantError(
-        ErrorCode.AMBIGUOUS_MATCH,
-        `Selector matched ${matches.length} elements; cannot decide which to focus.`,
-        "Disambiguate via 'nearestTo' or a tighter resourceId.",
-        { buildResult: { matches: describeMatches(matches) } },
-      );
-    }
-    const center = getElementCenter(matches[0]);
+    const resolution = await resolveSelector(input, context, config, deviceId);
+    const match = pickSelectorMatch(resolution, input.selector, "input");
+    const center = getElementCenter(match);
     await context.ui.tap(deviceId, center.x, center.y, true);
   }
 
@@ -242,23 +264,8 @@ async function handleScroll(
   const amount = input.amount ?? 0.5;
 
   if (input.selector) {
-    const matches = await resolveSelector(input, context, config, deviceId);
-    if (matches.length === 0) {
-      throw new ReplicantError(
-        ErrorCode.ELEMENT_NOT_FOUND,
-        `No element matched selector for scroll: ${JSON.stringify(input.selector)}`,
-        "Selector must resolve to an element inside a scrollable container.",
-      );
-    }
-    if (matches.length > 1) {
-      throw new ReplicantError(
-        ErrorCode.AMBIGUOUS_MATCH,
-        `Selector matched ${matches.length} elements; cannot decide which container to scroll.`,
-        "Disambiguate via 'nearestTo' or a tighter resourceId.",
-        { buildResult: { matches: describeMatches(matches) } },
-      );
-    }
-    const target = matches[0];
+    const resolution = await resolveSelector(input, context, config, deviceId);
+    const target = pickSelectorMatch(resolution, input.selector, "scroll");
     if (!isAccessibilityNode(target)) {
       // OCR/grid match — fall back to screen-center scroll with a warning.
       await context.ui.scroll(deviceId, input.direction, amount);

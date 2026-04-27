@@ -83,6 +83,37 @@ describe("ui-action selector path (THE-99)", () => {
       expect(ctx.ui.tap).not.toHaveBeenCalled();
     });
 
+    it("picks the nearest match (matches[0]) when nearestTo disambiguates multiple results", async () => {
+      // findWithFallbacks already runs the proximity sort, so the first element
+      // is the intended target. Selector path should accept it instead of
+      // throwing AMBIGUOUS_MATCH (the whole point of nearestTo).
+      // First call: anchor lookup for "Aditya".
+      ctx.ui.findWithFallbacks.mockResolvedValueOnce({
+        elements: [
+          { text: "Aditya", resourceId: "anchor", className: "TextView", centerX: 500, centerY: 700, bounds: { left: 0, top: 650, right: 1000, bottom: 750 }, clickable: false, focusable: false, contentDesc: "", index: 0 },
+        ],
+        source: "accessibility",
+      });
+      // Second call: actual "Connect" lookup.
+      ctx.ui.findWithFallbacks.mockResolvedValueOnce({
+        elements: [
+          { text: "Connect", resourceId: "near", className: "Button", centerX: 500, centerY: 800, bounds: { left: 0, top: 750, right: 1000, bottom: 850 }, clickable: true, focusable: true, contentDesc: "", index: 0 },
+          { text: "Connect", resourceId: "far",  className: "Button", centerX: 500, centerY: 1500, bounds: { left: 0, top: 1450, right: 1000, bottom: 1550 }, clickable: true, focusable: true, contentDesc: "", index: 1 },
+        ],
+        source: "accessibility",
+      });
+      // dump for containment scoring
+      ctx.ui.dump.mockResolvedValueOnce([]);
+
+      const result = await handleUiActionTool(
+        { operation: "tap", selector: { textContains: "Connect", nearestTo: "Aditya" } },
+        ctx as any,
+      );
+
+      expect(ctx.ui.tap).toHaveBeenCalledWith("emulator-5554", 500, 800, true);
+      expect(result.tapped).toEqual({ x: 500, y: 800, deviceSpace: true });
+    });
+
     it("throws AMBIGUOUS_MATCH when selector matches multiple elements", async () => {
       ctx.ui.findWithFallbacks.mockResolvedValueOnce({
         elements: [
@@ -104,6 +135,33 @@ describe("ui-action selector path (THE-99)", () => {
         expect((err as ReplicantError).context?.buildResult).toBeDefined();
         const matches = (err as ReplicantError).context?.buildResult?.matches as unknown[];
         expect(matches).toHaveLength(2);
+      }
+      expect(ctx.ui.tap).not.toHaveBeenCalled();
+    });
+
+    it("preserves fallback candidates in ELEMENT_NOT_FOUND so the caller doesn't pay for the work twice", async () => {
+      // Tier 4 visual fallback: 0 elements but a candidate list.
+      ctx.ui.findWithFallbacks.mockResolvedValueOnce({
+        elements: [],
+        source: "visual",
+        tier: 4,
+        candidates: [
+          { index: 0, bounds: "[0,0][100,100]", center: { x: 50, y: 50 }, image: "data:image/png;base64,AAAA" },
+          { index: 1, bounds: "[100,0][200,100]", center: { x: 150, y: 50 }, image: "data:image/png;base64,BBBB" },
+        ],
+      });
+
+      try {
+        await handleUiActionTool(
+          { operation: "tap", selector: { textContains: "Connect" } },
+          ctx as any,
+        );
+        throw new Error("expected ELEMENT_NOT_FOUND");
+      } catch (err) {
+        const e = err as ReplicantError;
+        expect(e.code).toBe(ErrorCode.ELEMENT_NOT_FOUND);
+        const candidates = e.context?.buildResult?.candidates as unknown[];
+        expect(candidates).toHaveLength(2);
       }
       expect(ctx.ui.tap).not.toHaveBeenCalled();
     });

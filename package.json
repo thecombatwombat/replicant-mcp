@@ -11,7 +11,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "vitest --run && npm run check:contracts",
+    "test": "vitest --run",
+    "posttest": "npm run check:contracts",
     "test:watch": "vitest",
     "test:unit": "vitest --run tests/services tests/adapters tests/tools",
     "test:integration": "vitest --run tests/integration",

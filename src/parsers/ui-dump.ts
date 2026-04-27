@@ -57,6 +57,24 @@ function parseNodeFromAttrs(attrs: Record<string, string>): AccessibilityNode {
   };
 }
 
+function collectDescendantLabels(node: AccessibilityNode): string[] {
+  const labels: string[] = [];
+  for (const child of node.children ?? []) {
+    const label = child.text || child.contentDesc;
+    if (label) labels.push(label);
+    labels.push(...collectDescendantLabels(child));
+  }
+  return labels;
+}
+
+function propagateChildLabels(node: AccessibilityNode): void {
+  for (const child of node.children ?? []) propagateChildLabels(child);
+  if (!node.text && !node.contentDesc && node.children?.length) {
+    const labels = collectDescendantLabels(node);
+    if (labels.length > 0) node.text = labels.join(" ");
+  }
+}
+
 export function parseUiDump(xml: string): AccessibilityNode[] {
   const nodes: AccessibilityNode[] = [];
 
@@ -136,7 +154,9 @@ export function parseUiDump(xml: string): AccessibilityNode[] {
   // Extract hierarchy content
   const hierarchyMatch = xml.match(/<hierarchy[^>]*>([\s\S]*)<\/hierarchy>/);
   if (hierarchyMatch) {
-    return parseChildren(hierarchyMatch[1]);
+    const tree = parseChildren(hierarchyMatch[1]);
+    for (const root of tree) propagateChildLabels(root);
+    return tree;
   }
 
   return nodes;

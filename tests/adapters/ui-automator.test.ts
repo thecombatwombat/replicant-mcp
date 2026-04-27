@@ -84,6 +84,100 @@ describe("UI Dump Parsing", () => {
     expect(tree[0].centerX).toBe(200);
     expect(tree[0].centerY).toBe(300);
   });
+
+  describe("propagates descendant labels (THE-98)", () => {
+    it("surfaces inner TextView text on a label-less parent button", () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy>
+  <node index="0" text="" resource-id="bottom_sheet_container" class="android.widget.Button" bounds="[0,600][1080,700]">
+    <node index="0" text="Connect" class="android.widget.TextView" bounds="[100,620][400,660]" />
+  </node>
+</hierarchy>`;
+
+      const tree = parseUiDump(xml);
+      expect(tree[0].text).toBe("Connect");
+      expect(tree[0].children?.[0].text).toBe("Connect");
+    });
+
+    it("joins multiple descendant labels in DOM order", () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy>
+  <node text="" class="android.widget.LinearLayout" bounds="[0,0][1080,200]">
+    <node text="Aditya Advani" class="android.widget.TextView" bounds="[0,0][1080,80]" />
+    <node text="Senior Engineer" class="android.widget.TextView" bounds="[0,80][1080,160]" />
+  </node>
+</hierarchy>`;
+
+      const tree = parseUiDump(xml);
+      expect(tree[0].text).toBe("Aditya Advani Senior Engineer");
+    });
+
+    it("falls back to content-desc when descendant text is empty", () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy>
+  <node text="" content-desc="" class="android.widget.Button" bounds="[0,0][100,100]">
+    <node text="" content-desc="More options" class="android.widget.ImageView" bounds="[20,20][80,80]" />
+  </node>
+</hierarchy>`;
+
+      const tree = parseUiDump(xml);
+      expect(tree[0].text).toBe("More options");
+    });
+
+    it("does not overwrite a parent's existing text", () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy>
+  <node text="Genuine Label" class="android.widget.Button" bounds="[0,0][100,100]">
+    <node text="Inner Junk" class="android.widget.TextView" bounds="[20,20][80,80]" />
+  </node>
+</hierarchy>`;
+
+      const tree = parseUiDump(xml);
+      expect(tree[0].text).toBe("Genuine Label");
+    });
+
+    it("does not overwrite a parent's existing content-desc", () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy>
+  <node text="" content-desc="Search button" class="android.widget.Button" bounds="[0,0][100,100]">
+    <node text="Magnifier" class="android.widget.ImageView" bounds="[20,20][80,80]" />
+  </node>
+</hierarchy>`;
+
+      const tree = parseUiDump(xml);
+      expect(tree[0].text).toBe("");
+      expect(tree[0].contentDesc).toBe("Search button");
+    });
+
+    it("handles a LinkedIn-style bottom-sheet menu", () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy>
+  <node text="" resource-id="bottom_sheet" class="android.widget.LinearLayout" bounds="[0,500][1080,1500]">
+    <node text="" resource-id="bottom_sheet_container" class="android.widget.Button" bounds="[0,520][1080,600]">
+      <node text="Share via" class="android.widget.TextView" bounds="[100,540][400,580]" />
+    </node>
+    <node text="" resource-id="bottom_sheet_container" class="android.widget.Button" bounds="[0,600][1080,680]">
+      <node text="Connect" class="android.widget.TextView" bounds="[100,620][400,660]" />
+    </node>
+    <node text="" resource-id="bottom_sheet_container" class="android.widget.Button" bounds="[0,680][1080,760]">
+      <node text="Unfollow Aditya" class="android.widget.TextView" bounds="[100,700][400,740]" />
+    </node>
+    <node text="" resource-id="bottom_sheet_container" class="android.widget.Button" bounds="[0,760][1080,840]">
+      <node text="Report or block" class="android.widget.TextView" bounds="[100,780][400,820]" />
+    </node>
+  </node>
+</hierarchy>`;
+
+      const tree = parseUiDump(xml);
+      const rows = tree[0].children!;
+      expect(rows.map((r) => r.text)).toEqual([
+        "Share via",
+        "Connect",
+        "Unfollow Aditya",
+        "Report or block",
+      ]);
+    });
+  });
 });
 
 describe("UiAutomatorAdapter", () => {

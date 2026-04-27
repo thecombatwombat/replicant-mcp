@@ -1,11 +1,11 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-04-27T18:49:09.790Z",
+  "generatedAt": "2026-04-27T18:57:46.755Z",
   "charsPerToken": 4,
   "instructionsChars": 137,
-  "schemaChars": 8398,
-  "totalChars": 8535,
-  "estimatedTokens": 2134,
+  "schemaChars": 8536,
+  "totalChars": 8673,
+  "estimatedTokens": 2169,
   "perTool": {
     "cache": {
       "chars": 542,
@@ -56,8 +56,8 @@
       "estTokens": 271
     },
     "ui-action": {
-      "chars": 791,
-      "estTokens": 198
+      "chars": 929,
+      "estTokens": 233
     },
     "ui-capture": {
       "chars": 596,

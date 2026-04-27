@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-04-27T18:49:09.635Z",
+  "generatedAt": "2026-04-27T18:57:46.610Z",
   "tools": {
     "cache": {
       "inputSchema": {
@@ -2150,6 +2150,26 @@
           "elementIndex": {
             "type": "number"
           },
+          "selector": {
+            "type": "object",
+            "properties": {
+              "resourceId": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              },
+              "textContains": {
+                "type": "string"
+              },
+              "className": {
+                "type": "string"
+              },
+              "nearestTo": {
+                "type": "string"
+              }
+            }
+          },
           "text": {
             "type": "string"
           },
@@ -2169,7 +2189,7 @@
             "maximum": 1
           },
           "deviceSpace": {
-            "description": "x/y are device-space coords (default: true, matches ui-query dump output). Set false only when passing image-space coords read from a screenshot overlay.",
+            "description": "x/y in device-space (default true). Set false only for image-space coords.",
             "type": "boolean"
           }
         },

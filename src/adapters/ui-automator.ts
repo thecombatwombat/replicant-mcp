@@ -118,19 +118,27 @@ export class UiAutomatorAdapter {
   async scroll(
     deviceId: string,
     direction: "up" | "down" | "left" | "right",
-    amount: number = 0.5
+    amount: number = 0.5,
+    bounds?: { left: number; top: number; right: number; bottom: number }
   ): Promise<void> {
-    const screen = await this.getScreenMetadata(deviceId);
-    const { width, height } = screen;
+    let width: number, height: number, centerX: number, centerY: number;
+    if (bounds) {
+      width = bounds.right - bounds.left;
+      height = bounds.bottom - bounds.top;
+      centerX = Math.round((bounds.left + bounds.right) / 2);
+      centerY = Math.round((bounds.top + bounds.bottom) / 2);
+    } else {
+      const screen = await this.getScreenMetadata(deviceId);
+      width = screen.width;
+      height = screen.height;
+      centerX = Math.round(width / 2);
+      centerY = Math.round(height / 2);
+    }
 
-    // Calculate scroll distance based on amount (0-1 representing screen percentage)
+    // Calculate scroll distance based on amount (0-1 representing container percentage)
     const scrollDistance = Math.round(
       (direction === "up" || direction === "down" ? height : width) * amount * 0.8
     );
-
-    // Center point of the screen
-    const centerX = Math.round(width / 2);
-    const centerY = Math.round(height / 2);
 
     // Calculate start and end points based on direction
     // Note: "scroll down" means content moves up, so we swipe up (finger moves from bottom to top)

@@ -118,6 +118,56 @@ describe("ui-action selector path (THE-99)", () => {
       expect(result.tapped).toEqual({ x: 100, y: 200, deviceSpace: true });
     });
 
+    it("ignores explicit deviceSpace=false when coords come from a selector (always device-space)", async () => {
+      ctx.ui.findWithFallbacks.mockResolvedValueOnce({
+        elements: [
+          {
+            text: "Connect", resourceId: "btn", className: "Button",
+            centerX: 540, centerY: 1200, bounds: { left: 0, top: 1150, right: 1080, bottom: 1250 },
+            clickable: true, focusable: true, contentDesc: "", index: 0,
+          },
+        ],
+        source: "accessibility",
+      });
+
+      const result = await handleUiActionTool(
+        { operation: "tap", selector: { textContains: "Connect" }, deviceSpace: false },
+        ctx as any,
+      );
+
+      // Even though caller passed deviceSpace:false, selector-resolved coords are
+      // always device-space and must NOT be re-converted.
+      expect(ctx.ui.tap).toHaveBeenCalledWith("emulator-5554", 540, 1200, true);
+      expect(result.tapped).toEqual({ x: 540, y: 1200, deviceSpace: true });
+    });
+
+    it("ignores explicit deviceSpace=false when coords come from elementIndex", async () => {
+      ctx.lastFindResults = [
+        {
+          centerX: 100, centerY: 200, className: "Button",
+          text: "x", resourceId: "y", bounds: { left: 0, top: 0, right: 200, bottom: 400 },
+          clickable: true, focusable: true, contentDesc: "", index: 0,
+        } as never,
+      ];
+
+      await handleUiActionTool(
+        { operation: "tap", elementIndex: 0, deviceSpace: false },
+        ctx as any,
+      );
+
+      expect(ctx.ui.tap).toHaveBeenCalledWith("emulator-5554", 100, 200, true);
+    });
+
+    it("respects explicit deviceSpace=false on the raw x/y path", async () => {
+      await handleUiActionTool(
+        { operation: "tap", x: 178, y: 68, deviceSpace: false },
+        ctx as any,
+      );
+
+      // Raw coord path: caller knows what space they're in. Honor the flag.
+      expect(ctx.ui.tap).toHaveBeenCalledWith("emulator-5554", 178, 68, false);
+    });
+
     it("selector wins over elementIndex when both are provided", async () => {
       ctx.lastFindResults = [
         { centerX: 999, centerY: 999, className: "Button" } as never,

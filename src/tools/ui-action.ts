@@ -172,7 +172,11 @@ async function handleTap(
     );
   }
 
-  const deviceSpace = input.deviceSpace ?? true;
+  // Selector and elementIndex paths always yield device-space coords (the find
+  // result is already in device space). Only the raw x/y path lets the caller
+  // override the space; default true matches the new ui-query dump contract.
+  const fromResolvedElement = usedSelector || input.elementIndex !== undefined;
+  const deviceSpace = fromResolvedElement ? true : (input.deviceSpace ?? true);
   await context.ui.tap(deviceId, x, y, deviceSpace);
   const response: Record<string, unknown> = { tapped: { x, y, deviceSpace }, deviceId };
   if (usedSelector) response.matchedSelector = input.selector;

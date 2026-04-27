@@ -13,6 +13,7 @@ describe("UI Tool - Token Efficient Defaults", () => {
       ui: {
         dump: vi.fn(),
         screenshot: vi.fn(),
+        getScalingState: vi.fn().mockReturnValue(null),
       },
       cache: {
         generateId: vi.fn().mockReturnValue("ui-dump-1"),

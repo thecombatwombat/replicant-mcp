@@ -71,6 +71,26 @@ export async function handleUiQueryTool(
   return handler(input, context, config, device.id);
 }
 
+interface DumpCoordinateMeta {
+  coordinateSpace: "device";
+  scaleFactor: number;
+  deviceDimensions?: { width: number; height: number };
+  imageDimensions?: { width: number; height: number };
+}
+
+function buildCoordinateMeta(context: ServerContext): DumpCoordinateMeta {
+  const scalingState = context.ui.getScalingState();
+  if (!scalingState) {
+    return { coordinateSpace: "device", scaleFactor: 1.0 };
+  }
+  return {
+    coordinateSpace: "device",
+    scaleFactor: scalingState.scaleFactor,
+    deviceDimensions: { width: scalingState.deviceWidth, height: scalingState.deviceHeight },
+    imageDimensions: { width: scalingState.imageWidth, height: scalingState.imageHeight },
+  };
+}
+
 async function handleDump(
   input: UiQueryInput,
   context: ServerContext,
@@ -86,11 +106,13 @@ async function handleDump(
     ? "No accessibility nodes found. Possible causes: (1) UI still loading - wait and retry, (2) App uses custom rendering (Flutter, games, video players) - use screenshot instead, (3) App blocks accessibility services."
     : undefined;
 
+  const coordMeta = buildCoordinateMeta(context);
+
   if (input.compact !== false) {
-    return handleCompactDump(tree, input, dumpId, deviceId, emptyWarning);
+    return handleCompactDump(tree, input, dumpId, deviceId, emptyWarning, coordMeta);
   }
 
-  return handleFullDump(tree, dumpId, deviceId, emptyWarning);
+  return handleFullDump(tree, dumpId, deviceId, emptyWarning, coordMeta);
 }
 
 function handleCompactDump(
@@ -99,6 +121,7 @@ function handleCompactDump(
   dumpId: string,
   deviceId: string,
   emptyWarning: string | undefined,
+  coordMeta: DumpCoordinateMeta,
 ): Record<string, unknown> {
   const flat = flattenTree(tree);
   const interactive = flat.filter((n) => n.clickable || n.focusable);
@@ -134,6 +157,7 @@ function handleCompactDump(
     offset,
     limit,
     deviceId,
+    ...coordMeta,
     hint,
     warning: emptyWarning || noInteractiveWarning,
   };
@@ -144,6 +168,7 @@ function handleFullDump(
   dumpId: string,
   deviceId: string,
   emptyWarning: string | undefined,
+  coordMeta: DumpCoordinateMeta,
 ): Record<string, unknown> {
   const simplifyNode = (node: AccessibilityNode): Record<string, unknown> => ({
     className: node.className.split(".").pop(),
@@ -158,6 +183,7 @@ function handleFullDump(
     dumpId,
     tree: tree.map((n) => simplifyNode(n)),
     deviceId,
+    ...coordMeta,
     warning: emptyWarning,
   };
 }

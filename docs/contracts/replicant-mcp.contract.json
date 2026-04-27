@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-04-24T01:45:30.043Z",
+  "generatedAt": "2026-04-27T18:49:09.635Z",
   "tools": {
     "cache": {
       "inputSchema": {
@@ -2169,7 +2169,7 @@
             "maximum": 1
           },
           "deviceSpace": {
-            "description": "Treat x/y as device coordinates (skip scaling)",
+            "description": "x/y are device-space coords (default: true, matches ui-query dump output). Set false only when passing image-space coords read from a screenshot overlay.",
             "type": "boolean"
           }
         },

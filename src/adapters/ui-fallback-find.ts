@@ -8,6 +8,8 @@ import {
   createGridOverlay,
   POSITION_LABELS,
 } from "../services/grid.js";
+import { boundsToImageSpace, toDeviceSpace } from "../services/scaling.js";
+import type { OcrElement } from "../types/ocr.js";
 import {
   FindWithFallbacksResult,
   FindOptions,
@@ -24,6 +26,47 @@ export interface FallbackFindDeps {
   getScreenMetadata(deviceId: string): Promise<ScreenMetadata>;
   visualSnapshot(deviceId: string, options?: { includeBase64?: boolean }): Promise<VisualSnapshot>;
   getScalingState(): ScalingState | null;
+}
+
+function ocrToDeviceSpace(elements: OcrElement[], scaleFactor: number): OcrElement[] {
+  if (scaleFactor === 1.0) return elements;
+  return elements.map((el) => {
+    const center = toDeviceSpace(el.center.x, el.center.y, scaleFactor);
+    const m = el.bounds.match(/\[(\d+),(\d+)\]\[(\d+),(\d+)\]/);
+    let bounds = el.bounds;
+    if (m) {
+      const x0 = Math.round(parseInt(m[1], 10) * scaleFactor);
+      const y0 = Math.round(parseInt(m[2], 10) * scaleFactor);
+      const x1 = Math.round(parseInt(m[3], 10) * scaleFactor);
+      const y1 = Math.round(parseInt(m[4], 10) * scaleFactor);
+      bounds = `[${x0},${y0}][${x1},${y1}]`;
+    }
+    return { ...el, center, bounds };
+  });
+}
+
+function gridResultToDeviceSpace(
+  cellBounds: { x0: number; y0: number; x1: number; y1: number },
+  coords: { x: number; y: number },
+  scaleFactor: number,
+): {
+  bounds: string;
+  center: { x: number; y: number };
+} {
+  if (scaleFactor === 1.0) {
+    return {
+      bounds: `[${cellBounds.x0},${cellBounds.y0}][${cellBounds.x1},${cellBounds.y1}]`,
+      center: coords,
+    };
+  }
+  return {
+    bounds: `[${Math.round(cellBounds.x0 * scaleFactor)},${Math.round(cellBounds.y0 * scaleFactor)}]` +
+            `[${Math.round(cellBounds.x1 * scaleFactor)},${Math.round(cellBounds.y1 * scaleFactor)}]`,
+    center: {
+      x: Math.round(coords.x * scaleFactor),
+      y: Math.round(coords.y * scaleFactor),
+    },
+  };
 }
 
 function createEarlyStopResult(
@@ -58,10 +101,12 @@ export async function findWithFallbacks(
   // Handle Tier 5 grid refinement FIRST (when gridCell and gridPosition are provided)
   if (options.gridCell !== undefined && options.gridPosition !== undefined) {
     let width: number, height: number;
+    let gridScaleFactor = 1.0;
     const scalingState = deps.getScalingState();
     if (scalingState && scalingState.scaleFactor !== 1.0) {
       width = scalingState.imageWidth;
       height = scalingState.imageHeight;
+      gridScaleFactor = scalingState.scaleFactor;
     } else {
       const screen = await deps.getScreenMetadata(deviceId);
       width = screen.width;
@@ -69,13 +114,14 @@ export async function findWithFallbacks(
     }
     const cellBounds = calculateGridCellBounds(options.gridCell, width, height);
     const coords = calculatePositionCoordinates(options.gridPosition, cellBounds);
+    const deviceCoords = gridResultToDeviceSpace(cellBounds, coords, gridScaleFactor);
 
     return {
       elements: [
         {
           index: 0,
-          bounds: `[${cellBounds.x0},${cellBounds.y0}][${cellBounds.x1},${cellBounds.y1}]`,
-          center: coords,
+          bounds: deviceCoords.bounds,
+          center: deviceCoords.center,
         },
       ],
       source: "grid",
@@ -134,6 +180,8 @@ export async function findWithFallbacks(
   if ((selector.text || selector.textContains) && maxTier >= 3) {
     const searchTerm = selector.text || selector.textContains!;
     const screenshotResult = await deps.screenshot(deviceId, {});
+    const scalingState = deps.getScalingState();
+    const scaleFactor = scalingState?.scaleFactor ?? 1.0;
 
     try {
       const ocrResults = await extractText(screenshotResult.path!);
@@ -141,7 +189,7 @@ export async function findWithFallbacks(
 
       if (matches.length > 0) {
         return {
-          elements: matches,
+          elements: ocrToDeviceSpace(matches, scaleFactor),
           source: "ocr",
           tier: 3,
           confidence: "high",
@@ -161,12 +209,16 @@ export async function findWithFallbacks(
       const iconCandidates = filterIconCandidates(flat);
 
       if (iconCandidates.length > 0) {
+        // Crop the screenshot using image-space bounds (dump now returns device-space).
         const candidates: VisualCandidate[] = await Promise.all(
           iconCandidates.map(async (node, index) => ({
             index,
             bounds: formatBounds(node),
             center: { x: node.centerX, y: node.centerY },
-            image: await cropCandidateImage(screenshotResult.path!, node.bounds),
+            image: await cropCandidateImage(
+              screenshotResult.path!,
+              boundsToImageSpace(node.bounds, scaleFactor),
+            ),
           }))
         );
 

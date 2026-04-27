@@ -17,7 +17,10 @@ export const uiActionInputSchema = toolSchema({
     .describe("Scroll fraction (0-1, default: 0.5)"),
   deviceSpace: booleanInput()
     .optional()
-    .describe("Treat x/y as device coordinates (skip scaling)"),
+    .describe(
+      "x/y are device-space coords (default: true, matches ui-query dump output). " +
+      "Set false only when passing image-space coords read from a screenshot overlay.",
+    ),
 });
 
 export type UiActionInput = z.infer<typeof uiActionInputSchema>;
@@ -81,8 +84,9 @@ async function handleTap(
     );
   }
 
-  await context.ui.tap(deviceId, x, y, input.deviceSpace);
-  return { tapped: { x, y, deviceSpace: input.deviceSpace ?? false }, deviceId };
+  const deviceSpace = input.deviceSpace ?? true;
+  await context.ui.tap(deviceId, x, y, deviceSpace);
+  return { tapped: { x, y, deviceSpace }, deviceId };
 }
 
 async function handleInput(

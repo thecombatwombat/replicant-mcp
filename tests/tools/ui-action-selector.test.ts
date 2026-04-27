@@ -321,6 +321,45 @@ describe("ui-action selector path (THE-99)", () => {
       expect((result.scrolled as Record<string, unknown>).container).toContain("RecyclerView");
     });
 
+    it("matches NestedScrollView and HorizontalScrollView via ScrollView substring", async () => {
+      // The SCROLLABLE list intentionally uses substring matching ("ScrollView"),
+      // which covers NestedScrollView, HorizontalScrollView, and any future
+      // FooScrollView variant. Lock that in so a future "tighten the match"
+      // refactor doesn't silently break it.
+      for (const containerClass of [
+        "androidx.core.widget.NestedScrollView",
+        "android.widget.HorizontalScrollView",
+      ]) {
+        ctx = buildMockContext();
+        const tree = {
+          text: "", resourceId: "wrap", className: containerClass,
+          centerX: 540, centerY: 1100, bounds: { left: 0, top: 200, right: 1080, bottom: 2000 },
+          clickable: false, focusable: false, contentDesc: "", index: 0,
+          children: [
+            {
+              text: "Save", resourceId: "btn", className: "android.widget.Button",
+              centerX: 540, centerY: 900, bounds: { left: 0, top: 850, right: 1080, bottom: 950 },
+              clickable: true, focusable: true, contentDesc: "", index: 0,
+            },
+          ],
+        };
+        ctx.ui.findWithFallbacks.mockResolvedValueOnce({
+          elements: [tree.children![0]],
+          source: "accessibility",
+        });
+        ctx.ui.dump.mockResolvedValueOnce([tree]);
+
+        const result = await handleUiActionTool(
+          { operation: "scroll", direction: "down", selector: { textContains: "Save" } },
+          ctx as any,
+        );
+
+        expect(ctx.ui.scroll).toHaveBeenCalledWith("emulator-5554", "down", 0.5, tree.bounds);
+        expect((result.scrolled as Record<string, unknown>).container).toBe(containerClass);
+        expect(result.warning).toBeUndefined();
+      }
+    });
+
     it("falls back to screen-center scroll with a warning when no scrollable ancestor exists", async () => {
       const orphan = {
         text: "Lone", resourceId: "x", className: "android.widget.LinearLayout",

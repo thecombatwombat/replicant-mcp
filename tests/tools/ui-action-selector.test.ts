@@ -288,6 +288,20 @@ describe("ui-action selector path (THE-99)", () => {
   });
 
   describe("scroll with selector", () => {
+    const scrollTree = (className: string, scrollable?: boolean) => ({
+      text: "", resourceId: "container", className,
+      centerX: 540, centerY: 1100, bounds: { left: 0, top: 200, right: 1080, bottom: 2000 },
+      clickable: false, focusable: false, contentDesc: "", index: 0,
+      ...(scrollable === undefined ? {} : { scrollable }),
+      children: [
+        {
+          text: "Target", resourceId: "row", className: "android.widget.TextView",
+          centerX: 540, centerY: 900, bounds: { left: 0, top: 850, right: 1080, bottom: 950 },
+          clickable: true, focusable: true, contentDesc: "", index: 0,
+        },
+      ],
+    });
+
     it("scrolls within the nearest scrollable ancestor's bounds", async () => {
       const list = {
         text: "", resourceId: "feed", className: "androidx.recyclerview.widget.RecyclerView",
@@ -319,6 +333,68 @@ describe("ui-action selector path (THE-99)", () => {
         list.bounds,
       );
       expect((result.scrolled as Record<string, unknown>).container).toContain("RecyclerView");
+    });
+
+    it("uses semantic scrollable=true on a generic container", async () => {
+      const tree = scrollTree("android.view.ViewGroup", true);
+      ctx.ui.findWithFallbacks.mockResolvedValueOnce({
+        elements: [tree.children[0]],
+        source: "accessibility",
+      });
+      ctx.ui.dump.mockResolvedValueOnce([tree]);
+
+      const result = await handleUiActionTool(
+        { operation: "scroll", direction: "down", selector: { textContains: "Target" } },
+        ctx as any,
+      );
+
+      expect(ctx.ui.scroll).toHaveBeenCalledWith("emulator-5554", "down", 0.5, tree.bounds);
+      expect((result.scrolled as Record<string, unknown>).container).toBe("android.view.ViewGroup");
+      expect(result.warning).toBeUndefined();
+    });
+
+    it("honors semantic scrollable=false over class fallback", async () => {
+      const tree = scrollTree("androidx.recyclerview.widget.RecyclerView", false);
+      ctx.ui.findWithFallbacks.mockResolvedValueOnce({
+        elements: [tree.children[0]],
+        source: "accessibility",
+      });
+      ctx.ui.dump.mockResolvedValueOnce([tree]);
+
+      const result = await handleUiActionTool(
+        { operation: "scroll", direction: "down", selector: { textContains: "Target" } },
+        ctx as any,
+      );
+
+      expect(ctx.ui.scroll).toHaveBeenCalledWith("emulator-5554", "down", 0.5);
+      expect(result.warning).toContain("no scrollable container");
+    });
+
+    it("matches Compose and legacy scrollable containers by curated class fragments", async () => {
+      for (const containerClass of [
+        "androidx.compose.ui.platform.AndroidComposeView",
+        "androidx.compose.ui.platform.ComposeView",
+        "android.widget.GridView",
+        "android.widget.Gallery",
+        "android.widget.NumberPicker",
+      ]) {
+        ctx = buildMockContext();
+        const tree = scrollTree(containerClass);
+        ctx.ui.findWithFallbacks.mockResolvedValueOnce({
+          elements: [tree.children[0]],
+          source: "accessibility",
+        });
+        ctx.ui.dump.mockResolvedValueOnce([tree]);
+
+        const result = await handleUiActionTool(
+          { operation: "scroll", direction: "down", selector: { textContains: "Target" } },
+          ctx as any,
+        );
+
+        expect(ctx.ui.scroll).toHaveBeenCalledWith("emulator-5554", "down", 0.5, tree.bounds);
+        expect((result.scrolled as Record<string, unknown>).container).toBe(containerClass);
+        expect(result.warning).toBeUndefined();
+      }
     });
 
     it("matches NestedScrollView and HorizontalScrollView via ScrollView substring", async () => {

@@ -83,7 +83,7 @@ if [[ "$DRY_RUN" == "true" ]]; then
 fi
 
 echo "📋 Running tests..."
-npm test -- --run
+npm test
 
 echo "📦 Bumping to $NEW_VERSION..."
 npm version $NEW_VERSION --no-git-tag-version >/dev/null

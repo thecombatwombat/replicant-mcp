@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "replicant-mcp",
   "display_name": "Replicant MCP",
-  "version": "1.6.4",
+  "version": "1.6.5",
   "description": "Android MCP server for AI-assisted Android development. Build APKs, launch emulators, manage devices, automate UI, and analyze logs.",
   "long_description": "Replicant MCP provides 14 tools across 6 categories for complete Android development automation. Build and test with Gradle, manage emulators and devices via ADB, automate UI interactions through accessibility services, capture screenshots, and analyze logcat output — all through natural conversation with Claude.",
   "author": {

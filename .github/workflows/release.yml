@@ -52,7 +52,7 @@ jobs:
       - run: npm ci
       - run: npm run lint --if-present
       - run: npm run build
-      - run: npm test -- --run
+      - run: npm test
 
       - name: Rebuild and verify MCPB bundle
         if: hashFiles('manifest.json') != ''

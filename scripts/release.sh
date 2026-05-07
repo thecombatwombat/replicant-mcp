@@ -98,6 +98,19 @@ if [[ -f .mcp/server.json ]]; then
     fs.writeFileSync('.mcp/server.json', JSON.stringify(s, null, 2) + '\n');
   "
   echo "   Synced .mcp/server.json → $NEW_VERSION"
+
+  # Soft pre-flight: validate the manifest if mcp-publisher is installed locally.
+  # CI runs this same check (pinned) and is the source of truth — this just catches
+  # schema breakage before we tag, so we don't ship a tag CI will reject.
+  if command -v mcp-publisher >/dev/null 2>&1; then
+    echo "   Validating .mcp/server.json with mcp-publisher..."
+    if ! mcp-publisher validate .mcp/server.json; then
+      echo "❌ mcp-publisher validate failed — fix .mcp/server.json before releasing"
+      exit 1
+    fi
+  else
+    echo "   ℹ️  mcp-publisher not installed locally — skipping pre-flight validate (CI will validate)"
+  fi
 fi
 
 # Sync version in manifest.json (MCPB Desktop Extensions manifest)

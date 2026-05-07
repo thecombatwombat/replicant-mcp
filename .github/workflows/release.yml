@@ -67,8 +67,30 @@ jobs:
           fi
           echo "✅ MCPB bundle verified at v$EXPECTED_VERSION"
 
+      # MCP Registry pre-flight: install + validate + auth before any irreversible publish.
+      # Failures here abort the release before npm publish, preserving "as-atomic-as-feasible" semantics.
+      - name: Install mcp-publisher (pinned)
+        env:
+          # Bump deliberately. See https://github.com/modelcontextprotocol/registry/releases
+          MCP_PUBLISHER_VERSION: 1.7.8
+        run: |
+          OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+          ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/v${MCP_PUBLISHER_VERSION}/mcp-publisher_${OS}_${ARCH}.tar.gz" \
+            | tar xz mcp-publisher
+          ./mcp-publisher --version || true
+
+      - name: Validate MCP Registry manifest
+        run: ./mcp-publisher validate .mcp/server.json
+
+      - name: Authenticate to MCP Registry (GitHub OIDC)
+        run: ./mcp-publisher login github-oidc
+
       - name: Publish to npm
         run: npm publish --provenance --access public
+
+      - name: Publish to MCP Registry
+        run: ./mcp-publisher publish .mcp/server.json
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

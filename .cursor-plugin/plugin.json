@@ -1,7 +1,7 @@
 {
   "name": "replicant-mcp",
   "description": "Android MCP server for AI-assisted Android development. Build APKs, launch emulators, manage devices, automate UI, and analyze logs.",
-  "version": "1.6.6",
+  "version": "1.6.7",
   "author": {
     "name": "Archit Joshi"
   },

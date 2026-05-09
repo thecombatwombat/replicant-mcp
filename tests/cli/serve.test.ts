@@ -116,8 +116,7 @@ class FakeChild extends EventEmitter {
   }
 }
 
-function fakeDeps(over: Partial<ServeDeps> = {}): { deps: ServeDeps; out: string[]; err: string[]; exitCodes: number[]; spawn: ReturnType<typeof vi.fn> } {
-  const out: string[] = [];
+function fakeDeps(over: Partial<ServeDeps> = {}): { deps: ServeDeps; err: string[]; exitCodes: number[]; spawn: ReturnType<typeof vi.fn> } {
   const err: string[] = [];
   const exitCodes: number[] = [];
   const spawn = over.spawnChild
@@ -128,19 +127,18 @@ function fakeDeps(over: Partial<ServeDeps> = {}): { deps: ServeDeps; out: string
     detectIp: vi.fn().mockResolvedValue("100.64.1.42"),
     spawnChild: spawn as unknown as ServeDeps["spawnChild"],
     exit: (code: number) => { exitCodes.push(code); },
-    log: (line: string) => { out.push(line); },
     errLog: (line: string) => { err.push(line); },
     selfNode: "/usr/bin/node",
     selfBin: "/abs/dist/index.js",
     signals: [],
     ...over,
   };
-  return { deps, out, err, exitCodes, spawn };
+  return { deps, err, exitCodes, spawn };
 }
 
 describe("runServe", () => {
   it("spawns uvx mcp-proxy with the resolved bind address", async () => {
-    const { deps, out, spawn } = fakeDeps();
+    const { deps, err, spawn } = fakeDeps();
     await runServe(baseOpts(), deps);
     expect(spawn).toHaveBeenCalledWith("uvx", [
       "mcp-proxy",
@@ -151,7 +149,23 @@ describe("runServe", () => {
       "/usr/bin/node",
       "/abs/dist/index.js",
     ]);
-    expect(out.join("\n")).toContain("http://100.64.1.42:8765/sse");
+    expect(err.join("\n")).toContain("http://100.64.1.42:8765/sse");
+  });
+
+  it("does not write the banner to stdout (stdout is reserved for MCP-stream cleanliness)", async () => {
+    const writes: string[] = [];
+    const original = process.stdout.write;
+    (process.stdout as unknown as { write: (s: string) => boolean }).write = (s: string) => {
+      writes.push(s);
+      return true;
+    };
+    try {
+      const { deps } = fakeDeps();
+      await runServe(baseOpts(), deps);
+    } finally {
+      (process.stdout as unknown as { write: typeof original }).write = original;
+    }
+    expect(writes.join("")).not.toContain("replicant-mcp remote mode");
   });
 
   it("exits 1 with a clear reason when preflight fails", async () => {

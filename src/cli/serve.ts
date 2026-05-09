@@ -13,7 +13,9 @@ export interface ServeDeps {
   detectIp: typeof detectTailscaleIp;
   spawnChild: (cmd: string, args: string[]) => ChildProcess;
   exit: (code: number) => void;
-  log: (line: string) => void;
+  // Serve mode never writes to stdout — stdout is reserved for the MCP wire
+  // when this same Node binary is re-spawned in stdio mode by mcp-proxy.
+  // Banner + diagnostics + errors all go through errLog (stderr).
   errLog: (line: string) => void;
   selfBin: string;
   selfNode: string;
@@ -118,7 +120,7 @@ export async function runServe(options: ServeOptions, deps: ServeDeps): Promise<
   const port = options.port;
   const args = buildProxyArgs(result.bindHost, port, deps.selfNode, deps.selfBin);
 
-  deps.log(formatBanner(result.bindHost, port));
+  deps.errLog(formatBanner(result.bindHost, port));
 
   const child = deps.spawnChild("uvx", args);
 
@@ -154,7 +156,6 @@ export function createServeCommand(): Command {
         detectIp: detectTailscaleIp,
         spawnChild: (cmd, args) => spawn(cmd, args, { stdio: "inherit" }),
         exit: (code) => process.exit(code),
-        log: (line) => process.stdout.write(line + "\n"),
         errLog: (line) => process.stderr.write(line + "\n"),
         selfNode: process.execPath,
         selfBin: process.argv[1] ?? "",

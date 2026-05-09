@@ -154,4 +154,74 @@ describe("AdbAdapter", () => {
       ).rejects.toThrow("Failed to pull");
     });
   });
+
+  describe("transient-error retry", () => {
+    const offlineResult = { stdout: "", stderr: "error: device offline", exitCode: 1 } as const;
+    const noDevicesResult = { stdout: "error: no devices/emulators found\n", stderr: "", exitCode: 1 } as const;
+    const notFoundResult = { stdout: "", stderr: "error: device '1234' not found", exitCode: 1 } as const;
+    const unauthorizedResult = { stdout: "", stderr: "error: device unauthorized.", exitCode: 1 } as const;
+    const successResult = { stdout: "ok", stderr: "", exitCode: 0 } as const;
+
+    it("does not retry on success", async () => {
+      mockRunner.runAdb.mockResolvedValueOnce(successResult);
+      await adapter.shell("emulator-5554", "echo hi");
+      expect(mockRunner.runAdb).toHaveBeenCalledTimes(1);
+    });
+
+    it("retries on 'device offline' and returns the second result", async () => {
+      mockRunner.runAdb
+        .mockResolvedValueOnce(offlineResult)
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // wait-for-device
+        .mockResolvedValueOnce(successResult);
+      const result = await adapter.shell("emulator-5554", "echo hi");
+      expect(result.stdout).toBe("ok");
+      expect(mockRunner.runAdb).toHaveBeenCalledTimes(3);
+      expect(mockRunner.runAdb.mock.calls[1][0]).toEqual(["wait-for-device"]);
+    });
+
+    it("retries on 'no devices/emulators found' (stdout)", async () => {
+      mockRunner.runAdb
+        .mockResolvedValueOnce(noDevicesResult)
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 })
+        .mockResolvedValueOnce({ stdout: "List of devices attached\n", stderr: "", exitCode: 0 });
+      await adapter.getDevices();
+      expect(mockRunner.runAdb).toHaveBeenCalledTimes(3);
+    });
+
+    it("retries on \"device 'X' not found\"", async () => {
+      mockRunner.runAdb
+        .mockResolvedValueOnce(notFoundResult)
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 })
+        .mockResolvedValueOnce(successResult);
+      await adapter.shell("1234", "ls");
+      expect(mockRunner.runAdb).toHaveBeenCalledTimes(3);
+    });
+
+    it("does NOT retry on 'device unauthorized'", async () => {
+      mockRunner.runAdb.mockResolvedValueOnce(unauthorizedResult);
+      const result = await adapter.shell("emulator-5554", "ls");
+      expect(result.exitCode).toBe(1);
+      expect(mockRunner.runAdb).toHaveBeenCalledTimes(1);
+    });
+
+    it("retries at most once (returns second result even if also offline)", async () => {
+      mockRunner.runAdb
+        .mockResolvedValueOnce(offlineResult)
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 })
+        .mockResolvedValueOnce(offlineResult);
+      const result = await adapter.shell("emulator-5554", "ls");
+      expect(result.exitCode).toBe(1);
+      expect(mockRunner.runAdb).toHaveBeenCalledTimes(3);
+    });
+
+    it("tolerates wait-for-device failure and still retries the original command", async () => {
+      mockRunner.runAdb
+        .mockResolvedValueOnce(offlineResult)
+        .mockRejectedValueOnce(new Error("wait-for-device timed out"))
+        .mockResolvedValueOnce(successResult);
+      const result = await adapter.shell("emulator-5554", "ls");
+      expect(result.exitCode).toBe(0);
+      expect(mockRunner.runAdb).toHaveBeenCalledTimes(3);
+    });
+  });
 });

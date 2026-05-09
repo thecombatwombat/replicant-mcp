@@ -125,6 +125,23 @@ export class AdbAdapter {
   }
 
   private async adb(args: string[], timeoutMs?: number): Promise<RunResult> {
+    const first = await this.runner.runAdb(args, { timeoutMs });
+    if (first.exitCode === 0 || !isTransientDeviceError(first)) {
+      return first;
+    }
+    // One retry: give the device 3s to come back, then re-run the original command.
+    // wait-for-device failure is non-fatal; the retry will surface the real error.
+    await this.runner.runAdb(["wait-for-device"], { timeoutMs: 3000 }).catch(() => {});
     return this.runner.runAdb(args, { timeoutMs });
   }
+}
+
+function isTransientDeviceError(result: RunResult): boolean {
+  const blob = `${result.stderr ?? ""}\n${result.stdout ?? ""}`.toLowerCase();
+  if (blob.includes("device unauthorized")) return false;
+  return (
+    blob.includes("device offline") ||
+    blob.includes("no devices/emulators found") ||
+    /device '[^']+' not found/.test(blob)
+  );
 }

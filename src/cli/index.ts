@@ -4,4 +4,5 @@ export { createEmulatorCommand } from "./emulator.js";
 export { createUiCommand } from "./ui.js";
 export { createCacheCommand } from "./cache.js";
 export { createDoctorCommand } from "./doctor.js";
+export { createServeCommand } from "./serve.js";
 export * from "./formatter.js";

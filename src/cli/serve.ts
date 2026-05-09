@@ -8,6 +8,8 @@ export interface ServeOptions {
   host?: string;
 }
 
+type SignalListener = (sig: NodeJS.Signals) => void;
+
 export interface ServeDeps {
   runner: ProcessRunner;
   detectIp: typeof detectTailscaleIp;
@@ -20,6 +22,10 @@ export interface ServeDeps {
   selfBin: string;
   selfNode: string;
   signals?: NodeJS.Signals[];
+  // Injected so tests can verify listener cleanup without poking the real
+  // global `process` event emitter.
+  processOn?: (sig: NodeJS.Signals, fn: SignalListener) => void;
+  processOff?: (sig: NodeJS.Signals, fn: SignalListener) => void;
 }
 
 export interface PreflightResult {
@@ -124,14 +130,23 @@ export async function runServe(options: ServeOptions, deps: ServeDeps): Promise<
 
   const child = deps.spawnChild("uvx", args);
 
-  const signals: NodeJS.Signals[] = deps.signals ?? ["SIGINT", "SIGTERM"];
-  for (const sig of signals) {
-    process.on(sig, () => {
-      if (!child.killed) child.kill("SIGTERM");
-    });
-  }
+  // The signal handlers below close over `cleanupSignals`. We declare it
+  // after wiring child listeners so that an immediate `error` event from
+  // a failed spawn can be reported without racing the signal-handler
+  // install. The handlers themselves only call cleanupSignals on child
+  // exit, by which time it's defined.
+  const installedSignals: Array<{ sig: NodeJS.Signals; fn: SignalListener }> = [];
+  const cleanupSignals = () => {
+    const off = deps.processOff ?? ((s, f) => { process.removeListener(s, f); });
+    for (const { sig, fn } of installedSignals) off(sig, fn);
+    installedSignals.length = 0;
+  };
 
+  // Wire child listeners BEFORE signal handlers. A synchronous `error`
+  // event from a failed spawn must be observable, and the signal handlers
+  // assume `child.exit` will eventually fire to clean them up.
   child.on("exit", (code, sig) => {
+    cleanupSignals();
     if (sig && !code) {
       deps.exit(0);
     } else {
@@ -139,9 +154,29 @@ export async function runServe(options: ServeOptions, deps: ServeDeps): Promise<
     }
   });
   child.on("error", (err) => {
+    cleanupSignals();
     deps.errLog(`failed to spawn uvx: ${err.message}`);
     deps.exit(1);
   });
+
+  let shuttingDown = false;
+  const onSignal: SignalListener = (sig) => {
+    if (shuttingDown) {
+      // Second Ctrl-C (or repeated SIGTERM): escalate. The proxy may be
+      // taking time to drain SSE clients; the user wants out now.
+      child.kill("SIGKILL");
+      return;
+    }
+    shuttingDown = true;
+    child.kill(sig);
+  };
+
+  const signals: NodeJS.Signals[] = deps.signals ?? ["SIGINT", "SIGTERM"];
+  const on = deps.processOn ?? ((s, f) => { process.on(s, f); });
+  for (const sig of signals) {
+    on(sig, onSignal);
+    installedSignals.push({ sig, fn: onSignal });
+  }
 }
 
 export function createServeCommand(): Command {

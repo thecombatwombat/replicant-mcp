@@ -211,4 +211,92 @@ describe("runServe", () => {
       expect.arrayContaining(["--host", "10.0.0.5"])
     );
   });
+
+  describe("signal handling", () => {
+    function fakeProcessOn() {
+      const listeners = new Map<string, Set<(...args: unknown[]) => void>>();
+      const processOn = vi.fn((sig: string, fn: (...args: unknown[]) => void) => {
+        if (!listeners.has(sig)) listeners.set(sig, new Set());
+        listeners.get(sig)!.add(fn);
+      });
+      const processOff = vi.fn((sig: string, fn: (...args: unknown[]) => void) => {
+        listeners.get(sig)?.delete(fn);
+      });
+      const fire = (sig: string) => {
+        for (const fn of [...(listeners.get(sig) ?? [])]) fn(sig);
+      };
+      const count = (sig: string) => listeners.get(sig)?.size ?? 0;
+      return { processOn, processOff, fire, count };
+    }
+
+    it("installs SIGINT/SIGTERM handlers on the injected processOn", async () => {
+      const child = new FakeChild();
+      const { processOn, count } = fakeProcessOn();
+      const { deps } = fakeDeps({
+        spawnChild: () => child,
+        signals: ["SIGINT", "SIGTERM"],
+        processOn: processOn as unknown as ServeDeps["processOn"],
+      });
+      await runServe(baseOpts(), deps);
+      expect(count("SIGINT")).toBe(1);
+      expect(count("SIGTERM")).toBe(1);
+    });
+
+    it("removes signal listeners after the child exits", async () => {
+      const child = new FakeChild();
+      const { processOn, processOff, count } = fakeProcessOn();
+      const { deps } = fakeDeps({
+        spawnChild: () => child,
+        signals: ["SIGINT", "SIGTERM"],
+        processOn: processOn as unknown as ServeDeps["processOn"],
+        processOff: processOff as unknown as ServeDeps["processOff"],
+      });
+      await runServe(baseOpts(), deps);
+      child.emit("exit", 0, null);
+      expect(count("SIGINT")).toBe(0);
+      expect(count("SIGTERM")).toBe(0);
+    });
+
+    it("escalates to SIGKILL on a second signal (Ctrl-C twice)", async () => {
+      const child = new FakeChild();
+      const killSpy = vi.spyOn(child, "kill");
+      const { processOn, fire } = fakeProcessOn();
+      const { deps } = fakeDeps({
+        spawnChild: () => child,
+        signals: ["SIGINT"],
+        processOn: processOn as unknown as ServeDeps["processOn"],
+      });
+      await runServe(baseOpts(), deps);
+      fire("SIGINT");
+      fire("SIGINT");
+      expect(killSpy).toHaveBeenNthCalledWith(1, "SIGINT");
+      expect(killSpy).toHaveBeenNthCalledWith(2, "SIGKILL");
+    });
+
+    it("wires the child error listener before installing signal handlers", async () => {
+      const child = new FakeChild();
+      const { processOn } = fakeProcessOn();
+      const order: string[] = [];
+      const wrappedOn = vi.fn((sig: string, fn: (...args: unknown[]) => void) => {
+        order.push(`process.on(${sig})`);
+        processOn(sig, fn);
+      });
+      const originalOn = child.on.bind(child);
+      child.on = ((event: string, listener: (...args: unknown[]) => void) => {
+        order.push(`child.on(${event})`);
+        return originalOn(event, listener);
+      }) as typeof child.on;
+      const { deps } = fakeDeps({
+        spawnChild: () => child,
+        signals: ["SIGINT", "SIGTERM"],
+        processOn: wrappedOn as unknown as ServeDeps["processOn"],
+      });
+      await runServe(baseOpts(), deps);
+      const firstChildIdx = order.findIndex((s) => s.startsWith("child.on"));
+      const firstProcIdx = order.findIndex((s) => s.startsWith("process.on"));
+      expect(firstChildIdx).toBeGreaterThanOrEqual(0);
+      expect(firstProcIdx).toBeGreaterThanOrEqual(0);
+      expect(firstChildIdx).toBeLessThan(firstProcIdx);
+    });
+  });
 });

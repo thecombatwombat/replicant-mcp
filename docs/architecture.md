@@ -55,3 +55,18 @@ All subsequent commands target that device automatically.
 ## Safety Guards
 
 The `adb-shell` tool blocks dangerous commands like `rm -rf /`, `reboot`, and `su`. You can run shell commands, but not brick your device.
+
+## Run Modes
+
+replicant-mcp ships two run modes from the same npm package:
+
+- **stdio (default)** — `npx replicant-mcp` with no args. The MCP client launches it as a subprocess on the same machine the phone is plugged into. This is what every config block in [Setup](../README.md#setup) uses.
+- **remote / HTTP** — `replicant-mcp serve --http`. Wraps the same stdio server with [`mcp-proxy`](https://github.com/sparfenyuk/mcp-proxy) (fetched on demand via `uvx`) to expose it over SSE on the host machine's Tailscale interface. Lets an agent on machine A drive a phone plugged into machine B. See [docs/remote.md](remote.md) for the full setup.
+
+The server itself is unchanged across modes; only the transport in front of it differs. Process tree in remote mode:
+
+```
+replicant-mcp serve --http      # bin shim + arg parsing
+  └── uvx mcp-proxy …           # SSE listener on host's tailnet IP
+        └── replicant-mcp       # stdio MCP server (no args), backend
+```

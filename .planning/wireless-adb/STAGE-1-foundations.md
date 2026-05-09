@@ -311,9 +311,11 @@ export class DeviceLocks {
   acquireFingerprint(fingerprint: string): Promise<() => void>;
   // tryAcquire variant for Stage 4 supervisor's defer-on-contention behaviour.
   tryAcquireFingerprint(fingerprint: string, timeoutMs?: number): Promise<(() => void) | null>;
-  // Called after verifyDevice confirms identity; subsequent acquireHost(host) will route to fingerprint.
-  bindAlias(host: string, fingerprint: string): void;
-  // Called by disconnect when the device leaves; removes any host entries pointing at this fingerprint.
+  // The only way to publish or rebind an alias. Held-lock overlap guarantees no
+  // concurrent caller observes the alias change without serializing on the new lock.
+  // Internal bindAlias is not exported; callers cannot mutate the map without it.
+  transferAlias(currentRelease: () => void, host: string, fingerprint: string): Promise<() => void>;
+  // Called by disconnect after teardown; removes any host entries pointing at this fingerprint.
   unbindAlias(fingerprint: string): void;
 }
 ```

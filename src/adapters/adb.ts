@@ -129,9 +129,20 @@ export class AdbAdapter {
     if (first.exitCode === 0 || !isTransientDeviceError(first)) {
       return first;
     }
+    // Don't recursively wait when the caller is already waiting — a failing
+    // `wait-for-device` retried with another `wait-for-device` would just
+    // double the worst-case timeout for no benefit.
+    if (args.includes("wait-for-device")) {
+      return first;
+    }
     // One retry: give the device 3s to come back, then re-run the original command.
+    // Carry `-s <deviceId>` from the original args so multi-device hosts wait
+    // for the *right* device, not whichever happens to be online.
     // wait-for-device failure is non-fatal; the retry will surface the real error.
-    await this.runner.runAdb(["wait-for-device"], { timeoutMs: 3000 }).catch(() => {});
+    const sIdx = args.indexOf("-s");
+    const deviceId = sIdx >= 0 ? args[sIdx + 1] : undefined;
+    const waitArgs = deviceId ? ["-s", deviceId, "wait-for-device"] : ["wait-for-device"];
+    await this.runner.runAdb(waitArgs, { timeoutMs: 3000 }).catch(() => {});
     return this.runner.runAdb(args, { timeoutMs });
   }
 }

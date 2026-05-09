@@ -176,7 +176,11 @@ describe("AdbAdapter", () => {
       const result = await adapter.shell("emulator-5554", "echo hi");
       expect(result.stdout).toBe("ok");
       expect(mockRunner.runAdb).toHaveBeenCalledTimes(3);
-      expect(mockRunner.runAdb.mock.calls[1][0]).toEqual(["wait-for-device"]);
+      expect(mockRunner.runAdb.mock.calls[1][0]).toEqual([
+        "-s",
+        "emulator-5554",
+        "wait-for-device",
+      ]);
     });
 
     it("retries on 'no devices/emulators found' (stdout)", async () => {
@@ -222,6 +226,41 @@ describe("AdbAdapter", () => {
       const result = await adapter.shell("emulator-5554", "ls");
       expect(result.exitCode).toBe(0);
       expect(mockRunner.runAdb).toHaveBeenCalledTimes(3);
+    });
+
+    it("carries -s <deviceId> into the retry's wait-for-device call", async () => {
+      mockRunner.runAdb
+        .mockResolvedValueOnce(offlineResult)
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 })
+        .mockResolvedValueOnce(successResult);
+      await adapter.shell("emulator-5554", "echo hi");
+      expect(mockRunner.runAdb.mock.calls[1][0]).toEqual([
+        "-s",
+        "emulator-5554",
+        "wait-for-device",
+      ]);
+    });
+
+    it("uses bare wait-for-device when the original command has no -s flag", async () => {
+      mockRunner.runAdb
+        .mockResolvedValueOnce(noDevicesResult)
+        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 })
+        .mockResolvedValueOnce({ stdout: "List of devices attached\n", stderr: "", exitCode: 0 });
+      await adapter.getDevices();
+      expect(mockRunner.runAdb.mock.calls[1][0]).toEqual(["wait-for-device"]);
+    });
+
+    it("does NOT recursively wait when the original command is already wait-for-device", async () => {
+      mockRunner.runAdb.mockResolvedValueOnce(notFoundResult);
+      await expect(
+        adapter.waitForDevice("ghost-device", 1000)
+      ).resolves.toBeUndefined();
+      expect(mockRunner.runAdb).toHaveBeenCalledTimes(1);
+      expect(mockRunner.runAdb.mock.calls[0][0]).toEqual([
+        "-s",
+        "ghost-device",
+        "wait-for-device",
+      ]);
     });
   });
 });

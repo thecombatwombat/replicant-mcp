@@ -101,6 +101,8 @@ mkdir -p "$ANDROID_HOME"
 # 4. Accept all SDK licenses first, then install packages.
 #    `sdkmanager --install` aborts on unaccepted per-package licenses
 #    (e.g. the Google APIs system image) if licenses aren't accepted first.
+#    The system-image arch must match your host: `arm64-v8a` for Apple
+#    Silicon (M1/M2/M3), `x86_64` for Intel Macs. Check with `uname -m`.
 yes | sdkmanager --licenses
 sdkmanager --install "platform-tools" "emulator" "system-images;android-34;google_apis;arm64-v8a"
 ```

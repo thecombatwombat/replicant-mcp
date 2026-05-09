@@ -16,23 +16,25 @@
 
 ### Block-on-merge
 
-| ID | File | Line(s) | One-line action |
-|---|---|---|---|
-| C1 | `src/cli/serve.ts` | 121, 157 | Route banner to **stderr**, not stdout. Drop the `log`/`errLog` split. Update `tests/cli/serve.test.ts` assertions accordingly. |
-| C2 | `src/cli/serve.ts` | 123-130 | Wire `child.on(exit/error)` **before** signal handlers. Add SIGKILL escalation on second signal. Use `process.once`, remove listeners on child exit. Add a `shuttingDown` flag instead of `child.killed`. |
-| H1 | `src/adapters/adb.ts` | 127-145 | Carry `-s <deviceId>` into the retry's `wait-for-device` call. Short-circuit when args already include `wait-for-device`. |
-| H4 | `src/cli/serve.ts` | 97-103 | Banner advertises "paste into Claude Desktop" but Claude Desktop can't consume `{ "url": "..." }`. Either drop the Claude Desktop mention or print *both* the SSE-direct snippet and the `mcp-remote` bridge snippet. |
-| L3 | `src/cli/serve.ts` | 99-104 | Banner JSON missing the outer `"mcpServers": { … }` wrapper. Verbatim paste = invalid config. |
-| M1 | `PRIVACY.md` | new section | CLAUDE.md mandates a privacy-policy review when adding network-reachable capability. Add a section: remote mode + first-launch PyPI fetch via `uvx`. |
+| ID | Status | File | Line(s) | One-line action |
+|---|---|---|---|---|
+| C1 | ✅ `fa6534e` | `src/cli/serve.ts` | 121, 157 | Route banner to **stderr**, not stdout. Drop the `log`/`errLog` split. Update `tests/cli/serve.test.ts` assertions accordingly. |
+| C2 | ✅ `29a13b1` | `src/cli/serve.ts` | 123-130 | Wire `child.on(exit/error)` **before** signal handlers. Add SIGKILL escalation on second signal. Use `process.once`, remove listeners on child exit. Add a `shuttingDown` flag instead of `child.killed`. |
+| H1 | ✅ `406a118` | `src/adapters/adb.ts` | 127-145 | Carry `-s <deviceId>` into the retry's `wait-for-device` call. Short-circuit when args already include `wait-for-device`. |
+| H4 | ✅ `0e81d9f` | `src/cli/serve.ts` | 97-103 | Banner advertises "paste into Claude Desktop" but Claude Desktop can't consume `{ "url": "..." }`. Either drop the Claude Desktop mention or print *both* the SSE-direct snippet and the `mcp-remote` bridge snippet. |
+| L3 | ✅ `0e81d9f` | `src/cli/serve.ts` | 99-104 | Banner JSON missing the outer `"mcpServers": { … }` wrapper. Verbatim paste = invalid config. |
+| M1 | ✅ `c976ed1` | `PRIVACY.md` | new section | CLAUDE.md mandates a privacy-policy review when adding network-reachable capability. Add a section: remote mode + first-launch PyPI fetch via `uvx`. |
 
 ### Investigate, then either fix or document
 
-| ID | What | How to verify |
-|---|---|---|
-| C3 / OQ2 | Does `mcp-proxy --pass-environment` propagate to the **backend** subprocess, or only to `mcp-proxy` itself? Does it leak secrets that should be allowlisted? | `ANDROID_HOME=/tmp/nope replicant-mcp serve --http`, drive a tool call from a client, check whether the error references `/tmp/nope`. |
-| OQ1 | Does mcp-proxy forward signals to the grandchild node? | `serve --http`, `kill -TERM <proxy-pid>`, then `pgrep -f "node dist/index"` should be empty. |
-| OQ3 | If only the inner node dies, does mcp-proxy hang or recover? | `serve --http`, find inner node PID, `kill -KILL`, then call a tool from the client. |
-| L2 | `claude mcp add … --transport sse` — flag still current? Or has it been renamed/replaced? | `claude mcp add --help` on the latest CLI. Update or hedge `docs/remote.md`. |
+| ID | Status | What | How to verify |
+|---|---|---|---|
+| C3 / OQ2 | 📝 `5055dbc` (documented) | Does `mcp-proxy --pass-environment` propagate to the **backend** subprocess, or only to `mcp-proxy` itself? Does it leak secrets that should be allowlisted? | `ANDROID_HOME=/tmp/nope replicant-mcp serve --http`, drive a tool call from a client, check whether the error references `/tmp/nope`. |
+| OQ1 | 📝 `5055dbc` (documented) | Does mcp-proxy forward signals to the grandchild node? | `serve --http`, `kill -TERM <proxy-pid>`, then `pgrep -f "node dist/index"` should be empty. |
+| OQ3 | 📝 `5055dbc` (documented) | If only the inner node dies, does mcp-proxy hang or recover? | `serve --http`, find inner node PID, `kill -KILL`, then call a tool from the client. |
+| L2 | ⏳ deferred | `claude mcp add … --transport sse` — flag still current? Or has it been renamed/replaced? | `claude mcp add --help` on the latest CLI. Update or hedge `docs/remote.md`. |
+
+> **Status legend:** ✅ fixed in code · 📝 documented (no code fix) · ⏳ deferred to a follow-up. Commit refs are on the `fix/remote-mode-review` branch. The C3/OQ1/OQ3 entries are accepted-as-documented per `docs/remote.md` "Process supervision and environment"; live smoke-tests still recommended before merge.
 
 ### Lower priority — picked up but defer if time-pressed
 

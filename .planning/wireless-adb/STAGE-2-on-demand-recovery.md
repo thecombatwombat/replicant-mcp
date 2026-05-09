@@ -24,7 +24,7 @@ The classification of which adapter methods are "idempotent for retry" lives nex
 
 ## Dependencies
 
-- Stage 1's `verifyDevice` primitive on `AdbAdapter` (returns `{ ok, serial, model }` — same call serves Stage 2 verify and Stage 3 fingerprint collection).
+- Stage 1's `verifyDevice` primitive on `AdbAdapter` (returns `{ ok, serial, model, fingerprint }` on success; same call serves Stage 2's pre-flight liveness check and Stage 3's cache writes — `verifyDevice` is the only producer of fingerprints per Stage 1's single-producer invariant).
 - Stage 1's `transport` field on `Device` (used to gate this behaviour to wireless devices only — USB devices don't need it).
 - Stage 1's per-device lock primitive (`src/services/locks.ts`). Pre-flight reset and adapter retry both acquire the lock so they cannot race a concurrent `connect`/`disconnect`.
 

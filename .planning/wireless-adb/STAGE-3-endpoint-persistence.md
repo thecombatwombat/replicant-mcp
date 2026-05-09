@@ -8,7 +8,7 @@ Survive server restarts, context compaction, and IP renewals without re-pairing.
 
 - **On-disk endpoint cache**, keyed by **fingerprint** (defined in `CONTEXT.md` and computed in Stage 1's `src/services/identity.ts`), not raw `host:port`. This lets us recognise the same device under a new IP after DHCP renewal.
   - Stored under the OS-conventional user-data dir: `$XDG_DATA_HOME/replicant-mcp/wireless-adb/endpoints.json` (Linux, fallback `~/.local/share/...`), `~/Library/Application Support/replicant-mcp/wireless-adb/endpoints.json` (macOS), `%LOCALAPPDATA%\replicant-mcp\wireless-adb\endpoints.json` (Windows). Resolution lives in `src/services/paths.ts` (new) so the cache, supervised set, and any future state share one resolver and tests.
-  - File permissions `0600`. The cache stores fingerprints (already hashed); raw serials never reach disk. The `0600` posture is belt-and-braces for `deviceLabel` and address history.
+  - File permissions `0600`. The cache stores fingerprints (already hashed); raw serials never reach disk. The `0600` posture is belt-and-braces for `deviceLabel` and the cached `lastKnownAddress`.
   - Each entry:
     ```ts
     {

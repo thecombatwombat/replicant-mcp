@@ -3,6 +3,7 @@ export { CacheManager, type CacheStats } from "./cache-manager.js";
 export { DeviceStateManager } from "./device-state.js";
 export { EnvironmentService, type Environment } from "./environment.js";
 export { ConfigManager, loadConfig } from "./config.js";
+export { detectTailscaleIp } from "./tailscale.js";
 export * from "./ocr.js";
 export * from "./icon-patterns.js";
 export * from "./grid.js";

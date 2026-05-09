@@ -259,12 +259,19 @@ Add internal helpers on `AdbAdapter`. These are not new MCP tools — they're ca
 - `disconnect(target?: string): Promise<{ message: string }>`
 - `pair(target: string, code: string): Promise<{ message: string }>`
 - `mdnsServices(): Promise<string>` (raw stdout; parsed by `parseMdnsServices`)
-- `verifyDevice(deviceId: string, timeoutMs: number): Promise<{ ok: boolean; serial?: string; model?: string; fingerprint?: string }>` — runs **two sequential** `adb -s <id> shell getprop ro.serialno` and `adb -s <id> shell getprop ro.product.model` calls. **Do not use `&&` to chain them in a single shell call**: `ProcessRunner.validateShellPayload` (`src/services/process-runner.ts:155`) rejects `&`, `;`, `|`, etc. before the command runs. Two separate adb invocations is the only safe form. Both calls share the same `timeoutMs` budget (split or sequential — implementation choice).
+- `verifyDevice(deviceId: string, timeoutMs: number): Promise<VerifyResult>` where:
 
-  **Result shape conventions:**
-  - `ok: true` ⟹ `serial`, `model`, and `fingerprint` are all non-empty strings (no empty-string sentinels).
-  - `ok: false` ⟹ all three other fields are `undefined` (omitted, not empty). Lets callers branch on `result.ok` cleanly without a second null-guard.
-  - Distinguishes **`unauthorized`** from **transport-offline**: when adb's stderr matches the documented unauthorized pattern (`device unauthorized` or `more than one device/emulator` is N/A here), the adapter throws `ReplicantError(CONNECTION_FAILED, ...)` with `nextSteps[0].required = true` and `args.operation = "pair"`. Auth failure is unambiguous — only `pair` fixes it. Transport offline (timeout, `device offline`, `protocol fault`) is ambiguous and uses `required: false`.
+  ```ts
+  type VerifyResult =
+    | { ok: true;  serial: string; model: string; fingerprint: string }
+    | { ok: false; reason: "unauthorized" | "offline" | "timeout" | "unknown"; stderr?: string };
+  ```
+
+  Runs **two sequential** `adb -s <id> shell getprop ro.serialno` and `adb -s <id> shell getprop ro.product.model` calls. **Do not use `&&` to chain them in a single shell call**: `ProcessRunner.validateShellPayload` (`src/services/process-runner.ts:155`) rejects `&`, `;`, `|`, etc. before the command runs. Two separate adb invocations is the only safe form. Both calls share the same `timeoutMs` budget (split or sequential — implementation choice).
+
+  **Discriminated union, no throw.** `verifyDevice` returns the result; classification of the `reason` string into `"unauthorized" | "offline" | "timeout" | "unknown"` happens here in one place by matching documented adb stderr substrings. Callers (the operation handlers in `adb-device.ts`, Stage 2's pre-flight, Stage 4's supervisor) consume the discriminated union: `result.ok` narrows to the success branch (compiler enforces all three fields present) or the failure branch (compiler enforces `reason`). Adding a new failure mode is a single enum addition with one catalog entry.
+
+  **Tool handlers translate failure to `ReplicantError`.** When `verifyDevice` returns `{ ok: false, reason: "unauthorized" }`, the calling handler builds `ReplicantError(CONNECTION_FAILED, ...)` with `nextSteps[0].required = true` and `args.operation = "pair"` — auth failure is unambiguous, only `pair` fixes it. `"offline" | "timeout" | "unknown"` map to `nextSteps` with `required: false` because the underlying cause is ambiguous (sleeping device, firewall, stale port, network change).
 
   **`verifyDevice` is the only producer of fingerprints** — every other component receives them already computed and never re-derives them. This is the same primitive used by Stage 2 pre-flight, Stage 3 cache writes, and Stage 4 supervisor identity confirmation.
 

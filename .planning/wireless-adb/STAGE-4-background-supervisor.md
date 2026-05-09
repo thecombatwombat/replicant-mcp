@@ -12,7 +12,7 @@ Detect and recover from connection loss **without** a triggering tool call. This
   Devices the user has explicitly disconnected are **not** in the supervised set and are **not** auto-reconnected. This is the load-bearing design choice: without it, the supervisor would silently undo every `disconnect`.
 - **On detection, attempts reconnect** using only mechanisms that already work without speculative identity claims:
   1. Last-known endpoint from the Stage 3 cache (matched by fingerprint). The cache holds exactly one address per fingerprint; there is no multi-endpoint fan-out.
-  2. mDNS scan: collect candidates, then for each, connect → run `verifyDevice` → if the returned fingerprint matches the cache entry → success; on mismatch, disconnect and try next. (mDNS itself does not expose serial/model — identity is only confirmed post-connect, per Stage 3's identity strategy.)
+  2. mDNS scan: collect candidates, then for each, **`tryAcquireHost(candidate, ~250ms)`** → if the host lock is contended, skip the candidate (a foreground tool call has it; the supervisor defers per the never-block-foreground invariant); otherwise connect → run `verifyDevice` → if the returned fingerprint matches the cache entry → `transferAlias` to the fingerprint lock and report success; on mismatch, release the host lock, disconnect, try next. (mDNS itself does not expose serial/model — identity is only confirmed post-connect, per Stage 3's identity strategy.)
   3. Exponential backoff with jitter on repeated failures (e.g., 5s, 15s, 60s, 5min, 15min, capped).
 - **Opt-in via config**, off by default. A config flag in `src/services/config.ts` enables the supervisor. Lifecycle bound to MCP server process — stops cleanly on shutdown.
 - **Event log** of supervisor actions feeds Stage 5 observability.
@@ -23,7 +23,7 @@ Detect and recover from connection loss **without** a triggering tool call. This
 - **Stage 3's endpoint cache** — without persistent endpoints, the supervisor has nothing to reconnect to after a port change.
 - **Stage 3's identity strategy** — fingerprint confirmation post-connect is what makes mDNS rediscovery safe.
 - **Stage 1's adapter primitives** for the connect/verify path.
-- **Stage 1's per-device lock** — supervisor uses `tryAcquireFingerprint` (with short timeout) so foreground tool calls always win; the supervisor defers to the next interval rather than blocking.
+- **Stage 1's per-device lock** — supervisor uses `tryAcquireHost` for the pre-identity mDNS scan phase and `tryAcquireFingerprint` once identity is confirmed (both with short timeouts) so foreground tool calls always win; the supervisor defers to the next interval rather than blocking.
 - **Stage 2's recovery sequence** as the inner reconnect step.
 
 ## Key design notes

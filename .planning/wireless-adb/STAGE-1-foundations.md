@@ -315,6 +315,7 @@ A single-function module: `computeFingerprint(serial: string, model: string): st
 
   Handler call shape: `release = await locks.transferAlias(release, host, fp);` — the handler's local `release` variable now refers to `lock(fingerprint)` and continues to serialize the rest of the operation. The internal `bindAlias` is not exposed; alias-map mutation only happens inside `transferAlias` so it cannot be called without the corresponding lock held.
 - `unbindAlias(fingerprint)` is called by `disconnect` after teardown; it removes any `host` entries whose value is `fingerprint`. O(n) over the alias map (small — bounded by live connects), no second map needed.
+- **Implementation note (multi-acquire deadlock).** `transferAlias` acquires a second lock while holding the prior one. Two concurrent transfers that cross-target each other's keys (e.g., devices swapping IPs and both being re-verified at the same instant) can deadlock under naive nested acquisition. This is a standard multi-lock concern; the implementation should choose one of the established remedies (deterministic key-ordered acquisition, try-acquire-with-timeout + retry, or single global serializing mutex around the transfer fast-path). The choice is implementation detail and does not affect this plan's API contract; flagged here so the implementer doesn't have to re-derive the concern.
 - Stage 3's cache and supervised-set both use fingerprint keys, but the lock manager is the only component that needs to translate between host and fingerprint at lock time. Cache lookups by host (e.g., during a no-args connect) consult the cache directly, not the alias map.
 
 ```ts
@@ -322,7 +323,9 @@ A single-function module: `computeFingerprint(serial: string, model: string): st
 export class DeviceLocks {
   acquireHost(host: string): Promise<() => void>;            // routes to fingerprint lock if alias bound; re-checks after acquire
   acquireFingerprint(fingerprint: string): Promise<() => void>; // re-checks after acquire
-  // tryAcquire variant for Stage 4 supervisor's defer-on-contention behaviour.
+  // tryAcquire variants for Stage 4 supervisor's defer-on-contention behaviour.
+  // tryAcquireHost is needed by the supervisor's mDNS scan, where identity isn't yet confirmed.
+  tryAcquireHost(host: string, timeoutMs?: number): Promise<(() => void) | null>;
   tryAcquireFingerprint(fingerprint: string, timeoutMs?: number): Promise<(() => void) | null>;
   // The only way to publish or rebind an alias. Held-lock overlap guarantees no
   // concurrent caller observes the alias change without serializing on the new lock.

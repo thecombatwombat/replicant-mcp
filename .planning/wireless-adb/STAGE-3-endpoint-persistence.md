@@ -27,7 +27,7 @@ Survive server restarts, context compaction, and IP renewals without re-pairing.
   2. **Multiple cached fingerprints:** return `MULTIPLE_WIRELESS_CANDIDATES` with one `nextSteps` entry per cached fingerprint (each pre-populated with `args: { operation: "connect", address: <lastKnownAddress> }`). This matches Stage 1's behaviour for ambiguity at discovery time and respects `DECISIONS.md`'s single-active-device decision — the server never silently routes to one of several plausible options.
   3. **No cached fingerprints:** Stage 1's no-args scan flow.
 
-  Each `verifyDevice` call confirms `serial+model` matches the cache's fingerprint before the cache entry is "used"; on mismatch the address is invalidated for that fingerprint and the loop continues.
+  Each `verifyDevice` call confirms the returned fingerprint matches the cache's fingerprint before the cache entry is "used"; on mismatch, increment `failedVerifyCount` for that entry and fall through to the Stage 1 mDNS scan (no multi-address loop — see step 1).
 - **`list` is unchanged.** It does not surface cached candidates as success-path `nextSteps`. (`nextSteps` is reserved for error responses, per Stage 1's contract.) Cached-candidate discovery is the job of `connect` no-args; agents that want to see cached identities call `connect` with no args and read the response.
 - **Cache write happens after a verified connect with confirmed fingerprint**: `verifyDevice` returns `{ ok: true; serial; model; fingerprint }` (Stage 1); the cache stores the returned `fingerprint` verbatim and never re-derives it (single-producer invariant from Stage 1).
 

@@ -11,10 +11,9 @@ Detect and recover from connection loss **without** a triggering tool call. This
   - The device disappearing entirely.
   Devices the user has explicitly disconnected are **not** in the supervised set and are **not** auto-reconnected. This is the load-bearing design choice: without it, the supervisor would silently undo every `disconnect`.
 - **On detection, attempts reconnect** using only mechanisms that already work without speculative identity claims:
-  1. Last-known endpoint from the Stage 3 cache (matched by fingerprint).
-  2. Other cached endpoints for the same fingerprint (e.g., previous addresses on the same network).
-  3. mDNS scan: collect candidates, then for each, connect → run `verifyDevice` → if `serial+model` matches the cache's fingerprint → success; on mismatch, disconnect and try next. (mDNS itself does not expose serial/model — identity is only confirmed post-connect, per Stage 3's identity strategy.)
-  4. Exponential backoff with jitter on repeated failures (e.g., 5s, 15s, 60s, 5min, 15min, capped).
+  1. Last-known endpoint from the Stage 3 cache (matched by fingerprint). The cache holds exactly one address per fingerprint; there is no multi-endpoint fan-out.
+  2. mDNS scan: collect candidates, then for each, connect → run `verifyDevice` → if the returned fingerprint matches the cache entry → success; on mismatch, disconnect and try next. (mDNS itself does not expose serial/model — identity is only confirmed post-connect, per Stage 3's identity strategy.)
+  3. Exponential backoff with jitter on repeated failures (e.g., 5s, 15s, 60s, 5min, 15min, capped).
 - **Opt-in via config**, off by default. A config flag in `src/services/config.ts` enables the supervisor. Lifecycle bound to MCP server process — stops cleanly on shutdown.
 - **Event log** of supervisor actions feeds Stage 5 observability.
 

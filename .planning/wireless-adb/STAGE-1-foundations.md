@@ -156,6 +156,12 @@ interface ToolError {
 
 **Convention for `args`:** when the agent needs information from the user, place a placeholder string starting with `"<ask user — "`, e.g. `"<ask user — pair address shown on the phone's Wireless debugging screen>"`. The agent forwards that prompt to its caller.
 
+**Relationship between `suggestion` and `nextSteps`.** Both convey "what to do next" and may both be populated on a wireless error. Convention:
+- `suggestion` is a **single human-readable line**, ≤120 chars, safe for any client to render verbatim — including small models that don't parse `nextSteps`.
+- `nextSteps` is the **structured form** of the same intent — what the orchestrator should programmatically follow.
+- They **must agree**. If `nextSteps[0]` says "pair this device first," `suggestion` should say roughly the same thing, not contradict it. The Stage 1 error builders are the single place that constructs both, so there is one writer per error code; a unit test asserts that for every wireless error code, a populated `nextSteps` implies a populated `suggestion` and the suggestion mentions the same primary action.
+- A client that consumes `nextSteps` should ignore `suggestion` for redundancy purposes; `suggestion` exists for clients that don't.
+
 **Pairing-code redaction.** `pairingCode` is a 6-digit secret with a ~30s lifetime. Adb sometimes echoes it back in stderr.
 - Never put `pairingCode` in `error.context` (including `stderr` — strip it before storing).
 - Never log `pairingCode` from `process-runner.ts`. The argv array passed to adb must be redacted before any log statement: replace the value following the `pair` subcommand's address with `<redacted>`.
@@ -216,6 +222,7 @@ interface ToolError {
 {
   error: "PAIR_OK_CONNECT_FAILED",
   message: "Paired with 192.168.1.10 but could not establish a connection",
+  details: { address: "192.168.1.10:5555", attempts: 2 },  // record the connect address that was tried
   nextSteps: [{
     action: "Connect to the paired device",
     required: true,
@@ -252,7 +259,14 @@ Add internal helpers on `AdbAdapter`. These are not new MCP tools — they're ca
 - `disconnect(target?: string): Promise<{ message: string }>`
 - `pair(target: string, code: string): Promise<{ message: string }>`
 - `mdnsServices(): Promise<string>` (raw stdout; parsed by `parseMdnsServices`)
-- `verifyDevice(deviceId: string, timeoutMs: number): Promise<{ ok: boolean; serial?: string; model?: string }>` — runs **two sequential** `adb -s <id> shell getprop ro.serialno` and `adb -s <id> shell getprop ro.product.model` calls. **Do not use `&&` to chain them in a single shell call**: `ProcessRunner.validateShellPayload` (`src/services/process-runner.ts:155`) rejects `&`, `;`, `|`, etc. before the command runs. Two separate adb invocations is the only safe form. Both calls share the same `timeoutMs` budget (split or sequential — implementation choice). Returns `ok: true` only when both properties are non-empty within the timeout. The same primitive serves verify (Stage 1+2) *and* fingerprint collection (Stage 3+4).
+- `verifyDevice(deviceId: string, timeoutMs: number): Promise<{ ok: boolean; serial?: string; model?: string; fingerprint?: string }>` — runs **two sequential** `adb -s <id> shell getprop ro.serialno` and `adb -s <id> shell getprop ro.product.model` calls. **Do not use `&&` to chain them in a single shell call**: `ProcessRunner.validateShellPayload` (`src/services/process-runner.ts:155`) rejects `&`, `;`, `|`, etc. before the command runs. Two separate adb invocations is the only safe form. Both calls share the same `timeoutMs` budget (split or sequential — implementation choice).
+
+  **Result shape conventions:**
+  - `ok: true` ⟹ `serial`, `model`, and `fingerprint` are all non-empty strings (no empty-string sentinels).
+  - `ok: false` ⟹ all three other fields are `undefined` (omitted, not empty). Lets callers branch on `result.ok` cleanly without a second null-guard.
+  - Distinguishes **`unauthorized`** from **transport-offline**: when adb's stderr matches the documented unauthorized pattern (`device unauthorized` or `more than one device/emulator` is N/A here), the adapter throws `ReplicantError(CONNECTION_FAILED, ...)` with `nextSteps[0].required = true` and `args.operation = "pair"`. Auth failure is unambiguous — only `pair` fixes it. Transport offline (timeout, `device offline`, `protocol fault`) is ambiguous and uses `required: false`.
+
+  **`verifyDevice` is the only producer of fingerprints** — every other component receives them already computed and never re-derives them. This is the same primitive used by Stage 2 pre-flight, Stage 3 cache writes, and Stage 4 supervisor identity confirmation.
 
 Each maps non-zero exits and known stderr substrings to `ReplicantError` with new codes (`CONNECTION_FAILED`, `PAIRING_FAILED`, `PAIR_OK_CONNECT_FAILED`, `MULTIPLE_WIRELESS_CANDIDATES`) and populated `nextSteps`.
 
@@ -263,30 +277,35 @@ Each maps non-zero exits and known stderr substrings to `ReplicantError` with ne
 ### `src/services/process-runner.ts`
 - Add argv redaction: when logging an `adb pair <addr> <code>` invocation, replace `<code>` with `<redacted>` before any log/event emission. Add a unit test that asserts the literal pairing code never appears in captured log output.
 
+### `src/services/identity.ts` (NEW)
+
+A single-function module: `computeFingerprint(serial: string, model: string): string` returning `sha256(serial + "\x00" + model)` as lowercase hex. Used by `verifyDevice` and nowhere else (other components receive the already-computed string). The null-byte separator prevents `("AB", "C")` colliding with `("A", "BC")`. Pin the format with a unit test (`tests/services/identity.test.ts`) that asserts a known input produces a known hash — the cache, lock keys, and event log all depend on this format being stable across releases.
+
 ### `src/services/locks.ts` (NEW) + `src/server.ts`
 - A single-lane per-key async lock primitive used by `connect`, `disconnect`, `pair`, and the verify/reset sequence. Stage 2's adapter-level retry and Stage 4's supervisor will reuse this. Introducing the lock in Stage 1 prevents the same wireless transport being torn down concurrently by two tool calls before any supervisor exists.
 - **Wired through `ServerContext`** — not a module-level singleton (which would violate `CLAUDE.md`'s no module-level mutable state rule). Add `deviceLocks: DeviceLocks` to the `ServerContext` interface (`src/server.ts:44`) and instantiate it in `createServerContext()` (`src/server.ts:57`). Tools and adapters access it via the context they're already passed.
 
 **Lock key strategy.** A pair address (`<ip>:<pair-port>`) and connect address (`<ip>:<connect-port>`) refer to the *same physical device* but on different ports — keying on the full `host:port` would mis-serialize them. Use:
 - **Host-level key** (just the IP, e.g. `192.168.1.10`) for `pair`, `connect`, and any verify/reset before identity is confirmed.
-- **Fingerprint-level key** (the verified `serial+model`) once `verifyDevice` has returned a fingerprint. Stage 3's cache-driven flows and Stage 4's supervisor key on fingerprint.
+- **Fingerprint-level key** (the canonical fingerprint string — see *fingerprint* in `CONTEXT.md`) once `verifyDevice` has returned one. Stage 3's cache-driven flows and Stage 4's supervisor key on fingerprint. The lock key is the fingerprint string verbatim — no further hashing, no `serial+model` concatenation at the call site.
 
-**Bidirectional alias map.** The lock manager maintains two maps populated by verified connects: `hostToFingerprint` and `fingerprintToHost`. Every acquire normalizes its argument to a single canonical key before locking:
-- `acquireHost(host)` looks up `hostToFingerprint[host]`; if present, locks on the fingerprint instead. Otherwise locks on the host.
-- `acquireFingerprint(fp)` looks up `fingerprintToHost[fp]`; if present, the host's lock is alias-locked too (so a foreground `disconnect` keyed by host won't slip through while the supervisor holds the fingerprint lock).
-- The maps are populated when `verifyDevice` succeeds: the connect/pair handler calls `lockManager.bindAlias(host, fingerprint)` before releasing its initial host-level lock.
+**Single-direction alias map (`hostToFingerprint`).** The lock manager maintains one map populated by verified connects. Every acquire normalizes its argument to a single canonical key before locking:
+- `acquireHost(host)` looks up `hostToFingerprint[host]`; if present, locks on the fingerprint. Otherwise locks on the host.
+- `acquireFingerprint(fp)` always locks directly on `fp`. No reverse lookup needed: any host bound to `fp` will route to `fp` via the line above, so the supervisor holding `fp` already blocks a foreground host-keyed disconnect for the bound host.
+- The map is populated when `verifyDevice` succeeds: the connect/pair handler calls `lockManager.bindAlias(host, fingerprint)` while still holding its initial host-level lock; `bindAlias` is idempotent and updates the entry to the latest fingerprint if the host was previously bound to a different one (e.g., a different physical device showed up at the same IP after the first device left the network).
+- `unbindAlias(fingerprint)` is called by `disconnect` after teardown; it removes any `host` entries whose value is `fingerprint`. O(n) over the alias map (small — bounded by live connects), no second map needed.
 - Stage 3's cache and supervised-set both use fingerprint keys, but the lock manager is the only component that needs to translate between host and fingerprint at lock time. Cache lookups by host (e.g., during a no-args connect) consult the cache directly, not the alias map.
 
 ```ts
 // Sketch — actual API designed in implementation
 export class DeviceLocks {
-  acquireHost(host: string): Promise<() => void>;
+  acquireHost(host: string): Promise<() => void>;            // routes to fingerprint lock if alias bound
   acquireFingerprint(fingerprint: string): Promise<() => void>;
   // tryAcquire variant for Stage 4 supervisor's defer-on-contention behaviour.
   tryAcquireFingerprint(fingerprint: string, timeoutMs?: number): Promise<(() => void) | null>;
-  // Called after verifyDevice confirms identity; subsequent acquires by either key serialize on the same lock.
+  // Called after verifyDevice confirms identity; subsequent acquireHost(host) will route to fingerprint.
   bindAlias(host: string, fingerprint: string): void;
-  // Called by disconnect when the device leaves; map entries are cleared.
+  // Called by disconnect when the device leaves; removes any host entries pointing at this fingerprint.
   unbindAlias(fingerprint: string): void;
 }
 ```
@@ -312,6 +331,8 @@ Add `transport?: "usb" | "wireless"`. Non-breaking. **Scope:** `transport` is a 
 
 ### `src/cli/adb.ts`
 Add three subcommands so the live-smoke verification in this stage actually has a vehicle: `pair <pairAddress> <code> [--connect-port <n>]`, `connect [address]`, `disconnect [address]`. Each calls the new `AdbAdapter` helpers directly (no MCP layer) and prints success/error in the existing CLI style. These are convenience for human verification and never used by the MCP tool path.
+
+The unified entrypoint (DECISIONS 2026-02-11) routes any `argv.length > 2` invocation to the CLI, so `npx replicant-mcp adb pair ...` already reaches `src/cli/adb.ts` without any new bin entry. Live-smoke verification commands in this plan use that form.
 
 ### Tool description (verbatim sketch)
 
@@ -381,7 +402,12 @@ Per `CLAUDE.md`'s privacy policy guidance: wireless ADB introduces no new extern
 - Errors carry structured `nextSteps` to eliminate agent reasoning on failure paths. `nextSteps` flows through `ToolError`/`toToolError()` so it actually reaches the agent over the wire.
 - `transport` is a property of physical devices (`"usb" | "wireless"`); emulators continue to be identified by `Device.type`.
 - A per-device async lock primitive (`src/services/locks.ts`) is introduced in Stage 1 because mid-flight teardown (Stage 1 reset, Stage 2 retry, Stage 4 supervisor) all share it.
-- `verifyDevice` is a single primitive that returns `{ ok, serial, model }` so verify and Stage 3 fingerprinting share one shell call.
+- `verifyDevice` is a single primitive that returns `{ ok, serial, model, fingerprint }` so verify and Stage 3+4 fingerprint use share one shell call.
+- The canonical device fingerprint is `sha256(serial + "\x00" + model)` rendered as lowercase hex, computed in `src/services/identity.ts` and pinned by a format test. Defined in `CONTEXT.md`. Used by locks (Stage 1), endpoint cache (Stage 3), supervised set (Stages 3-4), and event log (Stage 5) without re-derivation.
+- `ToolError.suggestion` (one human-readable line) and `ToolError.nextSteps` (structured) are dual channels for the same intent. They must agree; a unit test enforces parity for every wireless error code. Existing non-wireless errors keep `suggestion`-only; nothing is migrated.
+- `DeviceLocks` uses a **single-direction** alias map (`hostToFingerprint`); the reverse map proposed in earlier drafts is unnecessary because `acquireHost` always routes to fingerprint when bound, so a supervisor holding the fingerprint already blocks any host-keyed acquire for that device.
+- `mdnsServiceName` is stored in the cache as a cheap match hint, never as an authoritative identity claim. Every match is confirmed by `verifyDevice`'s returned fingerprint; on mismatch the cache row is treated as a miss.
+- The supervised set is persisted from Stage 3 (file alongside the endpoint cache, same data dir, `0600`); Stage 4's supervisor reads it but does not own it. The cache (how to reach a device) and the supervised set (whether to keep trying) are co-mutated by `connect`/`pair`/`disconnect` but persisted as separate files.
 - Pairing codes are treated as transient secrets and redacted in logs and error context.
 - Roadmap for Stages 2-5 lives at `.planning/wireless-adb/`.
 

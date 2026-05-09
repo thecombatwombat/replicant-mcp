@@ -52,16 +52,23 @@ replicant-mcp remote mode
   bind:  100.64.1.42:8765
   url:   http://100.64.1.42:8765/sse
 
-Client config (paste into Claude Desktop / Cursor / etc.):
+Client config for url-capable clients (Cursor, Windsurf):
+(see docs/remote.md for the Claude Desktop / Claude Code bridge)
 
   {
-    "replicant-remote": {
-      "url": "http://100.64.1.42:8765/sse"
+    "mcpServers": {
+      "replicant-remote": {
+        "url": "http://100.64.1.42:8765/sse"
+      }
     }
   }
 
 Press Ctrl-C to stop.
 ```
+
+The banner is printed to **stderr**, not stdout — stdout is reserved
+for MCP wire bytes when the same Node binary is re-spawned in stdio
+mode by mcp-proxy.
 
 By default, `serve --http` auto-detects your Tailscale IP via `tailscale ip -4`
 (falling back to scanning interfaces in the CGNAT range `100.64.0.0/10`) and

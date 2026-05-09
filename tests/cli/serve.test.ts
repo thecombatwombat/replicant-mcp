@@ -106,6 +106,27 @@ describe("formatBanner", () => {
     expect(banner).toContain("http://100.64.1.42:8765/sse");
     expect(banner).toContain("replicant-remote");
   });
+
+  it("wraps the JSON snippet in a top-level mcpServers object", () => {
+    const banner = formatBanner("100.64.1.42", 8765);
+    // Strip the surrounding banner chrome and parse the JSON block.
+    const match = banner.match(/\{[\s\S]*\}/);
+    expect(match).not.toBeNull();
+    const parsed = JSON.parse(match![0]);
+    expect(parsed).toHaveProperty("mcpServers");
+    expect(parsed.mcpServers).toHaveProperty("replicant-remote");
+    expect(parsed.mcpServers["replicant-remote"]).toEqual({
+      url: "http://100.64.1.42:8765/sse",
+    });
+  });
+
+  it("does not advertise the url snippet as paste-ready for Claude Desktop", () => {
+    const banner = formatBanner("100.64.1.42", 8765);
+    // Claude Desktop can't consume {"url": ...} — the banner must not
+    // claim it can be pasted there. A pointer to the bridge docs is fine.
+    expect(banner).not.toMatch(/paste into.*Claude Desktop/i);
+    expect(banner).not.toMatch(/Claude Desktop.*Cursor/i);
+  });
 });
 
 class FakeChild extends EventEmitter {

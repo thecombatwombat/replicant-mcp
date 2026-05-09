@@ -296,16 +296,16 @@ A single-function module: `computeFingerprint(serial: string, model: string): st
 - **Host-level key** (just the IP, e.g. `192.168.1.10`) for `pair`, `connect`, and any verify/reset before identity is confirmed.
 - **Fingerprint-level key** (the canonical fingerprint string — see *fingerprint* in `CONTEXT.md`) once `verifyDevice` has returned one. Stage 3's cache-driven flows and Stage 4's supervisor key on fingerprint. The lock key is the fingerprint string verbatim — no further hashing, no `serial+model` concatenation at the call site.
 
-**Single-direction alias map (`hostToFingerprint`).** The lock manager maintains one map populated by verified connects. Every acquire normalizes its argument to a single canonical key before locking:
-- `acquireHost(host)` looks up `hostToFingerprint[host]`; if present, locks on the fingerprint. Otherwise locks on the host.
-- `acquireFingerprint(fp)` always locks directly on `fp`. No reverse lookup needed: any host bound to `fp` will route to `fp` via the line above, so the supervisor holding `fp` already blocks a foreground host-keyed disconnect for the bound host.
+**Single-direction alias map (`hostToFingerprint`).** The lock manager maintains one map populated by verified connects. Every acquire normalizes its argument to a single canonical key before locking, and **re-checks after acquire** to handle in-flight alias publication:
+- `acquireHost(host)`: read `key = hostToFingerprint[host] ?? host`; await `locks.get(key).acquire()`; re-read `key' = hostToFingerprint[host] ?? host`; if `key' !== key`, release and loop. The re-check is the load-bearing piece — without it, callers queued on `lock(host)` (or `lock(FP_old)`) before a `transferAlias` would wake up holding the wrong key and race the handler's post-verify tail running under `lock(fingerprint)`. In TS's single-threaded event loop, the snapshot-then-await-then-re-check sequence is naturally serialized: the alias map cannot change between any two synchronous statements.
+- `acquireFingerprint(fp)` locks directly on `fp` and likewise re-checks: if a concurrent `transferAlias` rebound something away from `fp` while this caller was queued, the caller releases and re-acquires (or, in the unbind-then-rebind sweep, fails fast — `disconnect`'s `unbindAlias` plus a fresh connect can re-key `fp`'s neighbours). No reverse lookup needed: hosts bound to `fp` always route to `fp` via the rule above, so the supervisor holding `fp` blocks any foreground host-keyed disconnect for the bound host.
 - **Alias publication is always a lock transfer.** After `verifyDevice` confirms identity, the connect/pair handler holds a lock that is NOT yet `lock(fingerprint)`:
   - **First bind** (host previously unbound): handler holds `lock(host)`. Verify returns `fp`.
   - **Replacement** (host previously bound to `FP_old`, different physical device showed up at the same IP): handler holds `lock(FP_old)` (routed through the alias map). Verify returns `FP_new ≠ FP_old`.
 
   In both cases the handler must end up holding `lock(fingerprint)` so future `acquireHost(host)` and `acquireFingerprint(fingerprint)` callers serialize on the same lock as the in-flight operation's remaining post-verify work (cache write, current-device update, supervised-set add). **Naively publishing the alias while still holding only the prior lock is unsafe** — once the alias is published, future `acquireHost(host)` routes to `lock(fingerprint)`, which the handler does NOT hold; a concurrent foreground `disconnect` or supervisor reconnect could acquire `lock(fingerprint)` immediately and race the handler's tail.
 
-  The safe sequence — identical for first-bind and replacement — is: while still holding the current lock, acquire `lock(fingerprint)`; then update the alias map (`hostToFingerprint[host] = fingerprint`); then release the prior lock. Held-lock overlap is the only safe ordering. Expose this as a single primitive on `DeviceLocks`:
+  The safe sequence — identical for first-bind and replacement — is: while still holding the current lock, acquire `lock(fingerprint)`; then update the alias map (`hostToFingerprint[host] = fingerprint`); then release the prior lock. Held-lock overlap during the map mutation, plus the **re-check on acquire** described above, together close the queued-waiter race: callers queued on the prior lock wake up after `transferAlias` releases it, observe the changed alias on re-check, release the prior lock, and re-queue on `lock(fingerprint)` — which the handler still holds for its tail work. Expose this as a single primitive on `DeviceLocks`:
 
   ```ts
   // Atomically: acquire lock(fingerprint), set hostToFingerprint[host] = fingerprint,
@@ -320,8 +320,8 @@ A single-function module: `computeFingerprint(serial: string, model: string): st
 ```ts
 // Sketch — actual API designed in implementation
 export class DeviceLocks {
-  acquireHost(host: string): Promise<() => void>;            // routes to fingerprint lock if alias bound
-  acquireFingerprint(fingerprint: string): Promise<() => void>;
+  acquireHost(host: string): Promise<() => void>;            // routes to fingerprint lock if alias bound; re-checks after acquire
+  acquireFingerprint(fingerprint: string): Promise<() => void>; // re-checks after acquire
   // tryAcquire variant for Stage 4 supervisor's defer-on-contention behaviour.
   tryAcquireFingerprint(fingerprint: string, timeoutMs?: number): Promise<(() => void) | null>;
   // The only way to publish or rebind an alias. Held-lock overlap guarantees no

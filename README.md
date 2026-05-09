@@ -65,6 +65,57 @@ adb --version       # Should show Android Debug Bridge version
 emulator -version   # Should show Android emulator version
 ```
 
+<details>
+<summary><b>Installing prerequisites (macOS via Homebrew)</b></summary>
+
+If you don't already have these tools, install them with [Homebrew](https://brew.sh/):
+
+**Node.js 18+**
+
+```bash
+brew install node
+```
+
+**Physical-device only** — just `adb`, sufficient if you never run an emulator:
+
+```bash
+brew install --cask android-platform-tools
+```
+
+`adb` lands directly on your PATH; no further config needed.
+
+**Full Android SDK** — needed for emulator workflows or building APKs via the `gradle-*` tools. Run the steps in order:
+
+```bash
+# 1. JDK — required by sdkmanager itself, and by the gradle-* tools
+brew install --cask temurin@17
+
+# 2. cmdline-tools (provides sdkmanager)
+brew install --cask android-commandlinetools
+
+# 3. Set ANDROID_HOME and create the directory BEFORE running sdkmanager,
+#    otherwise sdkmanager has no install target.
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+mkdir -p "$ANDROID_HOME"
+
+# 4. Accept all SDK licenses first, then install packages.
+#    `sdkmanager --install` aborts on unaccepted per-package licenses
+#    (e.g. the Google APIs system image) if licenses aren't accepted first.
+#    The system-image arch must match your host: `arm64-v8a` for Apple
+#    Silicon (M1/M2/M3), `x86_64` for Intel Macs. Check with `uname -m`.
+yes | sdkmanager --licenses
+sdkmanager --install "platform-tools" "emulator" "system-images;android-34;google_apis;arm64-v8a"
+```
+
+Persist `ANDROID_HOME` and put the SDK binaries on your PATH by appending to `~/.zshrc` (or `~/.bashrc`):
+
+```bash
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+```
+
+</details>
+
 ### Installation
 
 ```bash

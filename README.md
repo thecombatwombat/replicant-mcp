@@ -65,6 +65,44 @@ adb --version       # Should show Android Debug Bridge version
 emulator -version   # Should show Android emulator version
 ```
 
+<details>
+<summary><b>Installing prerequisites (macOS via Homebrew)</b></summary>
+
+If you don't already have these tools, you can install them with [Homebrew](https://brew.sh/):
+
+```bash
+# Node.js 18+
+brew install node
+
+# adb only — sufficient if you're using a physical device
+brew install --cask android-platform-tools
+
+# Full Android SDK (adds emulator, sdkmanager, etc.) — needed for emulator workflows
+brew install --cask android-commandlinetools
+```
+
+After installing the command-line tools, install an emulator system image and accept licenses:
+
+```bash
+sdkmanager --install "platform-tools" "emulator" "system-images;android-34;google_apis;arm64-v8a"
+sdkmanager --licenses
+```
+
+Set `ANDROID_HOME` so `adb` and `emulator` resolve correctly (add to `~/.zshrc` or `~/.bashrc`):
+
+```bash
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+```
+
+For building APKs via the `gradle-*` tools you'll also need a JDK (Gradle itself comes from the project's `./gradlew` wrapper):
+
+```bash
+brew install --cask temurin@17
+```
+
+</details>
+
 ### Installation
 
 ```bash

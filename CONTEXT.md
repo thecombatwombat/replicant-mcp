@@ -26,7 +26,7 @@ Used wherever the same physical device must be recognised across reconnects, IP 
 The raw `serial` and `model` stay in memory for the active session only; persistent storage uses the fingerprint, not the raw values, so a leaked cache file does not expose device serials. Only ever produced by querying the device (see *verify*); never inferred from network metadata (mDNS service names, IPs).
 
 ### verify
-A round-trip that confirms a device-shaped thing on the network is actually a usable Android device, by reading two `getprop` values (`ro.serialno`, `ro.product.model`). Returns enough to compute the fingerprint. Used as the post-connect validation step and as Stage 2's pre-flight liveness check.
+A round-trip that confirms a device-shaped thing on the network is actually a usable Android device, by reading two `getprop` values (`ro.serialno`, `ro.product.model`). Returns the computed *fingerprint* directly (alongside the raw `serial` and `model`) — callers never re-derive it. Used as the post-connect validation step and as Stage 2's pre-flight liveness check.
 
 ## Wireless ADB lifecycle
 

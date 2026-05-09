@@ -211,7 +211,8 @@ tmux new -s replicant 'replicant-mcp serve --http'
 
 - **Brief USB flake (cable jostle, sleep/wake):** the next tool call may hit
   `device offline` once. replicant-mcp retries once after a 3-second
-  `wait-for-device`, so most flakes are invisible to the agent.
+  `wait-for-device` (carrying `-s <deviceId>` so multi-device hosts wait for
+  the right one), so most flakes are invisible to the agent.
 - **Phone reboot:** the next tool call surfaces `device offline` or
   `no devices/emulators found`. After the device is back, the call after
   succeeds.
@@ -222,6 +223,58 @@ tmux new -s replicant 'replicant-mcp serve --http'
 There's no background reconnect supervisor — by design, for the MVP. If you
 need transparent recovery across reboots, run under `KeepAlive`/`Restart=on-failure`
 and let the supervisor handle it.
+
+## Process supervision and environment
+
+These are the moving pieces around the `serve --http` process tree that
+operators tend to care about. None of them changes the `serve` UX day-to-day,
+but they're worth knowing if you're putting this on a long-running host.
+
+### What gets passed to the spawned backend
+
+`serve --http` invokes `uvx mcp-proxy ... --pass-environment -- <node> <self>`.
+With `--pass-environment`, mcp-proxy forwards the *entire* host shell
+environment to the spawned backend (the same Node binary running this CLI,
+re-launched in stdio mode). That covers `PATH`, `ANDROID_HOME`,
+`ANDROID_SDK_ROOT`, `JAVA_HOME`, `HOME`, and anything else your shell
+exports — including unrelated secrets like `OPENAI_API_KEY` or
+`GITHUB_TOKEN` if they happen to be in your environment. The backend is
+local on the host and trusted (it is the same code stdio mode runs locally),
+so no secret leaves the machine — but if you want a tighter blast radius,
+launch `replicant-mcp serve --http` from a shell where only what the
+backend needs is exported (`PATH`, `ANDROID_HOME`, etc).
+
+This also means a `REPLICANT_LOG_LEVEL=debug` or `REPLICANT_LOG_FORMAT=json`
+set on the parent shell silently propagates to the backend; expect a
+firehose of backend-level debug logs interleaved with mcp-proxy's stderr
+in that case.
+
+### Signal forwarding
+
+`Ctrl-C` (SIGINT) or `SIGTERM` to the `serve --http` process triggers
+the new shutdown sequence:
+
+1. The first signal forwards the same signal to the `uvx`/`mcp-proxy`
+   child. mcp-proxy then has up to a few seconds to drain SSE clients
+   and shut down its own backend.
+2. A second signal (mash Ctrl-C twice) escalates to `SIGKILL` on the
+   child. Use this if mcp-proxy is hanging.
+
+If you find orphaned `node dist/index.js` processes after killing the
+proxy, that's a mcp-proxy issue (it's responsible for forwarding signals
+to the stdio backend it spawned). The SIGKILL escalation above is the
+safety net; report any reproducible orphan case so we can pin down the
+mcp-proxy version that caused it.
+
+### When the inner backend crashes
+
+If the stdio backend (`node dist/index.js`) dies but mcp-proxy is still
+up, mcp-proxy currently keeps the SSE socket open and tool calls hang
+until the supervisor restarts the whole tree (see `KeepAlive` /
+`Restart=on-failure` in the launchd/systemd snippets above). There's no
+mid-stream backend respawn. If this matters for your workflow, run under
+a supervisor that restarts the whole `replicant-mcp serve --http`
+process tree on exit.
 
 ## Troubleshooting
 

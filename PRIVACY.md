@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Effective date:** April 6, 2026
+**Effective date:** May 9, 2026
 
 Replicant MCP is a local Model Context Protocol (MCP) server for Android development. This policy explains what data it accesses, where that data goes, and what it does not do.
 
@@ -24,6 +24,23 @@ Android device  -->  Replicant MCP (local)  -->  AI assistant
 ```
 
 Replicant MCP runs entirely on your machine. It does not transmit data to any external server, and it does not include telemetry, analytics, or crash reporting.
+
+## Remote mode (`serve --http`)
+
+Remote mode (`replicant-mcp serve --http`) makes the host machine reachable as an MCP server over HTTP/SSE so an agent on a *different* machine can drive the phone. When you opt in to remote mode:
+
+- The host binds an HTTP/SSE listener (default: your Tailscale interface, default port 8765). Any client on the same private network the host is bound to (Tailscale tailnet by default) can reach it.
+- Device data (screenshots, logs, UI state, shell output) flows from the host to the connecting MCP client over that interface, and from the client to whichever AI assistant the client is wired to.
+- Trust comes from the network boundary you choose: by default that is Tailscale's WireGuard tunnel between known peers. There is no bearer-token auth in remote mode — do not bind the listener to a public-internet address without your own auth layer.
+
+Remote mode does not change *what* data is accessed (it's the same screenshots / logs / UI state listed above). It changes *where the listener lives*: from a stdio subprocess on your laptop to a network endpoint on the host machine. See `docs/remote.md` for the full setup.
+
+## Third-party fetches
+
+- **First launch of `serve --http` only:** the host runs `uvx mcp-proxy ...`. `uvx` (from [Astral's uv](https://docs.astral.sh/uv/)) downloads the [`sparfenyuk/mcp-proxy`](https://github.com/sparfenyuk/mcp-proxy) Python package from PyPI and caches it locally. Subsequent launches use the cache and make no network call. PyPI is reached for package metadata and the package archive only; no usage data about your replicant-mcp session is sent.
+- **Environment propagation:** mcp-proxy is invoked with `--pass-environment`, which forwards the host shell's environment to the spawned replicant-mcp backend. The backend is the same process replicant-mcp would run in stdio mode on the host, so this is the same env exposure as running locally — it does not transmit your environment off the host.
+
+Stdio mode (the default, no `serve --http`) makes no third-party fetches.
 
 ## AI assistant processing
 

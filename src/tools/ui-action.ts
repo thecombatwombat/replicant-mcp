@@ -6,6 +6,8 @@ import { getElementCenter, handleFind, isAccessibilityNode } from "./ui-find.js"
 import { AccessibilityNode, flattenTree } from "../parsers/ui-dump.js";
 import { FindElement } from "../types/icon-recognition.js";
 import { rankBestTappable } from "./util-rank.js";
+import { ScreenshotScalingEntry } from "./ui-capture.js";
+import { toDeviceSpace } from "../services/scaling.js";
 import { booleanInput, jsonObjectInput, numberInput, toolSchema } from "../schemas/inputs.js";
 import { toMcpJsonSchema } from "../schemas/derive.js";
 
@@ -13,6 +15,20 @@ export const uiActionInputSchema = toolSchema({
   operation: z.enum(["tap", "input", "scroll"]),
   x: numberInput().optional(),
   y: numberInput().optional(),
+  imageX: numberInput()
+    .optional()
+    .describe(
+      "Image-space X coord. Pair with `screenshotId` to tap what you see in a screenshot without manually unscaling (THE-111).",
+    ),
+  imageY: numberInput()
+    .optional()
+    .describe("Image-space Y coord. See `imageX`."),
+  screenshotId: z
+    .string()
+    .optional()
+    .describe(
+      "Screenshot id from a prior `ui-capture screenshot`. Combined with `imageX`/`imageY`, the tap is converted to device-space using THAT screenshot's scaling (not the global adapter state).",
+    ),
   elementIndex: numberInput().optional(),
   selector: jsonObjectInput({
     resourceId: z.string().optional(),
@@ -222,6 +238,7 @@ async function handleTap(
   let usedSelector = false;
 
   let pickedExtras: PickedExtras | undefined;
+  let viaScreenshotId = false;
   if (input.selector) {
     const resolution = await resolveSelector(input, context, config, deviceId);
     pickedExtras = {};
@@ -230,6 +247,28 @@ async function handleTap(
     x = center.x;
     y = center.y;
     usedSelector = true;
+  } else if (input.screenshotId !== undefined) {
+    // THE-111: tap what's visible in a specific screenshot — convert
+    // imageX/imageY to device-space using that screenshot's scaling.
+    if (input.imageX === undefined || input.imageY === undefined) {
+      throw new ReplicantError(
+        ErrorCode.INPUT_VALIDATION_FAILED,
+        "screenshotId requires imageX and imageY",
+        "Provide imageX/imageY (image-space pixel coords) alongside screenshotId.",
+      );
+    }
+    const cached = context.cache.get<ScreenshotScalingEntry>(input.screenshotId);
+    if (!cached) {
+      throw new ReplicantError(
+        ErrorCode.UNKNOWN_SCREENSHOT_ID,
+        `Screenshot id '${input.screenshotId}' is unknown or has expired.`,
+        "Take a new screenshot via ui-capture screenshot — entries are kept for 5 minutes.",
+      );
+    }
+    const converted = toDeviceSpace(input.imageX, input.imageY, cached.data.scaleFactor);
+    x = converted.x;
+    y = converted.y;
+    viaScreenshotId = true;
   } else if (input.elementIndex !== undefined) {
     if (!context.lastFindResults[input.elementIndex]) {
       throw new ReplicantError(
@@ -248,21 +287,27 @@ async function handleTap(
   } else {
     throw new ReplicantError(
       ErrorCode.INPUT_VALIDATION_FAILED,
-      "tap requires x/y, elementIndex, or selector",
-      "Provide one of: x+y coords, elementIndex from a prior find, or a selector.",
+      "tap requires x/y, elementIndex, selector, or screenshotId+imageX+imageY",
+      "Provide one of: x+y coords, elementIndex from a prior find, a selector, or screenshotId paired with imageX/imageY.",
     );
   }
 
   // Selector and elementIndex paths always yield device-space coords (the find
-  // result is already in device space). Only the raw x/y path lets the caller
-  // override the space; default true matches the new ui-query dump contract.
-  const fromResolvedElement = usedSelector || input.elementIndex !== undefined;
+  // result is already in device space). screenshotId path converted to
+  // device-space above. Only the raw x/y path lets the caller override the
+  // space; default true matches the new ui-query dump contract.
+  const fromResolvedElement =
+    usedSelector || input.elementIndex !== undefined || viaScreenshotId;
   const deviceSpace = fromResolvedElement ? true : (input.deviceSpace ?? true);
   await context.ui.tap(deviceId, x, y, deviceSpace);
   const response: Record<string, unknown> = { tapped: { x, y, deviceSpace }, deviceId };
   if (usedSelector) response.matchedSelector = input.selector;
   if (pickedExtras?.pickedRationale) response.pickedRationale = pickedExtras.pickedRationale;
   if (pickedExtras?.alternatives) response.alternatives = pickedExtras.alternatives;
+  if (viaScreenshotId) {
+    response.viaScreenshotId = input.screenshotId;
+    response.imageCoords = { x: input.imageX, y: input.imageY };
+  }
   return response;
 }
 

@@ -1,10 +1,22 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
-import { UiConfig, ReplicantError, ErrorCode } from "../types/index.js";
+import { UiConfig, ReplicantError, ErrorCode, CACHE_TTLS } from "../types/index.js";
 import { DEFAULT_CONFIG } from "../types/config.js";
 import { booleanInput, numberInput, toolSchema } from "../schemas/inputs.js";
 import { toMcpJsonSchema } from "../schemas/derive.js";
 import { getCurrentAppSafe } from "./util-current-app.js";
+
+// THE-111: cached payload for a per-screenshot scaling lookup. Stored under
+// the returned `screenshotId` so a follow-up `ui-action tap` can convert
+// image-space coords against THIS screenshot's scaling, not whatever global
+// adapter state happens to be in effect.
+export interface ScreenshotScalingEntry {
+  scaleFactor: number;
+  deviceWidth: number;
+  deviceHeight: number;
+  imageWidth: number;
+  imageHeight: number;
+}
 
 export const uiCaptureInputSchema = toolSchema({
   operation: z.enum(["screenshot", "visual-snapshot"]),
@@ -66,7 +78,26 @@ async function handleScreenshot(
     }),
     getCurrentAppSafe(context, deviceId),
   ]);
-  return { ...result, deviceId, app };
+
+  // THE-111: pin per-screenshot scaling under a stable id so a later
+  // `ui-action tap` with image-space coords converts against THIS screenshot,
+  // not the global adapter state (which the next screenshot would overwrite).
+  const screenshotId = context.cache.generateId("screenshot");
+  if (
+    result.scaleFactor !== undefined &&
+    result.device !== undefined &&
+    result.image !== undefined
+  ) {
+    const entry: ScreenshotScalingEntry = {
+      scaleFactor: result.scaleFactor,
+      deviceWidth: result.device.width,
+      deviceHeight: result.device.height,
+      imageWidth: result.image.width,
+      imageHeight: result.image.height,
+    };
+    context.cache.set(screenshotId, entry, "screenshot-scaling", CACHE_TTLS.SCREENSHOT_SCALING);
+  }
+  return { ...result, deviceId, app, screenshotId };
 }
 
 async function handleVisualSnapshot(

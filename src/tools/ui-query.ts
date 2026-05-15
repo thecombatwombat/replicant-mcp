@@ -24,6 +24,12 @@ export const uiQueryInputSchema = toolSchema({
       .string()
       .optional()
       .describe("Find elements nearest to this text (spatial proximity)"),
+    rank: z
+      .enum(["bestTappable"])
+      .optional()
+      .describe(
+        "Rank matches by tappability heuristics (THE-108). Prefers clickable, smaller bounding box, penalizes full-screen containers.",
+      ),
   }).optional(),
   debug: booleanInput().optional(),
   maxTier: numberInput({ min: 1, max: 5 })

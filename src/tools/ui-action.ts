@@ -5,6 +5,7 @@ import { DEFAULT_CONFIG } from "../types/config.js";
 import { getElementCenter, handleFind, isAccessibilityNode } from "./ui-find.js";
 import { AccessibilityNode, flattenTree } from "../parsers/ui-dump.js";
 import { FindElement } from "../types/icon-recognition.js";
+import { rankBestTappable } from "./util-rank.js";
 import { booleanInput, jsonObjectInput, numberInput, toolSchema } from "../schemas/inputs.js";
 import { toMcpJsonSchema } from "../schemas/derive.js";
 
@@ -19,6 +20,12 @@ export const uiActionInputSchema = toolSchema({
     textContains: z.string().optional(),
     className: z.string().optional(),
     nearestTo: z.string().optional(),
+    rank: z
+      .enum(["bestTappable"])
+      .optional()
+      .describe(
+        "Auto-pick the top-ranked match when matches > 1 (THE-108). Without this, ambiguous matches throw AMBIGUOUS_MATCH.",
+      ),
   }).optional(),
   text: z.string().optional(),
   direction: z
@@ -91,6 +98,11 @@ interface SelectorResolution {
   visualFallback?: unknown;
 }
 
+interface PickedExtras {
+  pickedRationale?: string;
+  alternatives?: Array<Record<string, unknown>>;
+}
+
 async function resolveSelector(
   input: UiActionInput,
   context: ServerContext,
@@ -120,6 +132,7 @@ function pickSelectorMatch(
   resolution: SelectorResolution,
   selector: NonNullable<UiActionInput["selector"]>,
   operation: "tap" | "input" | "scroll",
+  extras?: PickedExtras,
 ): FindElement {
   const { elements: matches, candidates, visualFallback } = resolution;
   if (matches.length === 0) {
@@ -136,10 +149,20 @@ function pickSelectorMatch(
     );
   }
   if (matches.length > 1 && !selector.nearestTo) {
+    // THE-108: with rank=bestTappable, auto-pick the top-ranked candidate
+    // instead of throwing AMBIGUOUS_MATCH.
+    if (selector.rank === "bestTappable") {
+      const ranked = rankBestTappable(matches);
+      if (extras) {
+        extras.pickedRationale = ranked.pickedRationale;
+        extras.alternatives = ranked.alternativeSummaries;
+      }
+      return ranked.ranked[0];
+    }
     throw new ReplicantError(
       ErrorCode.AMBIGUOUS_MATCH,
       `Selector matched ${matches.length} elements; cannot decide which to ${operation}.`,
-      "Disambiguate via 'nearestTo', a tighter resourceId, or use ui-query find + elementIndex.",
+      "Disambiguate via 'nearestTo', a tighter resourceId, or use ui-query find + elementIndex. Or set rank: 'bestTappable' to auto-pick.",
       { buildResult: { matches: describeMatches(matches) } },
     );
   }
@@ -198,9 +221,11 @@ async function handleTap(
   let x: number, y: number;
   let usedSelector = false;
 
+  let pickedExtras: PickedExtras | undefined;
   if (input.selector) {
     const resolution = await resolveSelector(input, context, config, deviceId);
-    const match = pickSelectorMatch(resolution, input.selector, "tap");
+    pickedExtras = {};
+    const match = pickSelectorMatch(resolution, input.selector, "tap", pickedExtras);
     const center = getElementCenter(match);
     x = center.x;
     y = center.y;
@@ -236,6 +261,8 @@ async function handleTap(
   await context.ui.tap(deviceId, x, y, deviceSpace);
   const response: Record<string, unknown> = { tapped: { x, y, deviceSpace }, deviceId };
   if (usedSelector) response.matchedSelector = input.selector;
+  if (pickedExtras?.pickedRationale) response.pickedRationale = pickedExtras.pickedRationale;
+  if (pickedExtras?.alternatives) response.alternatives = pickedExtras.alternatives;
   return response;
 }
 

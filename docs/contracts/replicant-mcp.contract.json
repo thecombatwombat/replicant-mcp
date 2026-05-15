@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-04-27T21:43:15.187Z",
+  "generatedAt": "2026-05-15T19:06:33.979Z",
   "tools": {
     "cache": {
       "inputSchema": {
@@ -452,7 +452,8 @@
               "launch",
               "stop",
               "clear-data",
-              "list"
+              "list",
+              "start-intent"
             ]
           },
           "apkPath": {
@@ -476,6 +477,25 @@
             "description": "Pagination offset",
             "type": "number",
             "minimum": 0
+          },
+          "action": {
+            "description": "Intent action (e.g., android.intent.action.VIEW)",
+            "type": "string"
+          },
+          "data": {
+            "description": "Intent data URI",
+            "type": "string"
+          },
+          "component": {
+            "description": "Component spec (pkg/.Activity or pkg/pkg.Activity)",
+            "type": "string"
+          },
+          "extras": {
+            "description": "String extras as key/value pairs (--es key value)",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -1654,6 +1674,13 @@
               "nearestTo": {
                 "description": "Find elements nearest to this text (spatial proximity)",
                 "type": "string"
+              },
+              "rank": {
+                "description": "Rank matches by tappability heuristics (THE-108). Prefers clickable, smaller bounding box, penalizes full-screen containers.",
+                "type": "string",
+                "enum": [
+                  "bestTappable"
+                ]
               }
             }
           },
@@ -1678,6 +1705,10 @@
           },
           "compact": {
             "description": "Paginated flat list (default: true). false for full tree.",
+            "type": "boolean"
+          },
+          "interactiveOnly": {
+            "description": "If true, keep only nodes where any of clickable, long-clickable, focusable, editable, or scrollable is true. Applied after selector matching, before pagination.",
             "type": "boolean"
           },
           "limit": {
@@ -2229,6 +2260,18 @@
           "y": {
             "type": "number"
           },
+          "imageX": {
+            "description": "Image-space X coord. Pair with `screenshotId` to tap what you see in a screenshot without manually unscaling (THE-111).",
+            "type": "number"
+          },
+          "imageY": {
+            "description": "Image-space Y coord. See `imageX`.",
+            "type": "number"
+          },
+          "screenshotId": {
+            "description": "Screenshot id from a prior `ui-capture screenshot`. Combined with `imageX`/`imageY`, the tap is converted to device-space using THAT screenshot's scaling (not the global adapter state).",
+            "type": "string"
+          },
           "elementIndex": {
             "type": "number"
           },
@@ -2249,6 +2292,13 @@
               },
               "nearestTo": {
                 "type": "string"
+              },
+              "rank": {
+                "description": "Auto-pick the top-ranked match when matches > 1 (THE-108). Without this, ambiguous matches throw AMBIGUOUS_MATCH.",
+                "type": "string",
+                "enum": [
+                  "bestTappable"
+                ]
               }
             }
           },
@@ -2256,6 +2306,7 @@
             "type": "string"
           },
           "direction": {
+            "description": "Scroll direction is gesture-based (the way the user's finger moves), NOT the direction content moves. So `down` = swipe up = content scrolls down = next page of a feed. `up` = swipe down = content scrolls up = pull-to-refresh territory. `left` / `right` mirror this for horizontal scrolling.",
             "type": "string",
             "enum": [
               "up",
@@ -2272,6 +2323,10 @@
           },
           "deviceSpace": {
             "description": "x/y in device-space (default true). Set false only for image-space coords.",
+            "type": "boolean"
+          },
+          "verify": {
+            "description": "On `input`: capture the field's text before/after and report whether the input took effect. Requires a selector. Default false.",
             "type": "boolean"
           }
         },

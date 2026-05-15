@@ -228,6 +228,30 @@ function isScrollableContainer(node: AccessibilityNode): boolean {
   return scrollableClassFragments.some((fragment) => node.className.includes(fragment));
 }
 
+function resolveScreenshotIdTap(
+  input: UiActionInput,
+  context: ServerContext,
+): { x: number; y: number } {
+  // THE-111: tap what's visible in a specific screenshot — convert
+  // imageX/imageY to device-space using that screenshot's scaling.
+  if (input.imageX === undefined || input.imageY === undefined) {
+    throw new ReplicantError(
+      ErrorCode.INPUT_VALIDATION_FAILED,
+      "screenshotId requires imageX and imageY",
+      "Provide imageX/imageY (image-space pixel coords) alongside screenshotId.",
+    );
+  }
+  const cached = context.cache.get<ScreenshotScalingEntry>(input.screenshotId!);
+  if (!cached) {
+    throw new ReplicantError(
+      ErrorCode.UNKNOWN_SCREENSHOT_ID,
+      `Screenshot id '${input.screenshotId}' is unknown or has expired.`,
+      "Take a new screenshot via ui-capture screenshot — entries are kept for 5 minutes.",
+    );
+  }
+  return toDeviceSpace(input.imageX, input.imageY, cached.data.scaleFactor);
+}
+
 async function handleTap(
   input: UiActionInput,
   context: ServerContext,
@@ -248,26 +272,7 @@ async function handleTap(
     y = center.y;
     usedSelector = true;
   } else if (input.screenshotId !== undefined) {
-    // THE-111: tap what's visible in a specific screenshot — convert
-    // imageX/imageY to device-space using that screenshot's scaling.
-    if (input.imageX === undefined || input.imageY === undefined) {
-      throw new ReplicantError(
-        ErrorCode.INPUT_VALIDATION_FAILED,
-        "screenshotId requires imageX and imageY",
-        "Provide imageX/imageY (image-space pixel coords) alongside screenshotId.",
-      );
-    }
-    const cached = context.cache.get<ScreenshotScalingEntry>(input.screenshotId);
-    if (!cached) {
-      throw new ReplicantError(
-        ErrorCode.UNKNOWN_SCREENSHOT_ID,
-        `Screenshot id '${input.screenshotId}' is unknown or has expired.`,
-        "Take a new screenshot via ui-capture screenshot — entries are kept for 5 minutes.",
-      );
-    }
-    const converted = toDeviceSpace(input.imageX, input.imageY, cached.data.scaleFactor);
-    x = converted.x;
-    y = converted.y;
+    ({ x, y } = resolveScreenshotIdTap(input, context));
     viaScreenshotId = true;
   } else if (input.elementIndex !== undefined) {
     if (!context.lastFindResults[input.elementIndex]) {

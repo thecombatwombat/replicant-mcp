@@ -63,11 +63,15 @@ function summarizeFindElement(el: FindElement): Record<string, unknown> {
 export function rankBestTappable<T extends FindElement>(elements: T[]): RankResult<T> {
   if (elements.length <= 1) return { ranked: elements };
 
-  const axElements = elements.filter((e): e is T & AccessibilityNode => isAccessibilityNode(e));
+  // Local predicate so the generic T is narrowed to (T & AccessibilityNode)
+  // inside the conditional. Sidesteps the need for an opaque cast.
+  const isAx = (e: T): e is T & AccessibilityNode => isAccessibilityNode(e);
+
+  const axElements = elements.filter(isAx);
   const maxArea = axElements.reduce((max, n) => Math.max(max, nodeArea(n)), 0);
 
   const scored = elements.map((el) => {
-    const ax = isAccessibilityNode(el) ? (el as unknown as AccessibilityNode) : null;
+    const ax: AccessibilityNode | null = isAx(el) ? el : null;
     return {
       el,
       ax,

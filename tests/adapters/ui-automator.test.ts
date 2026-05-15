@@ -731,9 +731,26 @@ describe("UiAutomatorAdapter", () => {
   });
 
   describe("getCurrentApp", () => {
-    it("parses current app from dumpsys activity", async () => {
+    // Realistic multi-line dumpsys output. Mirrors what adb actually returns
+    // so the parser is exercised against true shape, not pre-grepped single lines.
+    const REALISTIC_ACTIVITIES_DUMPSYS = `ACTIVITY MANAGER ACTIVITIES (dumpsys activity activities)
+Display #0 (activities from top to bottom):
+  Stack #0:
+    Task id #42
+      mResumedActivity: ActivityRecord{abc123 u0 com.example.app/.MainActivity t42}
+      mLastResumedActivity: ActivityRecord{def456 u0 com.previous/.Prev t41}
+      mFocusedActivity: ActivityRecord{abc123 u0 com.example.app/.MainActivity t42}
+`;
+
+    const REALISTIC_WINDOW_DUMPSYS = `WINDOW MANAGER POLICY STATE (dumpsys window policy)
+  mStable=(0,0)-(1080,2400)
+  mCurrentFocus=Window{abc u0 com.test.app/.TestActivity}
+  mFocusedApp=AppWindowToken{def}
+`;
+
+    it("parses current app from dumpsys activity output", async () => {
       mockAdb.shell.mockResolvedValueOnce({
-        stdout: "  mResumedActivity: ActivityRecord{abc123 u0 com.example.app/.MainActivity t456}",
+        stdout: REALISTIC_ACTIVITIES_DUMPSYS,
         stderr: "",
         exitCode: 0,
       });
@@ -744,11 +761,15 @@ describe("UiAutomatorAdapter", () => {
       expect(result.activityName).toBe(".MainActivity");
     });
 
-    it("falls back to window manager when activity not found", async () => {
+    it("falls back to window manager when no mResumedActivity line is present", async () => {
       mockAdb.shell
-        .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }) // empty dumpsys activity
         .mockResolvedValueOnce({
-          stdout: "  mCurrentFocus=Window{abc com.test.app/.TestActivity}",
+          stdout: "ACTIVITY MANAGER ACTIVITIES\nDisplay #0:\n  (no resumed activity)\n",
+          stderr: "",
+          exitCode: 0,
+        })
+        .mockResolvedValueOnce({
+          stdout: REALISTIC_WINDOW_DUMPSYS,
           stderr: "",
           exitCode: 0,
         });
@@ -759,7 +780,7 @@ describe("UiAutomatorAdapter", () => {
       expect(result.activityName).toBe(".TestActivity");
     });
 
-    it("returns unknown when both methods fail", async () => {
+    it("returns unknown when both sources are empty", async () => {
       mockAdb.shell
         .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 })
         .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 });
@@ -768,6 +789,38 @@ describe("UiAutomatorAdapter", () => {
 
       expect(result.packageName).toBe("unknown");
       expect(result.activityName).toBe("unknown");
+    });
+
+    it("never issues shell commands containing the metacharacters the safety guard blocks (THE-105 regression)", async () => {
+      // Drive the full call sequence with empty stdout.
+      mockAdb.shell.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
+      await adapter.getCurrentApp("emulator-5554");
+
+      // Each issued command must be free of the characters validateShellPayload
+      // rejects. If this ever fails, visual-snapshot will fail in production
+      // with COMMAND_BLOCKED. See src/services/process-runner.ts.
+      const issuedCommands = mockAdb.shell.mock.calls.map((call: any[]) => call[1] as string);
+      expect(issuedCommands.length).toBeGreaterThan(0);
+      for (const cmd of issuedCommands) {
+        expect(cmd).not.toMatch(/[;&|`()]|\$[({a-zA-Z_]/);
+      }
+    });
+
+    it("picks the first mResumedActivity when multiple users are present", async () => {
+      // Multi-user devices (work profile, secondary users) expose one
+      // mResumedActivity per user. String.match historically returned only
+      // the first; preserve that behavior.
+      const multiUser = `Display #0:
+      mResumedActivity: ActivityRecord{a u0 com.foreground.user0/.MainActivity t1}
+      mResumedActivity: ActivityRecord{b u10 com.foreground.user10/.WorkActivity t2}
+`;
+      mockAdb.shell.mockResolvedValueOnce({ stdout: multiUser, stderr: "", exitCode: 0 });
+
+      const result = await adapter.getCurrentApp("emulator-5554");
+
+      expect(result.packageName).toBe("com.foreground.user0");
+      expect(result.activityName).toBe(".MainActivity");
     });
   });
 

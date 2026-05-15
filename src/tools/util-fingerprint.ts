@@ -31,12 +31,15 @@ function isAccessibilityNode(el: FindElement): el is AccessibilityNode {
 const SEP = "";
 
 export function computeAccessibilityFingerprint(node: AccessibilityNode): string {
-  const { left, top, right, bottom } = node.bounds;
+  // Some test/mock fixtures omit bounds. Treat missing bounds as 0,0,0,0 —
+  // the fingerprint still works as an identity comparison and any real dump
+  // from `parseUiDump` populates the field.
+  const b = node.bounds ?? { left: 0, top: 0, right: 0, bottom: 0 };
   return [
     node.text ?? "",
     node.resourceId ?? "",
     node.className ?? "",
-    `${left},${top},${right},${bottom}`,
+    `${b.left},${b.top},${b.right},${b.bottom}`,
   ].join(SEP);
 }
 

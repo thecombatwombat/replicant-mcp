@@ -59,7 +59,14 @@ describe("Token budget", () => {
     //                sub-keys (resourceId/text/textContains/className/nearestTo)
     //                cost ~20 tokens; descriptions on the field itself were trimmed
     //                to absorb most of it.
-    const TOKEN_CEILING = 2200;
+    //   2200 → 2400: ui-action gains screenshotId/imageX/imageY (THE-111) and
+    //                bestTappable rank (THE-108); both ship verbose describe text
+    //                to make the THE-111 lifecycle agent-visible.
+    //   2400 → 2700: adb-app gains `start-intent` op + typed-intent fields
+    //                (THE-106 / CU-2) and ui-action gains `verify` for input
+    //                (THE-113 / CU-9). Typed-intent surfaces 4 optional fields
+    //                (action/data/component/extras) with describe text.
+    const TOKEN_CEILING = 2700;
 
     expect(estimatedTokens).toBeLessThanOrEqual(TOKEN_CEILING);
   });

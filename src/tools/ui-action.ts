@@ -21,7 +21,12 @@ export const uiActionInputSchema = toolSchema({
     nearestTo: z.string().optional(),
   }).optional(),
   text: z.string().optional(),
-  direction: z.enum(["up", "down", "left", "right"]).optional(),
+  direction: z
+    .enum(["up", "down", "left", "right"])
+    .optional()
+    .describe(
+      "Scroll direction is gesture-based (the way the user's finger moves), NOT the direction content moves. So `down` = swipe up = content scrolls down = next page of a feed. `up` = swipe down = content scrolls up = pull-to-refresh territory. `left` / `right` mirror this for horizontal scrolling.",
+    ),
   amount: numberInput({ min: 0, max: 1 })
     .optional()
     .describe("Scroll fraction (0-1, default: 0.5)"),
@@ -314,7 +319,8 @@ async function handleScroll(
 
 export const uiActionToolDefinition = {
   name: "ui-action",
-  description: "Interact with app UI: tap, input, scroll. Use selector or coords.",
+  description:
+    "Interact with app UI: tap, input, scroll. Use selector or coords. Scroll `direction` is the gesture direction (down = swipe up, content moves down).",
   inputSchema: toMcpJsonSchema(uiActionInputSchema),
   annotations: {
     readOnlyHint: false,

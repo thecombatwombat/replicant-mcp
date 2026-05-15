@@ -5,6 +5,22 @@ import { handleUiActionTool } from "../../src/tools/ui-action.js";
 describe("UI cross-tool state via ServerContext", () => {
   let mockContext: any;
 
+  // THE-112: ui-action's elementIndex path now re-dumps the tree to check
+  // staleness. Tests that exercise the elementIndex path need to stub
+  // ui.dump alongside ui.findWithFallbacks.
+  const submitElement = {
+    text: "Submit",
+    resourceId: "btn_submit",
+    centerX: 300,
+    centerY: 500,
+    className: "Button",
+    bounds: { left: 200, top: 450, right: 400, bottom: 550 },
+    clickable: true,
+    focusable: true,
+    contentDesc: "",
+    index: 0,
+  };
+
   beforeEach(() => {
     mockContext = {
       deviceState: {
@@ -12,6 +28,7 @@ describe("UI cross-tool state via ServerContext", () => {
       },
       ui: {
         findWithFallbacks: vi.fn(),
+        dump: vi.fn(),
         tap: vi.fn(),
       },
       cache: {
@@ -19,16 +36,17 @@ describe("UI cross-tool state via ServerContext", () => {
         set: vi.fn(),
       },
       lastFindResults: [],
+      lastFindFingerprints: [],
     };
   });
 
   it("ui-query find populates lastFindResults, ui-action tap reads them", async () => {
     mockContext.ui.findWithFallbacks.mockResolvedValue({
-      elements: [
-        { text: "Submit", centerX: 300, centerY: 500, className: "Button", bounds: { left: 200, top: 450, right: 400, bottom: 550 }, clickable: true },
-      ],
+      elements: [submitElement],
       source: "accessibility",
     });
+    // Same tree on the re-dump = fingerprint matches = no STALE_ELEMENT_INDEX.
+    mockContext.ui.dump.mockResolvedValue([submitElement]);
 
     await handleUiQueryTool(
       { operation: "find", selector: { text: "Submit" } },
@@ -36,6 +54,7 @@ describe("UI cross-tool state via ServerContext", () => {
     );
 
     expect(mockContext.lastFindResults).toHaveLength(1);
+    expect(mockContext.lastFindFingerprints).toHaveLength(1);
 
     mockContext.ui.tap.mockResolvedValue(undefined);
     const tapResult = await handleUiActionTool(

@@ -6,6 +6,7 @@ import { getElementCenter, handleFind, isAccessibilityNode } from "./ui-find.js"
 import { AccessibilityNode, flattenTree } from "../parsers/ui-dump.js";
 import { FindElement } from "../types/icon-recognition.js";
 import { rankBestTappable } from "./util-rank.js";
+import { computeAccessibilityFingerprint } from "./util-fingerprint.js";
 import { ScreenshotScalingEntry } from "./ui-capture.js";
 import { toDeviceSpace } from "../services/scaling.js";
 import { booleanInput, jsonObjectInput, numberInput, toolSchema } from "../schemas/inputs.js";
@@ -185,6 +186,77 @@ function pickSelectorMatch(
   return matches[0];
 }
 
+// THE-112 (CU-8): stale-element check on the elementIndex path.
+//
+// `ui-query find` cached an element at this index plus its content
+// fingerprint. Between find and tap, the screen can change. Re-dump the tree,
+// locate the node whose center matches the cached center (within a small
+// tolerance so float rounding doesn't false-positive), recompute its
+// fingerprint, and compare.
+//
+// - If no node matches the cached center, STALE.
+// - If a node matches the center but fingerprint differs (text changed,
+//   resourceId changed, bounds shifted), STALE.
+// - If the cached element is non-accessibility (OCR/grid), its stored
+//   fingerprint is "" — skip the check (no stable identity).
+// - If `lastFindFingerprints` is missing or empty (older callers),
+//   skip the check (backward compat).
+//
+// Matches at exact (centerX, centerY). If multiple nodes share that center
+// (overlay siblings), prefer one with matching className.
+async function assertElementStillFresh(
+  context: ServerContext,
+  deviceId: string,
+  elementIndex: number,
+  element: FindElement,
+): Promise<void> {
+  const fingerprints = context.lastFindFingerprints;
+  if (!fingerprints || fingerprints.length === 0) return;
+  const cachedFingerprint = fingerprints[elementIndex];
+  if (cachedFingerprint === undefined || cachedFingerprint === "") return;
+  if (!isAccessibilityNode(element)) return;
+
+  const tree = await context.ui.dump(deviceId);
+  const flat = flattenTree(tree);
+
+  const cx = element.centerX;
+  const cy = element.centerY;
+  const candidates = flat.filter((n) => n.centerX === cx && n.centerY === cy);
+  let current: AccessibilityNode | undefined =
+    candidates.find((n) => n.className === element.className) ?? candidates[0];
+
+  if (!current) {
+    throw new ReplicantError(
+      ErrorCode.STALE_ELEMENT_INDEX,
+      `Element at index ${elementIndex} is stale: no node found at (${cx}, ${cy}).`,
+      "Re-run ui-query find — the screen has changed since the original find call.",
+      {
+        buildResult: {
+          elementIndex,
+          cachedCenter: { x: cx, y: cy },
+          cachedFingerprint,
+        },
+      },
+    );
+  }
+
+  const liveFingerprint = computeAccessibilityFingerprint(current);
+  if (liveFingerprint !== cachedFingerprint) {
+    throw new ReplicantError(
+      ErrorCode.STALE_ELEMENT_INDEX,
+      `Element at index ${elementIndex} is stale: content fingerprint changed since find.`,
+      "Re-run ui-query find — the screen has changed since the original find call.",
+      {
+        buildResult: {
+          elementIndex,
+          cachedFingerprint,
+          liveFingerprint,
+        },
+      },
+    );
+  }
+}
+
 function findScrollableAncestor(
   tree: AccessibilityNode[],
   target: AccessibilityNode,
@@ -228,83 +300,107 @@ function isScrollableContainer(node: AccessibilityNode): boolean {
   return scrollableClassFragments.some((fragment) => node.className.includes(fragment));
 }
 
+interface TapResolution {
+  x: number;
+  y: number;
+  usedSelector: boolean;
+  viaScreenshotId: boolean;
+  pickedExtras?: PickedExtras;
+}
+
+async function resolveScreenshotIdTap(
+  input: UiActionInput,
+  context: ServerContext,
+): Promise<TapResolution> {
+  if (input.imageX === undefined || input.imageY === undefined) {
+    throw new ReplicantError(
+      ErrorCode.INPUT_VALIDATION_FAILED,
+      "screenshotId requires imageX and imageY",
+      "Provide imageX/imageY (image-space pixel coords) alongside screenshotId.",
+    );
+  }
+  const cached = context.cache.get<ScreenshotScalingEntry>(input.screenshotId!);
+  if (!cached) {
+    throw new ReplicantError(
+      ErrorCode.UNKNOWN_SCREENSHOT_ID,
+      `Screenshot id '${input.screenshotId}' is unknown or has expired.`,
+      "Take a new screenshot via ui-capture screenshot — entries are kept for 5 minutes.",
+    );
+  }
+  const converted = toDeviceSpace(input.imageX, input.imageY, cached.data.scaleFactor);
+  return { x: converted.x, y: converted.y, usedSelector: false, viaScreenshotId: true };
+}
+
+async function resolveElementIndexTap(
+  input: UiActionInput,
+  context: ServerContext,
+  deviceId: string,
+): Promise<TapResolution> {
+  if (!context.lastFindResults[input.elementIndex!]) {
+    throw new ReplicantError(
+      ErrorCode.ELEMENT_NOT_FOUND,
+      `Element at index ${input.elementIndex} not found. Run 'find' first.`,
+      "Use ui-query find to locate elements, then reference them by index",
+    );
+  }
+  const element = context.lastFindResults[input.elementIndex!];
+  await assertElementStillFresh(context, deviceId, input.elementIndex!, element);
+  const center = getElementCenter(element);
+  return { x: center.x, y: center.y, usedSelector: false, viaScreenshotId: false };
+}
+
+async function resolveTap(
+  input: UiActionInput,
+  context: ServerContext,
+  config: UiConfig,
+  deviceId: string,
+): Promise<TapResolution> {
+  if (input.selector) {
+    const resolution = await resolveSelector(input, context, config, deviceId);
+    const pickedExtras: PickedExtras = {};
+    const match = pickSelectorMatch(resolution, input.selector, "tap", pickedExtras);
+    const center = getElementCenter(match);
+    return { x: center.x, y: center.y, usedSelector: true, viaScreenshotId: false, pickedExtras };
+  }
+  if (input.screenshotId !== undefined) {
+    return resolveScreenshotIdTap(input, context);
+  }
+  if (input.elementIndex !== undefined) {
+    return resolveElementIndexTap(input, context, deviceId);
+  }
+  if (input.x !== undefined && input.y !== undefined) {
+    return { x: input.x, y: input.y, usedSelector: false, viaScreenshotId: false };
+  }
+  throw new ReplicantError(
+    ErrorCode.INPUT_VALIDATION_FAILED,
+    "tap requires x/y, elementIndex, selector, or screenshotId+imageX+imageY",
+    "Provide one of: x+y coords, elementIndex from a prior find, a selector, or screenshotId paired with imageX/imageY.",
+  );
+}
+
 async function handleTap(
   input: UiActionInput,
   context: ServerContext,
   config: UiConfig,
   deviceId: string,
 ): Promise<Record<string, unknown>> {
-  let x: number, y: number;
-  let usedSelector = false;
+  const tap = await resolveTap(input, context, config, deviceId);
 
-  let pickedExtras: PickedExtras | undefined;
-  let viaScreenshotId = false;
-  if (input.selector) {
-    const resolution = await resolveSelector(input, context, config, deviceId);
-    pickedExtras = {};
-    const match = pickSelectorMatch(resolution, input.selector, "tap", pickedExtras);
-    const center = getElementCenter(match);
-    x = center.x;
-    y = center.y;
-    usedSelector = true;
-  } else if (input.screenshotId !== undefined) {
-    // THE-111: tap what's visible in a specific screenshot — convert
-    // imageX/imageY to device-space using that screenshot's scaling.
-    if (input.imageX === undefined || input.imageY === undefined) {
-      throw new ReplicantError(
-        ErrorCode.INPUT_VALIDATION_FAILED,
-        "screenshotId requires imageX and imageY",
-        "Provide imageX/imageY (image-space pixel coords) alongside screenshotId.",
-      );
-    }
-    const cached = context.cache.get<ScreenshotScalingEntry>(input.screenshotId);
-    if (!cached) {
-      throw new ReplicantError(
-        ErrorCode.UNKNOWN_SCREENSHOT_ID,
-        `Screenshot id '${input.screenshotId}' is unknown or has expired.`,
-        "Take a new screenshot via ui-capture screenshot — entries are kept for 5 minutes.",
-      );
-    }
-    const converted = toDeviceSpace(input.imageX, input.imageY, cached.data.scaleFactor);
-    x = converted.x;
-    y = converted.y;
-    viaScreenshotId = true;
-  } else if (input.elementIndex !== undefined) {
-    if (!context.lastFindResults[input.elementIndex]) {
-      throw new ReplicantError(
-        ErrorCode.ELEMENT_NOT_FOUND,
-        `Element at index ${input.elementIndex} not found. Run 'find' first.`,
-        "Use ui-query find to locate elements, then reference them by index",
-      );
-    }
-    const element = context.lastFindResults[input.elementIndex];
-    const center = getElementCenter(element);
-    x = center.x;
-    y = center.y;
-  } else if (input.x !== undefined && input.y !== undefined) {
-    x = input.x;
-    y = input.y;
-  } else {
-    throw new ReplicantError(
-      ErrorCode.INPUT_VALIDATION_FAILED,
-      "tap requires x/y, elementIndex, selector, or screenshotId+imageX+imageY",
-      "Provide one of: x+y coords, elementIndex from a prior find, a selector, or screenshotId paired with imageX/imageY.",
-    );
-  }
-
-  // Selector and elementIndex paths always yield device-space coords (the find
-  // result is already in device space). screenshotId path converted to
-  // device-space above. Only the raw x/y path lets the caller override the
-  // space; default true matches the new ui-query dump contract.
+  // Selector/elementIndex paths always yield device-space coords. screenshotId
+  // path is already converted. Only raw x/y lets the caller override.
   const fromResolvedElement =
-    usedSelector || input.elementIndex !== undefined || viaScreenshotId;
+    tap.usedSelector || input.elementIndex !== undefined || tap.viaScreenshotId;
   const deviceSpace = fromResolvedElement ? true : (input.deviceSpace ?? true);
-  await context.ui.tap(deviceId, x, y, deviceSpace);
-  const response: Record<string, unknown> = { tapped: { x, y, deviceSpace }, deviceId };
-  if (usedSelector) response.matchedSelector = input.selector;
-  if (pickedExtras?.pickedRationale) response.pickedRationale = pickedExtras.pickedRationale;
-  if (pickedExtras?.alternatives) response.alternatives = pickedExtras.alternatives;
-  if (viaScreenshotId) {
+  await context.ui.tap(deviceId, tap.x, tap.y, deviceSpace);
+
+  const response: Record<string, unknown> = {
+    tapped: { x: tap.x, y: tap.y, deviceSpace },
+    deviceId,
+  };
+  if (tap.usedSelector) response.matchedSelector = input.selector;
+  if (tap.pickedExtras?.pickedRationale) response.pickedRationale = tap.pickedExtras.pickedRationale;
+  if (tap.pickedExtras?.alternatives) response.alternatives = tap.pickedExtras.alternatives;
+  if (tap.viaScreenshotId) {
     response.viaScreenshotId = input.screenshotId;
     response.imageCoords = { x: input.imageX, y: input.imageY };
   }

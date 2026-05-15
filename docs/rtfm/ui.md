@@ -70,6 +70,14 @@ ui-query: { "operation": "find", "selector": { "text": "Login" } }
 ui-action: { "operation": "tap", "elementIndex": 0 }
 ```
 
+**THE-112: stale-element protection.** At find time, ui-query captures a
+content fingerprint (text + resourceId + className + bounds) of each
+accessibility match. When ui-action consumes `elementIndex`, it re-dumps the
+tree and rejects with `STALE_ELEMENT_INDEX` if the node at the cached center
+has changed (text differs, bounds shifted, or no node is there anymore).
+Re-run `ui-query find` after a scroll, dialog dismiss, or any screen
+transition. OCR/grid matches skip the check (no stable identity).
+
 **Example - Grid-based tap (for icons):**
 ```json
 { "operation": "tap", "gridCell": 12, "gridPosition": 3 }

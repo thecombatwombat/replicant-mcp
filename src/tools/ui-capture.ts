@@ -4,6 +4,7 @@ import { UiConfig, ReplicantError, ErrorCode } from "../types/index.js";
 import { DEFAULT_CONFIG } from "../types/config.js";
 import { booleanInput, numberInput, toolSchema } from "../schemas/inputs.js";
 import { toMcpJsonSchema } from "../schemas/derive.js";
+import { getCurrentAppSafe } from "./util-current-app.js";
 
 export const uiCaptureInputSchema = toolSchema({
   operation: z.enum(["screenshot", "visual-snapshot"]),
@@ -56,13 +57,16 @@ async function handleScreenshot(
   config: UiConfig,
   deviceId: string,
 ): Promise<Record<string, unknown>> {
-  const result = await context.ui.screenshot(deviceId, {
-    localPath: input.localPath,
-    inline: input.inline ?? false,
-    maxDimension: input.maxDimension ?? config.maxImageDimension,
-    raw: input.raw,
-  });
-  return { ...result, deviceId };
+  const [result, app] = await Promise.all([
+    context.ui.screenshot(deviceId, {
+      localPath: input.localPath,
+      inline: input.inline ?? false,
+      maxDimension: input.maxDimension ?? config.maxImageDimension,
+      raw: input.raw,
+    }),
+    getCurrentAppSafe(context, deviceId),
+  ]);
+  return { ...result, deviceId, app };
 }
 
 async function handleVisualSnapshot(

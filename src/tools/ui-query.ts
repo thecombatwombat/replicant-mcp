@@ -4,6 +4,7 @@ import { CACHE_TTLS, UiConfig, ReplicantError, ErrorCode } from "../types/index.
 import { AccessibilityNode, flattenTree } from "../parsers/ui-dump.js";
 import { DEFAULT_CONFIG } from "../types/config.js";
 import { handleFind } from "./ui-find.js";
+import { getCurrentAppSafe, CurrentAppField } from "./util-current-app.js";
 import {
   booleanInput,
   jsonObjectInput,
@@ -97,7 +98,10 @@ async function handleDump(
   _config: UiConfig,
   deviceId: string,
 ): Promise<Record<string, unknown>> {
-  const tree = await context.ui.dump(deviceId);
+  const [tree, app] = await Promise.all([
+    context.ui.dump(deviceId),
+    getCurrentAppSafe(context, deviceId),
+  ]);
 
   const dumpId = context.cache.generateId("ui-dump");
   context.cache.set(dumpId, { tree, deviceId }, "ui-dump", CACHE_TTLS.UI_TREE);
@@ -109,10 +113,10 @@ async function handleDump(
   const coordMeta = buildCoordinateMeta(context);
 
   if (input.compact !== false) {
-    return handleCompactDump(tree, input, dumpId, deviceId, emptyWarning, coordMeta);
+    return handleCompactDump(tree, input, dumpId, deviceId, emptyWarning, coordMeta, app);
   }
 
-  return handleFullDump(tree, dumpId, deviceId, emptyWarning, coordMeta);
+  return handleFullDump(tree, dumpId, deviceId, emptyWarning, coordMeta, app);
 }
 
 function handleCompactDump(
@@ -122,6 +126,7 @@ function handleCompactDump(
   deviceId: string,
   emptyWarning: string | undefined,
   coordMeta: DumpCoordinateMeta,
+  app: CurrentAppField | null,
 ): Record<string, unknown> {
   const flat = flattenTree(tree);
   const interactive = flat.filter((n) => n.clickable || n.focusable);
@@ -157,6 +162,7 @@ function handleCompactDump(
     offset,
     limit,
     deviceId,
+    app,
     ...coordMeta,
     hint,
     warning: emptyWarning || noInteractiveWarning,
@@ -169,6 +175,7 @@ function handleFullDump(
   deviceId: string,
   emptyWarning: string | undefined,
   coordMeta: DumpCoordinateMeta,
+  app: CurrentAppField | null,
 ): Record<string, unknown> {
   const simplifyNode = (node: AccessibilityNode): Record<string, unknown> => ({
     className: node.className.split(".").pop(),
@@ -183,6 +190,7 @@ function handleFullDump(
     dumpId,
     tree: tree.map((n) => simplifyNode(n)),
     deviceId,
+    app,
     ...coordMeta,
     warning: emptyWarning,
   };

@@ -8,6 +8,7 @@ import {
   FindWithFallbacksResult,
   GridElement,
 } from "../types/icon-recognition.js";
+import { getCurrentAppSafe } from "./util-current-app.js";
 
 export interface FindInput {
   selector?: { resourceId?: string; text?: string; textContains?: string; className?: string; nearestTo?: string };
@@ -262,7 +263,10 @@ async function handleTextFind(
     : null;
   const findOptions = buildFindOptions(input, debug, config);
 
-  const result = await context.ui.findWithFallbacks(deviceId, input.selector!, findOptions);
+  const [result, app] = await Promise.all([
+    context.ui.findWithFallbacks(deviceId, input.selector!, findOptions),
+    getCurrentAppSafe(context, deviceId),
+  ]);
 
   let usedContainment = false;
   if (anchorCenter && result.elements.length > 0) {
@@ -284,6 +288,7 @@ async function handleTextFind(
     elements: result.elements.map((el, index) => formatElement(el, index, debug)),
     count: result.elements.length,
     deviceId,
+    app,
   };
 
   appendResultMetadata(response, result, debug);
@@ -299,7 +304,10 @@ async function handleSelectorFind(
   config: UiConfig,
   deviceId: string
 ): Promise<Record<string, unknown>> {
-  const elements = await context.ui.find(deviceId, input.selector!);
+  const [elements, app] = await Promise.all([
+    context.ui.find(deviceId, input.selector!),
+    getCurrentAppSafe(context, deviceId),
+  ]);
   context.lastFindResults = elements;
 
   const response: Record<string, unknown> = {
@@ -315,6 +323,7 @@ async function handleSelectorFind(
     })),
     count: elements.length,
     deviceId,
+    app,
   };
 
   if (elements.length === 0 && config.autoFallbackScreenshot) {

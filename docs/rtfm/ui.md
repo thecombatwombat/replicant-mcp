@@ -84,6 +84,39 @@ transition. OCR/grid matches skip the check (no stable identity).
 // Taps center of cell 12 in the 24-cell grid overlay
 ```
 
+**Input verification (THE-113 / CU-9):**
+
+Setting `verify: true` on the `input` op captures the target field's text
+before and after the input call, and reports whether it took effect:
+
+```json
+{
+  "operation": "input",
+  "text": "hello world",
+  "selector": { "resourceId": "search_field" },
+  "verify": true
+}
+// Returns: {
+//   input, deviceId, matchedSelector,
+//   verified: true,
+//   containsRequested: true,   // inputAfter.includes(text)
+//   changed: true,             // inputAfter !== inputBefore
+//   inputBefore: "",
+//   inputAfter: "hello world"
+// }
+```
+
+`verified` is true if EITHER `containsRequested` or `changed` is true — the
+looser `changed` signal catches autocomplete/case-mutation cases where the
+final value isn't literally the requested string. `verify=true` requires a
+selector (we need to know which field to inspect) and costs two extra
+accessibility dumps (before + after). Defaults to false.
+
+Clipboard-paste — handling agent text containing special characters via the
+system clipboard rather than `input text` — is designed but deferred to a
+follow-up ticket. See DECISIONS.md (2026-05-15 CU-9 entry) for the design
+sketch.
+
 ## ui-capture
 
 Capture screenshots and visual snapshots of the device screen.

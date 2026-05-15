@@ -152,15 +152,17 @@ export class ProcessRunner {
     const shellPayload = payloadArgs.join(" ").trim();
     if (!shellPayload) return;
 
-    // Block shell metacharacters that enable command chaining/substitution.
-    // $letter/$(/$ are blocked (variable expansion, command substitution) but
-    // bare $ before digits is allowed (e.g., input text '$100').
-    if (/[;&|`()]|\$[({a-zA-Z_]/.test(shellPayload)) {
-      throw new ReplicantError(
-        ErrorCode.COMMAND_BLOCKED,
-        "Shell metacharacters are not allowed in shell commands",
-        "Use simple commands without chaining, pipes, or substitution"
-      );
+    // CU-2 (THE-106): argv-aware metacharacter check. Each arg is scanned
+    // individually for shell composition patterns. This is a TIGHTENING of the
+    // previous joined-string check, which over-blocked any URL or quoted
+    // string containing a literal `&`, `|`, etc. — even though execa never
+    // hands the joined string to a shell. The contract is: a single arg may
+    // contain literal `&`/`|` as data (URL query strings, content), but no
+    // arg may START with a chain operator or contain unbalanced shell
+    // structure that would let a payload split into multiple commands if it
+    // were ever passed through `sh -c`.
+    for (const arg of payloadArgs) {
+      this.validateArgForShellComposition(arg);
     }
 
     // Block shell wrapper commands (sh -c, bash -c)
@@ -191,4 +193,57 @@ export class ProcessRunner {
       }
     }
   }
+
+  // Per-arg composition check (CU-2 / THE-106).
+  //
+  // The OLD guard joined every payload arg with spaces and ran a single regex
+  // against the result. That caught real chains (`ls; rm`) but also blocked
+  // any single arg containing `&`, `|`, `(`, etc. as DATA — e.g.
+  // `am start ... -d "https://example.com/?foo=bar&baz=qux"`. URLs with
+  // multi-key query strings, JSON extras, etc. became un-passable.
+  //
+  // The NEW guard runs per-arg via SHELL_COMPOSITION_PATTERNS, looking for
+  // patterns that only make sense as composition (not as data inside a
+  // token). Bare `$` followed by a digit and embedded `&` inside a longer
+  // token are PERMITTED — the typed-intent path needs the latter.
+  private validateArgForShellComposition(arg: string): void {
+    if (arg.trim() === "") return;
+    for (const { pattern, description: _description } of SHELL_COMPOSITION_PATTERNS) {
+      if (pattern.test(arg)) {
+        throw new ReplicantError(
+          ErrorCode.COMMAND_BLOCKED,
+          "Shell metacharacters are not allowed in shell commands",
+          "Use simple commands without chaining, pipes, or substitution",
+        );
+      }
+    }
+  }
 }
+
+// Each entry documents the shell-composition shape it catches. The matchers
+// are deliberately conservative — embedded `&` and `|` (no whitespace, not
+// at start) flow through because URLs and content data legitimately use
+// those characters.
+const SHELL_COMPOSITION_PATTERNS: ReadonlyArray<{
+  pattern: RegExp;
+  description: string;
+}> = [
+  // Command substitution — always composition, never data we want to pass.
+  { pattern: /`/, description: "backtick command substitution" },
+  { pattern: /\$\(/, description: "$() command substitution" },
+  // Variable expansion: ${VAR} or $IDENT (letter/underscore-led).
+  // $123 is allowed (common in text input like `$100`).
+  { pattern: /\$\{/, description: "${VAR} expansion" },
+  { pattern: /\$[a-zA-Z_]/, description: "$IDENT expansion" },
+  // Subshell wrapper.
+  { pattern: /^\(.*\)$/, description: "parenthesised subshell" },
+  // Chain operator at the START of an arg (or the arg IS the operator).
+  { pattern: /^(&&|\|\||[;&|])/, description: "chain operator at start" },
+  // `;` anywhere is composition (no legitimate adb data use).
+  { pattern: /;/, description: "semicolon chain" },
+  // `&&` / `||` anywhere is composition.
+  { pattern: /&&|\|\|/, description: "&& or || chain" },
+  // Pipe with whitespace on either side: `cmd | other`. Glued `a|b` slips
+  // through deliberately (regex/URL alternates).
+  { pattern: /\s\|\s|\|\s|\s\|/, description: "pipe with whitespace" },
+];

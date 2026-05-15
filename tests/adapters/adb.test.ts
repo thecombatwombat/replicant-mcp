@@ -154,4 +154,165 @@ describe("AdbAdapter", () => {
       ).rejects.toThrow("Failed to pull");
     });
   });
+
+  describe("startIntent (CU-2 / THE-106)", () => {
+    const okStdout = "Starting: Intent { act=android.intent.action.VIEW }\nStatus: ok\n";
+
+    it("builds typed argv with -a action and -d URL containing `&`", async () => {
+      mockRunner.runAdb.mockResolvedValue({ stdout: okStdout, stderr: "", exitCode: 0 });
+
+      const result = await adapter.startIntent("emulator-5554", {
+        action: "android.intent.action.VIEW",
+        data: "https://example.com/?foo=bar&baz=qux",
+      });
+
+      expect(mockRunner.runAdb).toHaveBeenCalledWith(
+        [
+          "-s",
+          "emulator-5554",
+          "shell",
+          "am",
+          "start",
+          "-W",
+          "-a",
+          "android.intent.action.VIEW",
+          "-d",
+          "https://example.com/?foo=bar&baz=qux",
+        ],
+        expect.anything(),
+      );
+      expect(result.ok).toBe(true);
+      expect(result.status).toBe("ok");
+    });
+
+    it("omits -d when data is undefined", async () => {
+      mockRunner.runAdb.mockResolvedValue({ stdout: okStdout, stderr: "", exitCode: 0 });
+
+      await adapter.startIntent("emulator-5554", {
+        action: "android.intent.action.MAIN",
+      });
+
+      const args = mockRunner.runAdb.mock.calls[0][0];
+      expect(args).not.toContain("-d");
+      expect(args).toEqual(
+        expect.arrayContaining(["-a", "android.intent.action.MAIN"]),
+      );
+    });
+
+    it("appends --es key value pairs for extras (each value its own arg)", async () => {
+      mockRunner.runAdb.mockResolvedValue({ stdout: okStdout, stderr: "", exitCode: 0 });
+
+      await adapter.startIntent("emulator-5554", {
+        action: "android.intent.action.VIEW",
+        extras: { url: "https://x.example/?a=1&b=2", note: "hello world" },
+      });
+
+      const args = mockRunner.runAdb.mock.calls[0][0];
+      // URL extra value remains a single arg, embedded `&` survives.
+      expect(args).toEqual(
+        expect.arrayContaining([
+          "--es",
+          "url",
+          "https://x.example/?a=1&b=2",
+          "--es",
+          "note",
+          "hello world",
+        ]),
+      );
+    });
+
+    it("rejects an invalid action (spaces)", async () => {
+      await expect(
+        adapter.startIntent("emulator-5554", { action: "bad action with spaces" }),
+      ).rejects.toThrow("Invalid intent action");
+      expect(mockRunner.runAdb).not.toHaveBeenCalled();
+    });
+
+    it("rejects an action starting with a digit", async () => {
+      await expect(
+        adapter.startIntent("emulator-5554", { action: "1.bad" }),
+      ).rejects.toThrow("Invalid intent action");
+    });
+
+    it("rejects data containing a null byte", async () => {
+      await expect(
+        adapter.startIntent("emulator-5554", {
+          action: "android.intent.action.VIEW",
+          data: "https://example.com/\0evil",
+        }),
+      ).rejects.toThrow("null byte");
+    });
+
+    it("rejects extras key with shell metacharacters", async () => {
+      await expect(
+        adapter.startIntent("emulator-5554", {
+          action: "android.intent.action.VIEW",
+          extras: { "bad key;reboot": "x" },
+        }),
+      ).rejects.toThrow("Invalid extras key");
+    });
+
+    it("rejects data over the length cap", async () => {
+      const tooLong = "a".repeat(2049);
+      await expect(
+        adapter.startIntent("emulator-5554", {
+          action: "android.intent.action.VIEW",
+          data: tooLong,
+        }),
+      ).rejects.toThrow("exceeds");
+    });
+
+    it("rejects an invalid component spec", async () => {
+      await expect(
+        adapter.startIntent("emulator-5554", {
+          action: "android.intent.action.MAIN",
+          component: "not a component",
+        }),
+      ).rejects.toThrow("Invalid component");
+    });
+
+    it("accepts pkg/.RelativeActivity component", async () => {
+      mockRunner.runAdb.mockResolvedValue({ stdout: okStdout, stderr: "", exitCode: 0 });
+
+      await adapter.startIntent("emulator-5554", {
+        action: "android.intent.action.MAIN",
+        component: "com.example.app/.MainActivity",
+      });
+
+      const args = mockRunner.runAdb.mock.calls[0][0];
+      expect(args).toEqual(
+        expect.arrayContaining(["-n", "com.example.app/.MainActivity"]),
+      );
+    });
+
+    it("returns ok=false when am start reports Error", async () => {
+      mockRunner.runAdb.mockResolvedValue({
+        stdout: "Error: Activity not started, unable to resolve Intent",
+        stderr: "",
+        exitCode: 0,
+      });
+
+      const result = await adapter.startIntent("emulator-5554", {
+        action: "android.intent.action.VIEW",
+        data: "https://example.com/",
+      });
+
+      expect(result.ok).toBe(false);
+    });
+
+    it("throws when am start fails with non-zero exit", async () => {
+      mockRunner.runAdb.mockResolvedValue({
+        stdout: "",
+        stderr: "adb: device offline",
+        exitCode: 1,
+      });
+
+      await expect(
+        adapter.startIntent("emulator-5554", {
+          action: "android.intent.action.VIEW",
+          data: "https://example.com/",
+        }),
+      ).rejects.toThrow("am start failed");
+    });
+  });
 });

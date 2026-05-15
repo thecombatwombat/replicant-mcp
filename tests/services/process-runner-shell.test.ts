@@ -300,3 +300,134 @@ describe("ProcessRunner shell metacharacter and bypass prevention", () => {
     ).rejects.toThrow("Shell command 'reboot' is not allowed");
   });
 });
+
+// CU-2 (THE-106): the previous joined-string guard rejected URLs containing
+// `&` (and other embedded metacharacters), even though execa passes the URL
+// as a single argv entry — never through a shell. The per-arg guard allows
+// the URL through while still blocking real chains.
+describe("ProcessRunner shell payload — argv-aware metacharacter check (CU-2)", () => {
+  const runner = new ProcessRunner();
+
+  it("allows a URL with `?` and `&` inside a single arg (data URI)", async () => {
+    await runner.run("adb", [
+      "-s",
+      "emulator-5554",
+      "shell",
+      "am",
+      "start",
+      "-W",
+      "-a",
+      "android.intent.action.VIEW",
+      "-d",
+      "https://example.com/?foo=bar&baz=qux",
+    ]);
+  });
+
+  it("allows multiple `&`s embedded in a long URL", async () => {
+    await runner.run("adb", [
+      "-s",
+      "emulator-5554",
+      "shell",
+      "am",
+      "start",
+      "-a",
+      "android.intent.action.VIEW",
+      "-d",
+      "https://example.com/path?a=1&b=2&c=3&d=4",
+    ]);
+  });
+
+  it("still blocks `&&` chain inside a single arg", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "echo a&&reboot"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("still blocks a leading `&&` operator as its own arg", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "echo", "x", "&&", "reboot"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("still blocks `||` chain across args (joined)", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "echo", "x", "||", "reboot"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("still blocks `;` chain across args", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "ls", ";", "reboot"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("still blocks pipe with whitespace `cat foo | su`", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "cat /dev/null | su"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("still blocks `$VAR` expansion inside a single arg", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "echo $PATH"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("still blocks `$(...)` substitution inside a single arg", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "echo", "$(reboot)"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("still blocks backticks", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "echo", "`reboot`"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("still blocks `${VAR}` expansion", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "echo", "${PATH}"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("blocks an arg that starts with `&` (chain operator at start of arg)", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "echo", "&reboot"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("allows the literal `$` before digits (e.g., `$100`)", async () => {
+    await runner.run("adb", [
+      "-s",
+      "emulator-5554",
+      "shell",
+      "input",
+      "text",
+      "'$100'",
+    ]);
+  });
+
+  it("allows query params with `=` and `&` for typed-intent argv-style use", async () => {
+    // This mirrors how `AdbAdapter.startIntent` builds argv: each option pair
+    // is a separate arg, and the URL value is a single arg containing `&`.
+    await runner.run("adb", [
+      "-s",
+      "emulator-5554",
+      "shell",
+      "am",
+      "start",
+      "-W",
+      "-a",
+      "android.intent.action.VIEW",
+      "-d",
+      "https://example.com/?utm_source=replicant&utm_medium=mcp",
+      "--es",
+      "key1",
+      "value with spaces",
+      "--es",
+      "url",
+      "https://other.example/?x=1&y=2",
+    ]);
+  });
+});

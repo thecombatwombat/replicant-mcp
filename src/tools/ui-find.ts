@@ -1,6 +1,6 @@
 import { ServerContext } from "../server.js";
 import { OcrElement, UiConfig, ReplicantError, ErrorCode } from "../types/index.js";
-import { AccessibilityNode, flattenTree } from "../parsers/ui-dump.js";
+import { AccessibilityNode, flattenTree, isInteractiveNode } from "../parsers/ui-dump.js";
 import {
   FindElement,
   FindOptions,
@@ -16,6 +16,7 @@ export interface FindInput {
   maxTier?: number;
   gridCell?: number;
   gridPosition?: number;
+  interactiveOnly?: boolean;
 }
 
 export function isAccessibilityNode(el: FindElement): el is AccessibilityNode {
@@ -268,6 +269,14 @@ async function handleTextFind(
     getCurrentAppSafe(context, deviceId),
   ]);
 
+  if (input.interactiveOnly === true) {
+    // THE-109: prune non-interactive accessibility nodes after selector match.
+    // OCR/grid results pass through unchanged — they're inherently tap targets.
+    result.elements = result.elements.filter(
+      (el) => !isAccessibilityNode(el) || isInteractiveNode(el),
+    );
+  }
+
   let usedContainment = false;
   if (anchorCenter && result.elements.length > 0) {
     const accessibilityElements = result.elements.filter(isAccessibilityNode);
@@ -304,10 +313,13 @@ async function handleSelectorFind(
   config: UiConfig,
   deviceId: string
 ): Promise<Record<string, unknown>> {
-  const [elements, app] = await Promise.all([
+  const [elementsRaw, app] = await Promise.all([
     context.ui.find(deviceId, input.selector!),
     getCurrentAppSafe(context, deviceId),
   ]);
+  const elements = input.interactiveOnly === true
+    ? elementsRaw.filter(isInteractiveNode)
+    : elementsRaw;
   context.lastFindResults = elements;
 
   const response: Record<string, unknown> = {

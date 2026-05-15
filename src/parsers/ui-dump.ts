@@ -16,8 +16,22 @@ export interface AccessibilityNode {
   centerY: number;
   clickable: boolean;
   focusable: boolean;
+  longClickable?: boolean;
+  editable?: boolean;
   scrollable?: boolean;
   children?: AccessibilityNode[];
+}
+
+// True if any of the five flags listed in THE-109 is true. Used by the
+// `interactiveOnly` filter on ui-query find / dump.
+export function isInteractiveNode(node: AccessibilityNode): boolean {
+  return Boolean(
+    node.clickable ||
+      node.longClickable ||
+      node.focusable ||
+      node.editable ||
+      node.scrollable,
+  );
 }
 
 function parseAttributes(attrStr: string): Record<string, string> {
@@ -56,6 +70,12 @@ function parseNodeFromAttrs(attrs: Record<string, string>): AccessibilityNode {
     clickable: attrs.clickable === "true",
     focusable: attrs.focusable === "true",
   };
+  if (attrs["long-clickable"] !== undefined) {
+    node.longClickable = attrs["long-clickable"] === "true";
+  }
+  if (attrs.editable !== undefined) {
+    node.editable = attrs.editable === "true";
+  }
   if (attrs.scrollable !== undefined) {
     node.scrollable = attrs.scrollable === "true";
   }

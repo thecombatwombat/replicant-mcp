@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
 import { CACHE_TTLS, UiConfig, ReplicantError, ErrorCode } from "../types/index.js";
-import { AccessibilityNode, flattenTree } from "../parsers/ui-dump.js";
+import { AccessibilityNode, flattenTree, isInteractiveNode } from "../parsers/ui-dump.js";
 import { DEFAULT_CONFIG } from "../types/config.js";
 import { handleFind } from "./ui-find.js";
 import { getCurrentAppSafe, CurrentAppField } from "./util-current-app.js";
@@ -34,6 +34,11 @@ export const uiQueryInputSchema = toolSchema({
   compact: booleanInput()
     .optional()
     .describe("Paginated flat list (default: true). false for full tree."),
+  interactiveOnly: booleanInput()
+    .optional()
+    .describe(
+      "If true, keep only nodes where any of clickable, long-clickable, focusable, editable, or scrollable is true. Applied after selector matching, before pagination.",
+    ),
   limit: numberInput({ min: 1, max: 100 }).optional().describe("Default: 20"),
   offset: numberInput({ min: 0 }).optional(),
 });
@@ -129,7 +134,9 @@ function handleCompactDump(
   app: CurrentAppField | null,
 ): Record<string, unknown> {
   const flat = flattenTree(tree);
-  const interactive = flat.filter((n) => n.clickable || n.focusable);
+  const interactive = input.interactiveOnly === true
+    ? flat.filter(isInteractiveNode)
+    : flat.filter((n) => n.clickable || n.focusable);
 
   const limit = input.limit ?? 20;
   const offset = input.offset ?? 0;

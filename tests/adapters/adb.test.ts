@@ -186,6 +186,41 @@ describe("AdbAdapter", () => {
       expect(result.status).toBe("ok");
     });
 
+    it("uses -p (not -n .MainActivity) when only package is supplied (CU-2 follow-up)", async () => {
+      // Codex flagged that synthesising `<package>/.MainActivity` for
+      // package-only intents breaks common cases — VIEW URLs and apps whose
+      // launcher activity isn't `.MainActivity` fail with an unresolved
+      // component. The right primitive is `-p <package>` which limits the
+      // intent to the package and lets Android resolve the activity.
+      mockRunner.runAdb.mockResolvedValue({ stdout: okStdout, stderr: "", exitCode: 0 });
+
+      await adapter.startIntent("emulator-5554", {
+        action: "android.intent.action.VIEW",
+        data: "https://example.com/",
+        package: "com.example.app",
+      });
+
+      const args = mockRunner.runAdb.mock.calls[0][0];
+      expect(args).toEqual(expect.arrayContaining(["-p", "'com.example.app'"]));
+      // No synthesised .MainActivity component:
+      expect(args).not.toContain("-n");
+      expect(args.find((a: string) => a.includes(".MainActivity"))).toBeUndefined();
+    });
+
+    it("uses -n with the explicit component when both package and component are supplied", async () => {
+      mockRunner.runAdb.mockResolvedValue({ stdout: okStdout, stderr: "", exitCode: 0 });
+
+      await adapter.startIntent("emulator-5554", {
+        action: "android.intent.action.VIEW",
+        package: "com.example.app",
+        component: "com.example.app/.PreciseActivity",
+      });
+
+      const args = mockRunner.runAdb.mock.calls[0][0];
+      expect(args).toEqual(expect.arrayContaining(["-n", "'com.example.app/.PreciseActivity'"]));
+      expect(args).not.toContain("-p");
+    });
+
     it("omits -d when data is undefined", async () => {
       mockRunner.runAdb.mockResolvedValue({ stdout: okStdout, stderr: "", exitCode: 0 });
 

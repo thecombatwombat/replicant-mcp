@@ -219,11 +219,16 @@ export class AdbAdapter {
     if (intent.data !== undefined) {
       args.push("-d", quoteForDeviceShell(intent.data));
     }
-    if (intent.package !== undefined) {
-      const component = intent.component ?? `${intent.package}/.MainActivity`;
-      args.push("-n", quoteForDeviceShell(component));
-    } else if (intent.component !== undefined) {
+    // CU-2 follow-up: package-only intents use `-p <package>` so Android
+    // resolves the activity itself — synthesising `<package>/.MainActivity`
+    // would force `-n` at a component that doesn't exist for most apps
+    // (VIEW URLs, apps whose launcher isn't `.MainActivity`, etc.). Explicit
+    // component still goes through `-n` with the supplied value, regardless
+    // of whether package was also provided.
+    if (intent.component !== undefined) {
       args.push("-n", quoteForDeviceShell(intent.component));
+    } else if (intent.package !== undefined) {
+      args.push("-p", quoteForDeviceShell(intent.package));
     }
     if (intent.extras) {
       for (const [key, value] of Object.entries(intent.extras)) {

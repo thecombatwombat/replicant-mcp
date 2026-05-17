@@ -12,6 +12,17 @@ import { isAccessibilityNode } from "./ui-find.js";
 // Non-accessibility candidates (OCR, grid) score 0 — they're already
 // point-shaped tap targets and the heuristic doesn't apply.
 
+// CU-4 follow-up: bonuses must dominate the area penalty for typical UI
+// element sizes (50-200 px wide x 30-80 px tall → 1500-16000 px²). With
+// the original constants (1000/500/100), any clickable element more
+// than ~1000 px² larger than a non-clickable peer lost the ranking by
+// area dominance — defeating the whole purpose of the "best tappable"
+// heuristic. Scaled 100x so interactivity wins for elements up to ~100k
+// px², while area still distinguishes among interactive candidates and
+// still demotes truly full-screen containers (millions of px²).
+const CLICKABLE_BONUS = 100000;
+const LONG_CLICKABLE_BONUS = 50000;
+const FOCUSABLE_BONUS = 10000;
 const ROOT_AREA_RATIO = 0.9;
 const ROOT_PENALTY = 10000;
 
@@ -28,9 +39,9 @@ function nodeArea(node: AccessibilityNode): number {
 
 function scoreAxNode(node: AccessibilityNode, maxAreaInSet: number): number {
   let score = 0;
-  if (node.clickable) score += 1000;
-  if (node.longClickable) score += 500;
-  if (node.focusable) score += 100;
+  if (node.clickable) score += CLICKABLE_BONUS;
+  if (node.longClickable) score += LONG_CLICKABLE_BONUS;
+  if (node.focusable) score += FOCUSABLE_BONUS;
   const area = nodeArea(node);
   score -= area;
   if (maxAreaInSet > 0 && area >= maxAreaInSet * ROOT_AREA_RATIO) {

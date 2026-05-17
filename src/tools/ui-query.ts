@@ -127,7 +127,21 @@ async function handleDump(
     return handleCompactDump(tree, input, dumpId, deviceId, emptyWarning, coordMeta, app);
   }
 
-  return handleFullDump(tree, dumpId, deviceId, emptyWarning, coordMeta, app);
+  return handleFullDump(tree, input, dumpId, deviceId, emptyWarning, coordMeta, app);
+}
+
+// CU-5 follow-up: prune a tree to keep only subtrees that contain at least
+// one interactive descendant (or that are interactive themselves). The shape
+// of the tree is preserved — structural ancestors of interactive nodes stay
+// so callers retain the hierarchical context that distinguishes full-tree
+// mode from compact mode.
+function pruneToInteractive(node: AccessibilityNode): AccessibilityNode | null {
+  const prunedChildren = node.children
+    ?.map(pruneToInteractive)
+    .filter((c): c is AccessibilityNode => c !== null);
+  const keep = isInteractiveNode(node) || (prunedChildren !== undefined && prunedChildren.length > 0);
+  if (!keep) return null;
+  return { ...node, children: prunedChildren };
 }
 
 function handleCompactDump(
@@ -184,12 +198,19 @@ function handleCompactDump(
 
 function handleFullDump(
   tree: AccessibilityNode[],
+  input: UiQueryInput,
   dumpId: string,
   deviceId: string,
   emptyWarning: string | undefined,
   coordMeta: DumpCoordinateMeta,
   app: CurrentAppField | null,
 ): Record<string, unknown> {
+  const effectiveTree = input.interactiveOnly === true
+    ? tree
+        .map(pruneToInteractive)
+        .filter((n): n is AccessibilityNode => n !== null)
+    : tree;
+
   const simplifyNode = (node: AccessibilityNode): Record<string, unknown> => ({
     className: node.className.split(".").pop(),
     text: node.text || undefined,
@@ -201,7 +222,7 @@ function handleFullDump(
 
   return {
     dumpId,
-    tree: tree.map((n) => simplifyNode(n)),
+    tree: effectiveTree.map((n) => simplifyNode(n)),
     deviceId,
     app,
     ...coordMeta,

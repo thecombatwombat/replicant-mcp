@@ -76,6 +76,27 @@ describe("rankBestTappable (THE-108)", () => {
     expect(result.ranked[0].resourceId).toBe("inner");
   });
 
+  it("picks a small clickable Button over a smaller non-clickable label (CU-4 follow-up)", () => {
+    // Greptile flagged that in `{ Button(100x40=4000px², clickable),
+    // TextView(80x16=1280px², non-clickable) }`, the non-clickable label
+    // won. The clickable bonus was too small to dominate the area-penalty
+    // difference (2720 px²), and the root penalty (largest in set) made
+    // it worse. The fix dominates the area penalty for typical UI element
+    // sizes so interactivity wins for similarly-tiny candidates.
+    const button = axNode({
+      resourceId: "button",
+      clickable: true,
+      bounds: { left: 0, top: 0, right: 100, bottom: 40 },
+    });
+    const label = axNode({
+      resourceId: "label",
+      clickable: false,
+      bounds: { left: 0, top: 0, right: 80, bottom: 16 },
+    });
+    const result = rankBestTappable([button, label]);
+    expect(result.ranked[0].resourceId).toBe("button");
+  });
+
   it("emits pickedRationale and alternatives for multi-candidate inputs", () => {
     const a = axNode({ resourceId: "a", clickable: true, bounds: { left: 0, top: 0, right: 80, bottom: 60 } });
     const b = axNode({ resourceId: "b", clickable: false, bounds: { left: 0, top: 0, right: 80, bottom: 60 } });

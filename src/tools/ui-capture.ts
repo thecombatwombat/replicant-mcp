@@ -82,12 +82,17 @@ async function handleScreenshot(
   // THE-111: pin per-screenshot scaling under a stable id so a later
   // `ui-action tap` with image-space coords converts against THIS screenshot,
   // not the global adapter state (which the next screenshot would overwrite).
-  const screenshotId = context.cache.generateId("screenshot");
+  // CU-7 follow-up: only mint a screenshotId when we can also populate its
+  // cache entry. ScreenshotResult marks scaleFactor/device/image optional, so
+  // adapters that don't supply them would otherwise hand callers an id that
+  // throws UNKNOWN_SCREENSHOT_ID on first use.
+  let screenshotId: string | undefined;
   if (
     result.scaleFactor !== undefined &&
     result.device !== undefined &&
     result.image !== undefined
   ) {
+    screenshotId = context.cache.generateId("screenshot");
     const entry: ScreenshotScalingEntry = {
       scaleFactor: result.scaleFactor,
       deviceWidth: result.device.width,

@@ -342,7 +342,10 @@ describe("ProcessRunner shell metacharacter and bypass prevention", () => {
 describe("ProcessRunner shell payload — argv-aware metacharacter check (CU-2)", () => {
   const runner = new ProcessRunner();
 
-  it("allows a URL with `?` and `&` inside a single arg (data URI)", async () => {
+  it("allows a single-quoted URL with `?` and `&` inside a single arg (data URI)", async () => {
+    // Post-F3, `AdbAdapter.startIntent` wraps user-controlled URL values in
+    // single quotes via `quoteForDeviceShell` so the device shell treats the
+    // URL as a literal token. The guard mirrors that quoting contract.
     await runner.run("adb", [
       "-s",
       "emulator-5554",
@@ -353,11 +356,11 @@ describe("ProcessRunner shell payload — argv-aware metacharacter check (CU-2)"
       "-a",
       "android.intent.action.VIEW",
       "-d",
-      "https://example.com/?foo=bar&baz=qux",
+      "'https://example.com/?foo=bar&baz=qux'",
     ]);
   });
 
-  it("allows multiple `&`s embedded in a long URL", async () => {
+  it("allows multiple `&`s embedded in a single-quoted long URL", async () => {
     await runner.run("adb", [
       "-s",
       "emulator-5554",
@@ -367,7 +370,7 @@ describe("ProcessRunner shell payload — argv-aware metacharacter check (CU-2)"
       "-a",
       "android.intent.action.VIEW",
       "-d",
-      "https://example.com/path?a=1&b=2&c=3&d=4",
+      "'https://example.com/path?a=1&b=2&c=3&d=4'",
     ]);
   });
 
@@ -443,8 +446,11 @@ describe("ProcessRunner shell payload — argv-aware metacharacter check (CU-2)"
   });
 
   it("allows query params with `=` and `&` for typed-intent argv-style use", async () => {
-    // This mirrors how `AdbAdapter.startIntent` builds argv: each option pair
-    // is a separate arg, and the URL value is a single arg containing `&`.
+    // This mirrors how `AdbAdapter.startIntent` builds argv post-F3: each
+    // option pair is a separate arg, and user-controlled values (URL, extras)
+    // are wrapped in single quotes via `quoteForDeviceShell` so the device
+    // shell sees them as literal tokens. The argv-aware guard must therefore
+    // treat `&` inside a single-quoted span as data.
     await runner.run("adb", [
       "-s",
       "emulator-5554",
@@ -455,13 +461,65 @@ describe("ProcessRunner shell payload — argv-aware metacharacter check (CU-2)"
       "-a",
       "android.intent.action.VIEW",
       "-d",
-      "https://example.com/?utm_source=replicant&utm_medium=mcp",
+      "'https://example.com/?utm_source=replicant&utm_medium=mcp'",
       "--es",
       "key1",
-      "value with spaces",
+      "'value with spaces'",
       "--es",
       "url",
-      "https://other.example/?x=1&y=2",
+      "'https://other.example/?x=1&y=2'",
+    ]);
+  });
+
+  // CU-2 follow-up #2 (Codex P1): the previous `(?<!&)&(\s|$)` regex only
+  // caught `&` followed by whitespace/EOA. `/bin/sh` treats an UNQUOTED `&`
+  // as a control operator regardless of what follows — `echo ok&PWNED` glues
+  // a backgrounded `echo` to a second command. We can't fix this with a
+  // tighter regex because the legitimate F3 flow passes URLs containing
+  // `&` between alphanumerics inside single quotes. The fix is a quote-aware
+  // scanner: any `&` outside `'...'` / `"..."` (and not part of `&&`) is
+  // composition and rejected.
+  it("blocks single & glued to next command word (echo ok&PWNED)", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "echo ok&PWNED"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("blocks & followed by a digit (cmd&5 — data-looking glue)", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "cmd&5"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("blocks & followed by a letter (cmd&x — data-looking glue)", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "cmd&x"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("allows & inside a single-quoted URL token", async () => {
+    // Mirrors the F3-wrapped value `AdbAdapter.startIntent` emits.
+    await runner.run("adb", [
+      "-s",
+      "emulator-5554",
+      "shell",
+      "am",
+      "start",
+      "-a",
+      "android.intent.action.VIEW",
+      "-d",
+      "'https://x/?a=1&b=2'",
+    ]);
+  });
+
+  it("allows & inside a double-quoted span", async () => {
+    // The typed-intent path uses single quotes, but the scanner honours
+    // double quotes too for symmetry with /bin/sh's quoting rules.
+    await runner.run("adb", [
+      "-s",
+      "emulator-5554",
+      "shell",
+      'echo "ok & noop"',
     ]);
   });
 });

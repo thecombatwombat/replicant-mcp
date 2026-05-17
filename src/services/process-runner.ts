@@ -217,6 +217,56 @@ export class ProcessRunner {
         );
       }
     }
+    rejectUnquotedAmpersand(arg);
+  }
+}
+
+// CU-2 follow-up #2 (Codex P1). The previous `(?<!&)&(\s|$)` regex caught
+// only `&` followed by whitespace/end-of-arg, leaving `echo ok&PWNED` to
+// slip through — `/bin/sh` treats `&` as a control operator regardless of
+// what character follows. The temptation is to tighten to `(?<!&)&(?!&)`,
+// but that would also reject the legitimate F3 flow where
+// `AdbAdapter.startIntent` wraps user-controlled URLs in single quotes
+// (`'https://x/?a=1&b=2'`) — the `&` between `r` and `b` is data, not a
+// control operator, because it's inside a quoted span.
+//
+// So we walk the arg character by character, tracking quote state. Outside
+// any quoted span, a single `&` (not part of `&&`) is composition and gets
+// rejected. Inside `'...'` or `"..."`, `&` is literal data and passes
+// through. Both quote styles are honoured: the typed-intent path uses
+// single quotes, but double quotes get the same treatment for symmetry
+// with /bin/sh's quoting rules. Unbalanced trailing quotes just let the
+// iteration end — the other SHELL_COMPOSITION_PATTERNS already cover any
+// composition attempt that survives via different characters.
+function rejectUnquotedAmpersand(arg: string): void {
+  let inSingle = false;
+  let inDouble = false;
+  for (let i = 0; i < arg.length; i++) {
+    const ch = arg[i];
+    if (!inDouble && ch === "'") {
+      inSingle = !inSingle;
+      continue;
+    }
+    if (!inSingle && ch === '"') {
+      inDouble = !inDouble;
+      continue;
+    }
+    if (inSingle || inDouble) continue;
+    if (ch === "&") {
+      // `&&` is composition too, but it's caught by its dedicated
+      // SHELL_COMPOSITION_PATTERNS entry. Skip past the pair here so we
+      // don't double-fire and so a stray `&&&` still trips us on the third
+      // ampersand if it ever reached this scanner.
+      if (arg[i + 1] === "&") {
+        i++;
+        continue;
+      }
+      throw new ReplicantError(
+        ErrorCode.COMMAND_BLOCKED,
+        "Shell metacharacters are not allowed in shell commands",
+        "Use simple commands without chaining, pipes, or substitution",
+      );
+    }
   }
 }
 
@@ -243,12 +293,11 @@ const SHELL_COMPOSITION_PATTERNS: ReadonlyArray<{
   { pattern: /;/, description: "semicolon chain" },
   // `&&` / `||` anywhere is composition.
   { pattern: /&&|\|\|/, description: "&& or || chain" },
-  // CU-2 follow-up: single `&` followed by whitespace or end-of-arg is the
-  // shell's "background previous command" operator. URLs use `&` between
-  // alphanumerics (`?a=1&b=2`) with no surrounding whitespace — those flow
-  // through. The lookbehind keeps the pattern from double-firing on `&&`,
-  // which is already caught above.
-  { pattern: /(?<!&)&(\s|$)/, description: "single & chain operator" },
+  // CU-2 follow-up #2: bare `&` is composition (`/bin/sh` treats it as a
+  // control operator regardless of what follows), but inside `'...'` /
+  // `"..."` it's literal data — the F3 typed-intent path wraps URLs in
+  // single quotes. A regex can't honour quote spans, so the quote-aware
+  // scanner `rejectUnquotedAmpersand` handles single `&` separately.
   // Pipe with whitespace on either side: `cmd | other`. Glued `a|b` slips
   // through deliberately (regex/URL alternates).
   { pattern: /\s\|\s|\|\s|\s\|/, description: "pipe with whitespace" },

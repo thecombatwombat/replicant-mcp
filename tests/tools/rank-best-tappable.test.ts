@@ -76,6 +76,27 @@ describe("rankBestTappable (THE-108)", () => {
     expect(result.ranked[0].resourceId).toBe("inner");
   });
 
+  it("picks a wide clickable row over a non-clickable child label (CU-4 follow-up #2)", () => {
+    // Codex pointed out that a full-width list row (1080x120 ≈ 130k px²) is a
+    // common Android tap target. With a linear area penalty it loses to a
+    // small non-clickable child even when bonuses are boosted. The fix is to
+    // use sqrt(area) so the area term grows slowly enough that interactivity
+    // wins for typical row-sized targets while still demoting full-screen
+    // containers (millions of px²).
+    const row = axNode({
+      resourceId: "row",
+      clickable: true,
+      bounds: { left: 0, top: 0, right: 1080, bottom: 120 },
+    });
+    const childLabel = axNode({
+      resourceId: "child",
+      clickable: false,
+      bounds: { left: 60, top: 40, right: 460, bottom: 70 },
+    });
+    const result = rankBestTappable([row, childLabel]);
+    expect(result.ranked[0].resourceId).toBe("row");
+  });
+
   it("picks a small clickable Button over a smaller non-clickable label (CU-4 follow-up)", () => {
     // Greptile flagged that in `{ Button(100x40=4000px², clickable),
     // TextView(80x16=1280px², non-clickable) }`, the non-clickable label

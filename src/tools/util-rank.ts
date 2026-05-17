@@ -6,25 +6,27 @@ import { isAccessibilityNode } from "./ui-find.js";
 //   + strong bonus for clickable
 //   + medium bonus for long-clickable
 //   + small bonus for focusable
-//   - penalty proportional to bounding-box area (smaller = better)
-//   - heavy penalty for candidates whose area is >= 90% of the largest area
-//     in the candidate set (treated as a full-screen / root container)
+//   - penalty proportional to sqrt(bounding-box area) — smaller = better,
+//     but grows slowly enough that wide full-width rows still beat tiny
+//     non-interactive labels (typical Android list rows are ~1080x120 ≈
+//     130k px², while truly full-screen containers are millions of px²;
+//     sqrt lets us distinguish those scales without overpowering the
+//     clickable bonus for the merely-wide-row case).
 // Non-accessibility candidates (OCR, grid) score 0 — they're already
 // point-shaped tap targets and the heuristic doesn't apply.
 
-// CU-4 follow-up: bonuses must dominate the area penalty for typical UI
-// element sizes (50-200 px wide x 30-80 px tall → 1500-16000 px²). With
-// the original constants (1000/500/100), any clickable element more
-// than ~1000 px² larger than a non-clickable peer lost the ranking by
-// area dominance — defeating the whole purpose of the "best tappable"
-// heuristic. Scaled 100x so interactivity wins for elements up to ~100k
-// px², while area still distinguishes among interactive candidates and
-// still demotes truly full-screen containers (millions of px²).
+// CU-4 follow-up #2: the first follow-up scaled bonuses 100x to fix a
+// scoring inversion against tiny non-clickable peers, but a linear
+// `-area` term still demoted common full-width row targets (~130k px²)
+// below their non-clickable children. Switching to sqrt(area) flattens
+// the penalty curve so it grows from ~6k @ 4000 px² to ~36k @ 130k px²
+// to ~158k @ 2.5M px² — leaving the bonus (100k for clickable) dominant
+// across the typical-target range and still demotive for full-screen
+// containers.
 const CLICKABLE_BONUS = 100000;
 const LONG_CLICKABLE_BONUS = 50000;
 const FOCUSABLE_BONUS = 10000;
-const ROOT_AREA_RATIO = 0.9;
-const ROOT_PENALTY = 10000;
+const AREA_PENALTY_SCALE = 100;
 
 export interface RankResult<T> {
   ranked: T[];
@@ -37,16 +39,12 @@ function nodeArea(node: AccessibilityNode): number {
   return Math.max(0, b.right - b.left) * Math.max(0, b.bottom - b.top);
 }
 
-function scoreAxNode(node: AccessibilityNode, maxAreaInSet: number): number {
+function scoreAxNode(node: AccessibilityNode): number {
   let score = 0;
   if (node.clickable) score += CLICKABLE_BONUS;
   if (node.longClickable) score += LONG_CLICKABLE_BONUS;
   if (node.focusable) score += FOCUSABLE_BONUS;
-  const area = nodeArea(node);
-  score -= area;
-  if (maxAreaInSet > 0 && area >= maxAreaInSet * ROOT_AREA_RATIO) {
-    score -= ROOT_PENALTY;
-  }
+  score -= Math.sqrt(nodeArea(node)) * AREA_PENALTY_SCALE;
   return score;
 }
 
@@ -86,7 +84,7 @@ export function rankBestTappable<T extends FindElement>(elements: T[]): RankResu
     return {
       el,
       ax,
-      score: ax ? scoreAxNode(ax, maxArea) : 0,
+      score: ax ? scoreAxNode(ax) : 0,
       area: ax ? nodeArea(ax) : null,
     };
   });

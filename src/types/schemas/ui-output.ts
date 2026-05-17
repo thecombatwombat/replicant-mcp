@@ -35,6 +35,13 @@ const DumpCoordMetaShape = {
   imageDimensions: z.object({ width: z.number(), height: z.number() }).optional(),
 };
 
+// CU-1 follow-up: foreground-app surface returned alongside UI responses.
+// Nullable because `getCurrentAppSafe` returns null on adb hiccups.
+const AppFieldSchema = z.object({
+  packageName: z.string(),
+  activityName: z.string(),
+}).nullable();
+
 /**
  * Output for ui dump operation (full mode)
  */
@@ -42,6 +49,7 @@ export const UiDumpFullOutput = z.object({
   dumpId: z.string(),
   tree: z.array(SimplifiedNodeSchema),
   deviceId: z.string(),
+  app: AppFieldSchema.optional(),
   ...DumpCoordMetaShape,
   warning: z.string().optional(),
 });
@@ -69,6 +77,7 @@ export const UiDumpCompactOutput = z.object({
   offset: z.number(),
   limit: z.number(),
   deviceId: z.string(),
+  app: AppFieldSchema.optional(),
   ...DumpCoordMetaShape,
   hint: z.string().optional(),
   warning: z.string().optional(),
@@ -97,6 +106,7 @@ export const UiFindOutput = z.object({
   elements: z.array(FindElementSchema),
   count: z.number(),
   deviceId: z.string(),
+  app: AppFieldSchema.optional(),
   tier: z.number().optional(),
   confidence: z.enum(["high", "medium", "low"]).optional(),
   stoppedEarly: z.boolean().optional(),

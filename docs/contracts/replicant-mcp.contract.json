@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-05-15T19:05:00.452Z",
+  "generatedAt": "2026-05-17T05:06:27.418Z",
   "tools": {
     "cache": {
       "inputSchema": {
@@ -1723,6 +1723,29 @@
             "deviceId": {
               "type": "string"
             },
+            "app": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "packageName": {
+                      "type": "string"
+                    },
+                    "activityName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "packageName",
+                    "activityName"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "coordinateSpace": {
               "type": "string",
               "const": "device"
@@ -1859,6 +1882,29 @@
             },
             "deviceId": {
               "type": "string"
+            },
+            "app": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "packageName": {
+                      "type": "string"
+                    },
+                    "activityName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "packageName",
+                    "activityName"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "coordinateSpace": {
               "type": "string",
@@ -2012,6 +2058,29 @@
             },
             "deviceId": {
               "type": "string"
+            },
+            "app": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "packageName": {
+                      "type": "string"
+                    },
+                    "activityName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "packageName",
+                    "activityName"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "tier": {
               "type": "number"

@@ -59,7 +59,12 @@ describe("Token budget", () => {
     //                sub-keys (resourceId/text/textContains/className/nearestTo)
     //                cost ~20 tokens; descriptions on the field itself were trimmed
     //                to absorb most of it.
-    const TOKEN_CEILING = 2200;
+    //   2200 → 2600: COMPUTER-USE part 1 (THE-105..THE-111). ui-query gains
+    //                interactiveOnly + selector.rank; ui-action gains
+    //                imageX/imageY/screenshotId + selector.rank; both grew
+    //                describe text materially. Schemas auto-derive from Zod
+    //                so every describe lands in the wire schema.
+    const TOKEN_CEILING = 2600;
 
     expect(estimatedTokens).toBeLessThanOrEqual(TOKEN_CEILING);
   });

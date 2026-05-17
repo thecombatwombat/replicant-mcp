@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Effective date:** April 6, 2026
+**Effective date:** May 16, 2026
 
 Replicant MCP is a local Model Context Protocol (MCP) server for Android development. This policy explains what data it accesses, where that data goes, and what it does not do.
 
@@ -9,6 +9,7 @@ Replicant MCP is a local Model Context Protocol (MCP) server for Android develop
 Replicant MCP connects to Android devices and emulators via ADB (Android Debug Bridge). Through this connection it may access:
 
 - **Screenshots and UI hierarchy** for screen analysis and interaction
+- **Foreground app identity** (package name + top activity), returned alongside UI dump, find, and screenshot responses so the AI assistant can correlate UI state with the app under test
 - **Logcat output** for debugging
 - **Device information** such as model, OS version, and installed apps
 - **Gradle project structure** for build and test operations

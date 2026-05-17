@@ -32,6 +32,7 @@ export const ErrorCode = {
 
   // Cache errors
   CACHE_MISS: "CACHE_MISS",
+  UNKNOWN_SCREENSHOT_ID: "UNKNOWN_SCREENSHOT_ID",
 
   // New "Just Works" UX error codes
   SDK_NOT_FOUND: "SDK_NOT_FOUND",

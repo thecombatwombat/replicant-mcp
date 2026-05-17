@@ -29,4 +29,5 @@ export const CACHE_TTLS = {
   GRADLE_VARIANTS: 60 * 60 * 1000, // 1 hour
   LOGCAT: 5 * 60 * 1000, // 5 min
   DEVICE_PROPERTIES: 5 * 60 * 1000, // 5 min
+  SCREENSHOT_SCALING: 5 * 60 * 1000, // 5 min — see DECISIONS.md [THE-111]
 } as const;

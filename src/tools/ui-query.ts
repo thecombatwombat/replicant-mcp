@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { ServerContext } from "../server.js";
 import { CACHE_TTLS, UiConfig, ReplicantError, ErrorCode } from "../types/index.js";
-import { AccessibilityNode, flattenTree } from "../parsers/ui-dump.js";
+import { AccessibilityNode, flattenTree, isInteractiveNode } from "../parsers/ui-dump.js";
 import { DEFAULT_CONFIG } from "../types/config.js";
 import { handleFind } from "./ui-find.js";
+import { getCurrentAppSafe, CurrentAppField } from "./util-current-app.js";
 import {
   booleanInput,
   jsonObjectInput,
@@ -23,6 +24,12 @@ export const uiQueryInputSchema = toolSchema({
       .string()
       .optional()
       .describe("Find elements nearest to this text (spatial proximity)"),
+    rank: z
+      .enum(["bestTappable"])
+      .optional()
+      .describe(
+        "Rank matches by tappability heuristics (THE-108). Prefers clickable, smaller bounding box, penalizes full-screen containers.",
+      ),
   }).optional(),
   debug: booleanInput().optional(),
   maxTier: numberInput({ min: 1, max: 5 })
@@ -33,6 +40,11 @@ export const uiQueryInputSchema = toolSchema({
   compact: booleanInput()
     .optional()
     .describe("Paginated flat list (default: true). false for full tree."),
+  interactiveOnly: booleanInput()
+    .optional()
+    .describe(
+      "If true, keep only nodes where any of clickable, long-clickable, focusable, editable, or scrollable is true. Applied after selector matching, before pagination.",
+    ),
   limit: numberInput({ min: 1, max: 100 }).optional().describe("Default: 20"),
   offset: numberInput({ min: 0 }).optional(),
 });
@@ -97,7 +109,10 @@ async function handleDump(
   _config: UiConfig,
   deviceId: string,
 ): Promise<Record<string, unknown>> {
-  const tree = await context.ui.dump(deviceId);
+  const [tree, app] = await Promise.all([
+    context.ui.dump(deviceId),
+    getCurrentAppSafe(context, deviceId),
+  ]);
 
   const dumpId = context.cache.generateId("ui-dump");
   context.cache.set(dumpId, { tree, deviceId }, "ui-dump", CACHE_TTLS.UI_TREE);
@@ -109,10 +124,24 @@ async function handleDump(
   const coordMeta = buildCoordinateMeta(context);
 
   if (input.compact !== false) {
-    return handleCompactDump(tree, input, dumpId, deviceId, emptyWarning, coordMeta);
+    return handleCompactDump(tree, input, dumpId, deviceId, emptyWarning, coordMeta, app);
   }
 
-  return handleFullDump(tree, dumpId, deviceId, emptyWarning, coordMeta);
+  return handleFullDump(tree, input, dumpId, deviceId, emptyWarning, coordMeta, app);
+}
+
+// CU-5 follow-up: prune a tree to keep only subtrees that contain at least
+// one interactive descendant (or that are interactive themselves). The shape
+// of the tree is preserved — structural ancestors of interactive nodes stay
+// so callers retain the hierarchical context that distinguishes full-tree
+// mode from compact mode.
+function pruneToInteractive(node: AccessibilityNode): AccessibilityNode | null {
+  const prunedChildren = node.children
+    ?.map(pruneToInteractive)
+    .filter((c): c is AccessibilityNode => c !== null);
+  const keep = isInteractiveNode(node) || (prunedChildren !== undefined && prunedChildren.length > 0);
+  if (!keep) return null;
+  return { ...node, children: prunedChildren };
 }
 
 function handleCompactDump(
@@ -122,9 +151,12 @@ function handleCompactDump(
   deviceId: string,
   emptyWarning: string | undefined,
   coordMeta: DumpCoordinateMeta,
+  app: CurrentAppField | null,
 ): Record<string, unknown> {
   const flat = flattenTree(tree);
-  const interactive = flat.filter((n) => n.clickable || n.focusable);
+  const interactive = input.interactiveOnly === true
+    ? flat.filter(isInteractiveNode)
+    : flat.filter((n) => n.clickable || n.focusable);
 
   const limit = input.limit ?? 20;
   const offset = input.offset ?? 0;
@@ -157,6 +189,7 @@ function handleCompactDump(
     offset,
     limit,
     deviceId,
+    app,
     ...coordMeta,
     hint,
     warning: emptyWarning || noInteractiveWarning,
@@ -165,11 +198,19 @@ function handleCompactDump(
 
 function handleFullDump(
   tree: AccessibilityNode[],
+  input: UiQueryInput,
   dumpId: string,
   deviceId: string,
   emptyWarning: string | undefined,
   coordMeta: DumpCoordinateMeta,
+  app: CurrentAppField | null,
 ): Record<string, unknown> {
+  const effectiveTree = input.interactiveOnly === true
+    ? tree
+        .map(pruneToInteractive)
+        .filter((n): n is AccessibilityNode => n !== null)
+    : tree;
+
   const simplifyNode = (node: AccessibilityNode): Record<string, unknown> => ({
     className: node.className.split(".").pop(),
     text: node.text || undefined,
@@ -181,8 +222,9 @@ function handleFullDump(
 
   return {
     dumpId,
-    tree: tree.map((n) => simplifyNode(n)),
+    tree: effectiveTree.map((n) => simplifyNode(n)),
     deviceId,
+    app,
     ...coordMeta,
     warning: emptyWarning,
   };

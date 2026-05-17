@@ -1,6 +1,6 @@
 import { ServerContext } from "../server.js";
 import { OcrElement, UiConfig, ReplicantError, ErrorCode } from "../types/index.js";
-import { AccessibilityNode, flattenTree } from "../parsers/ui-dump.js";
+import { AccessibilityNode, flattenTree, isInteractiveNode } from "../parsers/ui-dump.js";
 import {
   FindElement,
   FindOptions,
@@ -8,13 +8,23 @@ import {
   FindWithFallbacksResult,
   GridElement,
 } from "../types/icon-recognition.js";
+import { getCurrentAppSafe } from "./util-current-app.js";
+import { rankBestTappable } from "./util-rank.js";
 
 export interface FindInput {
-  selector?: { resourceId?: string; text?: string; textContains?: string; className?: string; nearestTo?: string };
+  selector?: {
+    resourceId?: string;
+    text?: string;
+    textContains?: string;
+    className?: string;
+    nearestTo?: string;
+    rank?: "bestTappable";
+  };
   debug?: boolean;
   maxTier?: number;
   gridCell?: number;
   gridPosition?: number;
+  interactiveOnly?: boolean;
 }
 
 export function isAccessibilityNode(el: FindElement): el is AccessibilityNode {
@@ -262,7 +272,27 @@ async function handleTextFind(
     : null;
   const findOptions = buildFindOptions(input, debug, config);
 
-  const result = await context.ui.findWithFallbacks(deviceId, input.selector!, findOptions);
+  const [result, app] = await Promise.all([
+    context.ui.findWithFallbacks(deviceId, input.selector!, findOptions),
+    getCurrentAppSafe(context, deviceId),
+  ]);
+
+  if (input.interactiveOnly === true) {
+    // THE-109: prune non-interactive accessibility nodes after selector match.
+    // OCR/grid results pass through unchanged — they're inherently tap targets.
+    result.elements = result.elements.filter(
+      (el) => !isAccessibilityNode(el) || isInteractiveNode(el),
+    );
+  }
+
+  let pickedRationale: string | undefined;
+  let alternativeSummaries: Array<Record<string, unknown>> | undefined;
+  if (input.selector?.rank === "bestTappable") {
+    const ranked = rankBestTappable(result.elements);
+    result.elements = ranked.ranked;
+    pickedRationale = ranked.pickedRationale;
+    alternativeSummaries = ranked.alternativeSummaries;
+  }
 
   let usedContainment = false;
   if (anchorCenter && result.elements.length > 0) {
@@ -284,11 +314,14 @@ async function handleTextFind(
     elements: result.elements.map((el, index) => formatElement(el, index, debug)),
     count: result.elements.length,
     deviceId,
+    app,
   };
 
   appendResultMetadata(response, result, debug);
   appendNearestToMetadata(response, nearestTo, anchorCenter, usedContainment);
   appendFallbackPayload(response, result);
+  if (pickedRationale) response.pickedRationale = pickedRationale;
+  if (alternativeSummaries) response.alternatives = alternativeSummaries;
 
   return response;
 }
@@ -299,7 +332,21 @@ async function handleSelectorFind(
   config: UiConfig,
   deviceId: string
 ): Promise<Record<string, unknown>> {
-  const elements = await context.ui.find(deviceId, input.selector!);
+  const [elementsRaw, app] = await Promise.all([
+    context.ui.find(deviceId, input.selector!),
+    getCurrentAppSafe(context, deviceId),
+  ]);
+  let elements: AccessibilityNode[] = input.interactiveOnly === true
+    ? elementsRaw.filter(isInteractiveNode)
+    : elementsRaw;
+  let pickedRationale: string | undefined;
+  let alternativeSummaries: Array<Record<string, unknown>> | undefined;
+  if (input.selector?.rank === "bestTappable") {
+    const ranked = rankBestTappable(elements);
+    elements = ranked.ranked as AccessibilityNode[];
+    pickedRationale = ranked.pickedRationale;
+    alternativeSummaries = ranked.alternativeSummaries;
+  }
   context.lastFindResults = elements;
 
   const response: Record<string, unknown> = {
@@ -315,6 +362,7 @@ async function handleSelectorFind(
     })),
     count: elements.length,
     deviceId,
+    app,
   };
 
   if (elements.length === 0 && config.autoFallbackScreenshot) {
@@ -326,6 +374,9 @@ async function handleSelectorFind(
       hint: "No elements matched selector. Use screenshot to identify tap coordinates.",
     };
   }
+
+  if (pickedRationale) response.pickedRationale = pickedRationale;
+  if (alternativeSummaries) response.alternatives = alternativeSummaries;
 
   return response;
 }

@@ -3,6 +3,10 @@ import * as os from "os";
 import sharp from "sharp";
 import { AdbAdapter } from "./adb.js";
 import { parseUiDump, findElements, flattenTree, AccessibilityNode } from "../parsers/ui-dump.js";
+import {
+  parseCurrentAppFromDumpsysActivities,
+  parseCurrentAppFromDumpsysWindow,
+} from "../parsers/dumpsys-current-app.js";
 import { ReplicantError, ErrorCode, VisualSnapshot } from "../types/index.js";
 import {
   FindWithFallbacksResult,
@@ -371,40 +375,17 @@ export class UiAutomatorAdapter {
   }
 
   async getCurrentApp(deviceId: string): Promise<CurrentApp> {
-    // Get current focused activity
-    const result = await this.adb.shell(
-      deviceId,
-      "dumpsys activity activities | grep mResumedActivity"
-    );
+    // Parse dumpsys output in TS — the shell safety guard blocks `|`, so we
+    // cannot pipe to `grep` here (THE-105).
+    const activities = await this.adb.shell(deviceId, "dumpsys activity activities");
+    const primary = parseCurrentAppFromDumpsysActivities(activities.stdout);
+    if (primary) return primary;
 
-    // Parse: mResumedActivity: ActivityRecord{... com.example/.MainActivity t123}
-    const match = result.stdout.match(/([a-zA-Z0-9_.]+)\/([a-zA-Z0-9_.]+)\s+/);
+    const window = await this.adb.shell(deviceId, "dumpsys window");
+    const fallback = parseCurrentAppFromDumpsysWindow(window.stdout);
+    if (fallback) return fallback;
 
-    if (match) {
-      return {
-        packageName: match[1],
-        activityName: match[2],
-      };
-    }
-
-    // Fallback to simpler approach
-    const fallbackResult = await this.adb.shell(
-      deviceId,
-      "dumpsys window | grep mCurrentFocus"
-    );
-    const fallbackMatch = fallbackResult.stdout.match(/([a-zA-Z0-9_.]+)\/([a-zA-Z0-9_.]+)/);
-
-    if (fallbackMatch) {
-      return {
-        packageName: fallbackMatch[1],
-        activityName: fallbackMatch[2],
-      };
-    }
-
-    return {
-      packageName: "unknown",
-      activityName: "unknown",
-    };
+    return { packageName: "unknown", activityName: "unknown" };
   }
 
   async visualSnapshot(

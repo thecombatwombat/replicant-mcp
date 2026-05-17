@@ -5,6 +5,9 @@ import { DEFAULT_CONFIG } from "../types/config.js";
 import { getElementCenter, handleFind, isAccessibilityNode } from "./ui-find.js";
 import { AccessibilityNode, flattenTree } from "../parsers/ui-dump.js";
 import { FindElement } from "../types/icon-recognition.js";
+import { rankBestTappable } from "./util-rank.js";
+import { ScreenshotScalingEntry } from "./ui-capture.js";
+import { toDeviceSpace } from "../services/scaling.js";
 import { booleanInput, jsonObjectInput, numberInput, toolSchema } from "../schemas/inputs.js";
 import { toMcpJsonSchema } from "../schemas/derive.js";
 
@@ -12,6 +15,20 @@ export const uiActionInputSchema = toolSchema({
   operation: z.enum(["tap", "input", "scroll"]),
   x: numberInput().optional(),
   y: numberInput().optional(),
+  imageX: numberInput()
+    .optional()
+    .describe(
+      "Image-space X coord. Pair with `screenshotId` to tap what you see in a screenshot without manually unscaling (THE-111).",
+    ),
+  imageY: numberInput()
+    .optional()
+    .describe("Image-space Y coord. See `imageX`."),
+  screenshotId: z
+    .string()
+    .optional()
+    .describe(
+      "Screenshot id from a prior `ui-capture screenshot`. Combined with `imageX`/`imageY`, the tap is converted to device-space using THAT screenshot's scaling (not the global adapter state).",
+    ),
   elementIndex: numberInput().optional(),
   selector: jsonObjectInput({
     resourceId: z.string().optional(),
@@ -19,9 +36,20 @@ export const uiActionInputSchema = toolSchema({
     textContains: z.string().optional(),
     className: z.string().optional(),
     nearestTo: z.string().optional(),
+    rank: z
+      .enum(["bestTappable"])
+      .optional()
+      .describe(
+        "Auto-pick the top-ranked match when matches > 1 (THE-108). Without this, ambiguous matches throw AMBIGUOUS_MATCH.",
+      ),
   }).optional(),
   text: z.string().optional(),
-  direction: z.enum(["up", "down", "left", "right"]).optional(),
+  direction: z
+    .enum(["up", "down", "left", "right"])
+    .optional()
+    .describe(
+      "Scroll direction is gesture-based (the way the user's finger moves), NOT the direction content moves. So `down` = swipe up = content scrolls down = next page of a feed. `up` = swipe down = content scrolls up = pull-to-refresh territory. `left` / `right` mirror this for horizontal scrolling.",
+    ),
   amount: numberInput({ min: 0, max: 1 })
     .optional()
     .describe("Scroll fraction (0-1, default: 0.5)"),
@@ -86,6 +114,11 @@ interface SelectorResolution {
   visualFallback?: unknown;
 }
 
+interface PickedExtras {
+  pickedRationale?: string;
+  alternatives?: Array<Record<string, unknown>>;
+}
+
 async function resolveSelector(
   input: UiActionInput,
   context: ServerContext,
@@ -115,6 +148,7 @@ function pickSelectorMatch(
   resolution: SelectorResolution,
   selector: NonNullable<UiActionInput["selector"]>,
   operation: "tap" | "input" | "scroll",
+  extras?: PickedExtras,
 ): FindElement {
   const { elements: matches, candidates, visualFallback } = resolution;
   if (matches.length === 0) {
@@ -131,10 +165,20 @@ function pickSelectorMatch(
     );
   }
   if (matches.length > 1 && !selector.nearestTo) {
+    // THE-108: with rank=bestTappable, auto-pick the top-ranked candidate
+    // instead of throwing AMBIGUOUS_MATCH.
+    if (selector.rank === "bestTappable") {
+      const ranked = rankBestTappable(matches);
+      if (extras) {
+        extras.pickedRationale = ranked.pickedRationale;
+        extras.alternatives = ranked.alternativeSummaries;
+      }
+      return ranked.ranked[0];
+    }
     throw new ReplicantError(
       ErrorCode.AMBIGUOUS_MATCH,
       `Selector matched ${matches.length} elements; cannot decide which to ${operation}.`,
-      "Disambiguate via 'nearestTo', a tighter resourceId, or use ui-query find + elementIndex.",
+      "Disambiguate via 'nearestTo', a tighter resourceId, or use ui-query find + elementIndex. Or set rank: 'bestTappable' to auto-pick.",
       { buildResult: { matches: describeMatches(matches) } },
     );
   }
@@ -184,6 +228,30 @@ function isScrollableContainer(node: AccessibilityNode): boolean {
   return scrollableClassFragments.some((fragment) => node.className.includes(fragment));
 }
 
+function resolveScreenshotIdTap(
+  input: UiActionInput,
+  context: ServerContext,
+): { x: number; y: number } {
+  // THE-111: tap what's visible in a specific screenshot — convert
+  // imageX/imageY to device-space using that screenshot's scaling.
+  if (input.imageX === undefined || input.imageY === undefined) {
+    throw new ReplicantError(
+      ErrorCode.INPUT_VALIDATION_FAILED,
+      "screenshotId requires imageX and imageY",
+      "Provide imageX/imageY (image-space pixel coords) alongside screenshotId.",
+    );
+  }
+  const cached = context.cache.get<ScreenshotScalingEntry>(input.screenshotId!);
+  if (!cached) {
+    throw new ReplicantError(
+      ErrorCode.UNKNOWN_SCREENSHOT_ID,
+      `Screenshot id '${input.screenshotId}' is unknown or has expired.`,
+      "Take a new screenshot via ui-capture screenshot — entries are kept for 5 minutes.",
+    );
+  }
+  return toDeviceSpace(input.imageX, input.imageY, cached.data.scaleFactor);
+}
+
 async function handleTap(
   input: UiActionInput,
   context: ServerContext,
@@ -193,13 +261,19 @@ async function handleTap(
   let x: number, y: number;
   let usedSelector = false;
 
+  let pickedExtras: PickedExtras | undefined;
+  let viaScreenshotId = false;
   if (input.selector) {
     const resolution = await resolveSelector(input, context, config, deviceId);
-    const match = pickSelectorMatch(resolution, input.selector, "tap");
+    pickedExtras = {};
+    const match = pickSelectorMatch(resolution, input.selector, "tap", pickedExtras);
     const center = getElementCenter(match);
     x = center.x;
     y = center.y;
     usedSelector = true;
+  } else if (input.screenshotId !== undefined) {
+    ({ x, y } = resolveScreenshotIdTap(input, context));
+    viaScreenshotId = true;
   } else if (input.elementIndex !== undefined) {
     if (!context.lastFindResults[input.elementIndex]) {
       throw new ReplicantError(
@@ -218,19 +292,27 @@ async function handleTap(
   } else {
     throw new ReplicantError(
       ErrorCode.INPUT_VALIDATION_FAILED,
-      "tap requires x/y, elementIndex, or selector",
-      "Provide one of: x+y coords, elementIndex from a prior find, or a selector.",
+      "tap requires x/y, elementIndex, selector, or screenshotId+imageX+imageY",
+      "Provide one of: x+y coords, elementIndex from a prior find, a selector, or screenshotId paired with imageX/imageY.",
     );
   }
 
   // Selector and elementIndex paths always yield device-space coords (the find
-  // result is already in device space). Only the raw x/y path lets the caller
-  // override the space; default true matches the new ui-query dump contract.
-  const fromResolvedElement = usedSelector || input.elementIndex !== undefined;
+  // result is already in device space). screenshotId path converted to
+  // device-space above. Only the raw x/y path lets the caller override the
+  // space; default true matches the new ui-query dump contract.
+  const fromResolvedElement =
+    usedSelector || input.elementIndex !== undefined || viaScreenshotId;
   const deviceSpace = fromResolvedElement ? true : (input.deviceSpace ?? true);
   await context.ui.tap(deviceId, x, y, deviceSpace);
   const response: Record<string, unknown> = { tapped: { x, y, deviceSpace }, deviceId };
   if (usedSelector) response.matchedSelector = input.selector;
+  if (pickedExtras?.pickedRationale) response.pickedRationale = pickedExtras.pickedRationale;
+  if (pickedExtras?.alternatives) response.alternatives = pickedExtras.alternatives;
+  if (viaScreenshotId) {
+    response.viaScreenshotId = input.screenshotId;
+    response.imageCoords = { x: input.imageX, y: input.imageY };
+  }
   return response;
 }
 
@@ -314,7 +396,8 @@ async function handleScroll(
 
 export const uiActionToolDefinition = {
   name: "ui-action",
-  description: "Interact with app UI: tap, input, scroll. Use selector or coords.",
+  description:
+    "Interact with app UI: tap, input, scroll. Use selector or coords. Scroll `direction` is the gesture direction (down = swipe up, content moves down).",
   inputSchema: toMcpJsonSchema(uiActionInputSchema),
   annotations: {
     readOnlyHint: false,

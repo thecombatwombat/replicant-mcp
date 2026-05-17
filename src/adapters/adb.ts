@@ -2,6 +2,16 @@ import { ProcessRunner, RunResult } from "../services/index.js";
 import { Device, ReplicantError, ErrorCode } from "../types/index.js";
 import { parseDeviceList, parsePackageList } from "../parsers/adb-output.js";
 
+// CU-2 follow-up: `adb shell <args...>` joins all post-`shell` args with
+// spaces and ships the joined string to /bin/sh on the device. The device
+// shell tokenises on `&`, `;`, etc., regardless of host-side argv boundaries.
+// Wrapping user-controlled data in single quotes makes those characters
+// literal on the device. Embedded single quotes use the POSIX-portable
+// close-escape-reopen pattern: `'\''`.
+export function quoteForDeviceShell(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
 // CU-2 (THE-106): typed-intent input shape. Each field is validated before
 // being passed to argv — even though the per-arg shell-payload guard would
 // catch most attacks, defence-in-depth is cheap here.
@@ -200,24 +210,30 @@ export class AdbAdapter {
     validateStartIntentInput(intent);
 
     const args: string[] = ["-s", deviceId, "shell", "am", "start", "-W"];
+    // `action` and extras keys pass strict identifier regexes upstream, so
+    // they're safe unquoted. `data`, `component`/synthesised component, and
+    // extras values are user-controlled strings — quote them so the device
+    // shell sees one literal token per arg even though `adb shell` re-joins
+    // the argv with spaces before handing it to /bin/sh.
     args.push("-a", intent.action);
     if (intent.data !== undefined) {
-      args.push("-d", intent.data);
+      args.push("-d", quoteForDeviceShell(intent.data));
     }
     if (intent.package !== undefined) {
-      args.push("-n", intent.component ?? `${intent.package}/.MainActivity`);
+      const component = intent.component ?? `${intent.package}/.MainActivity`;
+      args.push("-n", quoteForDeviceShell(component));
     } else if (intent.component !== undefined) {
-      args.push("-n", intent.component);
+      args.push("-n", quoteForDeviceShell(intent.component));
     }
     if (intent.extras) {
       for (const [key, value] of Object.entries(intent.extras)) {
-        args.push("--es", key, value);
+        args.push("--es", key, quoteForDeviceShell(value));
       }
     }
 
     const result = await this.adb(args);
     const parsed = parseStartIntentOutput(result.stdout);
-    if (!parsed.ok && result.exitCode !== 0) {
+    if (!parsed.ok || result.exitCode !== 0) {
       throw new ReplicantError(
         ErrorCode.COMMAND_BLOCKED,
         `am start failed (exit ${result.exitCode}): ${result.stderr || result.stdout}`,

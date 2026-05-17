@@ -243,6 +243,12 @@ const SHELL_COMPOSITION_PATTERNS: ReadonlyArray<{
   { pattern: /;/, description: "semicolon chain" },
   // `&&` / `||` anywhere is composition.
   { pattern: /&&|\|\|/, description: "&& or || chain" },
+  // CU-2 follow-up: single `&` followed by whitespace or end-of-arg is the
+  // shell's "background previous command" operator. URLs use `&` between
+  // alphanumerics (`?a=1&b=2`) with no surrounding whitespace — those flow
+  // through. The lookbehind keeps the pattern from double-firing on `&&`,
+  // which is already caught above.
+  { pattern: /(?<!&)&(\s|$)/, description: "single & chain operator" },
   // Pipe with whitespace on either side: `cmd | other`. Glued `a|b` slips
   // through deliberately (regex/URL alternates).
   { pattern: /\s\|\s|\|\s|\s\|/, description: "pipe with whitespace" },

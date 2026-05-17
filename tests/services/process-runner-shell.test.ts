@@ -188,6 +188,40 @@ describe("ProcessRunner shell metacharacter and bypass prevention", () => {
     ).rejects.toThrow("Shell metacharacters are not allowed");
   });
 
+  it("blocks single & followed by space (trailing chain operator, CU-2 follow-up)", async () => {
+    // Codex flagged that `echo ok& reboot` passed the guard because a single
+    // `&` was only rejected at the start of an arg. Device shell tokenises
+    // on `&` regardless of position, so the first command backgrounds and
+    // the second runs — bypassing the dangerous-command list.
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "echo ok& reboot"])
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("blocks single & at end of arg (trailing backgrounding)", async () => {
+    // Use `echo done` rather than `reboot` so the rejection comes from the
+    // metacharacter guard, not the BLOCKED_SHELL_PATTERNS reboot rule.
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "echo done &"])
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("blocks single & surrounded by spaces", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "echo a & echo b"])
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("still allows single & between non-whitespace (URL query strings)", async () => {
+    // Defence-in-depth: the CU-2 part 1 design lets URLs with `?a=1&b=2`
+    // flow through as data. The trailing-& fix must not regress this.
+    await runner.run("adb", [
+      "-s", "emulator-5554", "shell", "am", "start", "-W",
+      "-a", "android.intent.action.VIEW",
+      "-d", "'https://example.com/?foo=bar&baz=qux'",
+    ]);
+  });
+
   it("blocks pipe operator", async () => {
     await expect(
       runner.run("adb", ["-s", "emulator-5554", "shell", "cat /dev/null | su"])

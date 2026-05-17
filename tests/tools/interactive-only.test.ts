@@ -99,6 +99,37 @@ describe("ui-query dump interactiveOnly (THE-109)", () => {
     // Now the scrollable RecyclerView is also included alongside btn and input.
     expect(resourceIds).toEqual(["btn", "input", "list"]);
   });
+
+  it("compact=false interactiveOnly=true prunes non-interactive subtrees while preserving the tree shape (CU-5 follow-up)", async () => {
+    const result: any = await handleUiQueryTool(
+      { operation: "dump", compact: false, interactiveOnly: true },
+      ctx,
+      cfg,
+    );
+    expect(result.tree).toHaveLength(1);
+    const root = result.tree[0];
+    // The root FrameLayout is non-interactive but kept because it has
+    // interactive descendants — pruning preserves structural ancestors.
+    expect(root.resourceId).toBe("root");
+    // The two non-interactive TextView leaves (Heading, More text) are
+    // pruned; only the three interactive children survive.
+    expect(root.children).toHaveLength(3);
+    const childIdentities = (root.children ?? []).map(
+      (c: any) => c.resourceId ?? c.text ?? c.className,
+    );
+    expect(childIdentities.sort()).toEqual(["btn", "input", "list"]);
+  });
+
+  it("compact=false (interactiveOnly absent) returns the full unpruned tree", async () => {
+    const result: any = await handleUiQueryTool(
+      { operation: "dump", compact: false },
+      ctx,
+      cfg,
+    );
+    expect(result.tree).toHaveLength(1);
+    const root = result.tree[0];
+    expect(root.children).toHaveLength(5);
+  });
 });
 
 describe("ui-query find interactiveOnly (THE-109)", () => {

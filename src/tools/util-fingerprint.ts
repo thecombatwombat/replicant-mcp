@@ -26,9 +26,17 @@ function isAccessibilityNode(el: FindElement): el is AccessibilityNode {
  * library), deterministic, and stable across redundant dumps of the same
  * frame. Non-accessibility elements (OCR, grid) get an empty fingerprint —
  * they don't have stable identity anyway, so we skip the stale check.
+ *
+ * CU-8 follow-up: the separator was previously a literal SOH (\x01) byte,
+ * which renders as empty in most editors and was flagged in review as if it
+ * actually WERE empty. A visible `|` matches the comment above and removes
+ * the footgun. `|` doesn't appear in any of the constituent fields (Android
+ * resource ids use `pkg:id/name`, class names use dots, bounds are digits
+ * and commas), so there's no risk of a delimiter collision against
+ * legitimate content.
  */
 
-const SEP = "";
+const SEP = "|";
 
 export function computeAccessibilityFingerprint(node: AccessibilityNode): string {
   // Some test/mock fixtures omit bounds. Treat missing bounds as 0,0,0,0 —

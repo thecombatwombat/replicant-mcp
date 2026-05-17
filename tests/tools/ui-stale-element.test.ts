@@ -87,6 +87,29 @@ describe("computeAccessibilityFingerprint", () => {
     expect(a).toBe(b);
   });
 
+  it("does not collide on different field splits with same total content (CU-8 follow-up)", () => {
+    // Greptile flagged that an empty separator lets two nodes with different
+    // field splits but the same concatenation hash identically — e.g. a node
+    // with resourceId="android.widget.Button" and empty className vs a node
+    // with empty resourceId and className="android.widget.Button" share the
+    // same total content "...android.widget.Button..." and would silently
+    // pass the stale-element check.
+    const sameBounds = { left: 0, top: 0, right: 0, bottom: 0 };
+    const a = computeAccessibilityFingerprint({
+      text: "",
+      resourceId: "android.widget.Button",
+      className: "",
+      bounds: sameBounds,
+    } as any);
+    const b = computeAccessibilityFingerprint({
+      text: "",
+      resourceId: "",
+      className: "android.widget.Button",
+      bounds: sameBounds,
+    } as any);
+    expect(a).not.toBe(b);
+  });
+
   it("returns empty string for non-accessibility elements (OCR/grid)", () => {
     const fps = computeFingerprints([
       { text: "OCR text", confidence: 0.8, center: { x: 1, y: 2 }, bounds: {} } as any,

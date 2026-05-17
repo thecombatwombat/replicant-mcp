@@ -455,7 +455,7 @@ async function handleInput(
     // field's text changed at all. We report both signals so the caller can
     // decide which one matters for their use case.
     const containsRequested = inputAfter !== null && inputAfter.includes(input.text);
-    const changed = inputAfter !== inputBefore;
+    const changed = inputAfter !== null && inputAfter !== inputBefore;
     result.verified = containsRequested || changed;
     result.containsRequested = containsRequested;
     result.changed = changed;

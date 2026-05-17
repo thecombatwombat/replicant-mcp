@@ -165,6 +165,35 @@ describe("ui-action input verify (CU-9 / THE-113)", () => {
     expect(result.inputAfter).toBe("ABC");
   });
 
+  it("verify=true when target element disappeared after input: reports verified=false (CU-13)", async () => {
+    // Greptile P1 (CU-13): if the input element vanishes after typing — e.g.
+    // the search field gets replaced by a results view, or focus shifts and
+    // the EditText is detached — `readSelectorText` returns null. The old
+    // logic compared `null !== ""` (inputBefore for an empty field) and
+    // reported `verified: true` despite zero evidence the input took effect.
+    // We must report verified=false here.
+    ctx.ui.find
+      .mockResolvedValueOnce([emptyField]) // inputBefore: empty field exists
+      .mockResolvedValueOnce([emptyField]) // tap resolution
+      .mockResolvedValueOnce([]); // inputAfter: element is GONE
+
+    const result = await handleUiActionTool(
+      {
+        operation: "input",
+        text: "hello",
+        selector: { resourceId: "search_field" },
+        verify: true,
+      },
+      ctx as any,
+    );
+
+    expect(result.verified).toBe(false);
+    expect(result.containsRequested).toBe(false);
+    expect(result.changed).toBe(false);
+    expect(result.inputBefore).toBe("");
+    expect(result.inputAfter).toBeNull();
+  });
+
   it("verify=true rejects when no selector provided", async () => {
     await expect(
       handleUiActionTool(

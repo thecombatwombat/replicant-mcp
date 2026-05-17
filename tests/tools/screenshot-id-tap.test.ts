@@ -83,6 +83,19 @@ describe("ui-action tap via screenshotId (THE-111)", () => {
     ).rejects.toThrow(/imageX and imageY/);
   });
 
+  it("omits screenshotId when adapter doesn't supply scaling metadata (CU-7 follow-up)", async () => {
+    // ScreenshotResult types scaleFactor/device/image as optional. When an
+    // adapter or partial mock omits them, we must not hand the caller a
+    // screenshotId that will throw UNKNOWN_SCREENSHOT_ID on use — the cache
+    // entry would never have been populated.
+    ctx.ui.screenshot.mockResolvedValueOnce({
+      mode: "file",
+      path: "/tmp/no-scaling.png",
+    });
+    const result: any = await handleUiCaptureTool({ operation: "screenshot" }, ctx, cfg);
+    expect(result.screenshotId).toBeUndefined();
+  });
+
   it("does not break the existing direct device-coord tap path", async () => {
     const result: any = await handleUiActionTool(
       { operation: "tap", x: 100, y: 200 },

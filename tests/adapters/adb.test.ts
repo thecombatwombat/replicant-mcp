@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { parseDeviceList, parsePackageList } from "../../src/parsers/adb-output.js";
 import { AdbAdapter } from "../../src/adapters/adb.js";
+import { ProcessRunner } from "../../src/services/index.js";
 
 describe("ADB Output Parsing", () => {
   describe("parseDeviceList", () => {
@@ -152,6 +153,249 @@ describe("AdbAdapter", () => {
       await expect(
         adapter.pull("emulator-5554", "/sdcard/test.png", "/tmp/test.png")
       ).rejects.toThrow("Failed to pull");
+    });
+  });
+
+  describe("startIntent (CU-2 / THE-106)", () => {
+    const okStdout = "Starting: Intent { act=android.intent.action.VIEW }\nStatus: ok\n";
+
+    it("builds typed argv with single-quoted -d URL (device-shell safe)", async () => {
+      mockRunner.runAdb.mockResolvedValue({ stdout: okStdout, stderr: "", exitCode: 0 });
+
+      const result = await adapter.startIntent("emulator-5554", {
+        action: "android.intent.action.VIEW",
+        data: "https://example.com/?foo=bar&baz=qux",
+      });
+
+      expect(mockRunner.runAdb).toHaveBeenCalledWith(
+        [
+          "-s",
+          "emulator-5554",
+          "shell",
+          "am",
+          "start",
+          "-W",
+          "-a",
+          "android.intent.action.VIEW",
+          "-d",
+          "'https://example.com/?foo=bar&baz=qux'",
+        ],
+        expect.anything(),
+      );
+      expect(result.ok).toBe(true);
+      expect(result.status).toBe("ok");
+    });
+
+    it("uses -p (not -n .MainActivity) when only package is supplied (CU-2 follow-up)", async () => {
+      // Codex flagged that synthesising `<package>/.MainActivity` for
+      // package-only intents breaks common cases — VIEW URLs and apps whose
+      // launcher activity isn't `.MainActivity` fail with an unresolved
+      // component. The right primitive is `-p <package>` which limits the
+      // intent to the package and lets Android resolve the activity.
+      mockRunner.runAdb.mockResolvedValue({ stdout: okStdout, stderr: "", exitCode: 0 });
+
+      await adapter.startIntent("emulator-5554", {
+        action: "android.intent.action.VIEW",
+        data: "https://example.com/",
+        package: "com.example.app",
+      });
+
+      const args = mockRunner.runAdb.mock.calls[0][0];
+      expect(args).toEqual(expect.arrayContaining(["-p", "'com.example.app'"]));
+      // No synthesised .MainActivity component:
+      expect(args).not.toContain("-n");
+      expect(args.find((a: string) => a.includes(".MainActivity"))).toBeUndefined();
+    });
+
+    it("uses -n with the explicit component when both package and component are supplied", async () => {
+      mockRunner.runAdb.mockResolvedValue({ stdout: okStdout, stderr: "", exitCode: 0 });
+
+      await adapter.startIntent("emulator-5554", {
+        action: "android.intent.action.VIEW",
+        package: "com.example.app",
+        component: "com.example.app/.PreciseActivity",
+      });
+
+      const args = mockRunner.runAdb.mock.calls[0][0];
+      expect(args).toEqual(expect.arrayContaining(["-n", "'com.example.app/.PreciseActivity'"]));
+      expect(args).not.toContain("-p");
+    });
+
+    it("omits -d when data is undefined", async () => {
+      mockRunner.runAdb.mockResolvedValue({ stdout: okStdout, stderr: "", exitCode: 0 });
+
+      await adapter.startIntent("emulator-5554", {
+        action: "android.intent.action.MAIN",
+      });
+
+      const args = mockRunner.runAdb.mock.calls[0][0];
+      expect(args).not.toContain("-d");
+      expect(args).toEqual(
+        expect.arrayContaining(["-a", "android.intent.action.MAIN"]),
+      );
+    });
+
+    it("single-quotes each --es value (each value its own arg, device-shell safe)", async () => {
+      mockRunner.runAdb.mockResolvedValue({ stdout: okStdout, stderr: "", exitCode: 0 });
+
+      await adapter.startIntent("emulator-5554", {
+        action: "android.intent.action.VIEW",
+        extras: { url: "https://x.example/?a=1&b=2", note: "hello world" },
+      });
+
+      const args = mockRunner.runAdb.mock.calls[0][0];
+      // URL extra value remains a single arg AND is single-quoted so `&`
+      // doesn't background on the device shell after argv-join.
+      expect(args).toEqual(
+        expect.arrayContaining([
+          "--es",
+          "url",
+          "'https://x.example/?a=1&b=2'",
+          "--es",
+          "note",
+          "'hello world'",
+        ]),
+      );
+    });
+
+    it("rejects an invalid action (spaces)", async () => {
+      await expect(
+        adapter.startIntent("emulator-5554", { action: "bad action with spaces" }),
+      ).rejects.toThrow("Invalid intent action");
+      expect(mockRunner.runAdb).not.toHaveBeenCalled();
+    });
+
+    it("rejects an action starting with a digit", async () => {
+      await expect(
+        adapter.startIntent("emulator-5554", { action: "1.bad" }),
+      ).rejects.toThrow("Invalid intent action");
+    });
+
+    it("rejects data containing a null byte", async () => {
+      await expect(
+        adapter.startIntent("emulator-5554", {
+          action: "android.intent.action.VIEW",
+          data: "https://example.com/\0evil",
+        }),
+      ).rejects.toThrow("null byte");
+    });
+
+    it("rejects extras key with shell metacharacters", async () => {
+      await expect(
+        adapter.startIntent("emulator-5554", {
+          action: "android.intent.action.VIEW",
+          extras: { "bad key;reboot": "x" },
+        }),
+      ).rejects.toThrow("Invalid extras key");
+    });
+
+    it("rejects data over the length cap", async () => {
+      const tooLong = "a".repeat(2049);
+      await expect(
+        adapter.startIntent("emulator-5554", {
+          action: "android.intent.action.VIEW",
+          data: tooLong,
+        }),
+      ).rejects.toThrow("exceeds");
+    });
+
+    it("rejects an invalid component spec", async () => {
+      await expect(
+        adapter.startIntent("emulator-5554", {
+          action: "android.intent.action.MAIN",
+          component: "not a component",
+        }),
+      ).rejects.toThrow("Invalid component");
+    });
+
+    it("accepts pkg/.RelativeActivity component and single-quotes the -n arg", async () => {
+      mockRunner.runAdb.mockResolvedValue({ stdout: okStdout, stderr: "", exitCode: 0 });
+
+      await adapter.startIntent("emulator-5554", {
+        action: "android.intent.action.MAIN",
+        component: "com.example.app/.MainActivity",
+      });
+
+      const args = mockRunner.runAdb.mock.calls[0][0];
+      expect(args).toEqual(
+        expect.arrayContaining(["-n", "'com.example.app/.MainActivity'"]),
+      );
+    });
+
+    it("escapes embedded single quote inside data when quoting for device shell", async () => {
+      mockRunner.runAdb.mockResolvedValue({ stdout: okStdout, stderr: "", exitCode: 0 });
+
+      await adapter.startIntent("emulator-5554", {
+        action: "android.intent.action.VIEW",
+        data: "ab'cd",
+      });
+
+      const args = mockRunner.runAdb.mock.calls[0][0];
+      const dIdx = args.indexOf("-d");
+      expect(dIdx).toBeGreaterThan(-1);
+      // POSIX-portable close-escape-reopen pattern.
+      expect(args[dIdx + 1]).toBe(`'ab'\\''cd'`);
+    });
+
+    it("host-side guard treats composition chars inside quoted data as literal (CU-2 follow-up #3)", async () => {
+      // `quoteForDeviceShell` wraps user-controlled data in single quotes;
+      // the device shell then sees `;`, `&&`, `||`, etc. as literal bytes
+      // inside the quoted token, not control operators. The host-side
+      // scanner in ProcessRunner.validateShellPayload was originally
+      // regex-based and ignored quote spans, so it rejected `;` here as
+      // defense-in-depth — Greptile flagged that as a P1 because it broke
+      // legitimate URLs (the `&&` redirect parameter shape is real). The
+      // scanner is now quote-aware, so the guard agrees with the device
+      // shell. The realAdapter call will fail with a device-not-found
+      // error (no emulator attached), but it MUST NOT fail with
+      // "Shell metacharacters" — that's what pins the new contract.
+      const realAdapter = new AdbAdapter(new ProcessRunner());
+      let caught: unknown;
+      try {
+        await realAdapter.startIntent("emulator-5554", {
+          action: "android.intent.action.VIEW",
+          data: "https://x/?a=1; echo PWNED",
+        });
+      } catch (err) {
+        caught = err;
+      }
+      // The call WILL reject (no device attached) — what matters is that
+      // the rejection isn't from the host-side metacharacter guard.
+      const message = caught instanceof Error ? caught.message : String(caught);
+      expect(message).not.toMatch(/Shell metacharacters/);
+    });
+
+    it("throws when am start prints Error even on exit 0", async () => {
+      // Android `am start` sometimes exits 0 while writing `Error: Activity not
+      // started, ...` to stdout. The error gate must fire on EITHER signal,
+      // not both — otherwise the failure is silently swallowed.
+      mockRunner.runAdb.mockResolvedValue({
+        stdout: "Error: Activity not started, unable to resolve Intent",
+        stderr: "",
+        exitCode: 0,
+      });
+
+      await expect(
+        adapter.startIntent("emulator-5554", {
+          action: "android.intent.action.VIEW",
+          data: "https://example.com/",
+        }),
+      ).rejects.toThrow("am start failed");
+    });
+
+    it("throws when am start fails with non-zero exit", async () => {
+      mockRunner.runAdb.mockResolvedValue({
+        stdout: "",
+        stderr: "adb: device offline",
+        exitCode: 1,
+      });
+
+      await expect(
+        adapter.startIntent("emulator-5554", {
+          action: "android.intent.action.VIEW",
+          data: "https://example.com/",
+        }),
+      ).rejects.toThrow("am start failed");
     });
   });
 });

@@ -131,6 +131,15 @@ describe("UI Tool - nearestTo", () => {
 
   describe("tap after nearestTo find", () => {
     it("can tap the first element after nearestTo sorting", async () => {
+      const btn = {
+        text: "",
+        resourceId: "btn",
+        className: "Button",
+        centerX: 200,
+        centerY: 200,
+        bounds: { left: 150, top: 150, right: 250, bottom: 250 },
+        clickable: true,
+      };
       mockContext.ui.findWithFallbacks
         .mockResolvedValueOnce({
           elements: [
@@ -139,18 +148,20 @@ describe("UI Tool - nearestTo", () => {
           source: "ocr",
         })
         .mockResolvedValueOnce({
-          elements: [
-            { text: "", resourceId: "btn", className: "Button", centerX: 200, centerY: 200, bounds: { left: 150, top: 150, right: 250, bottom: 250 }, clickable: true },
-          ],
+          elements: [btn],
           source: "accessibility",
           tier: 2,
         });
 
+      // Tree must contain the matched `btn` so the THE-112 stale-element
+      // check can re-locate it at consume time. The containment scan during
+      // find uses the same tree.
       mockContext.ui.dump.mockResolvedValue([
         {
           className: "android.view.ViewGroup",
           bounds: { left: 0, top: 0, right: 300, bottom: 300 },
           centerX: 150, centerY: 150,
+          children: [btn],
         },
       ]);
 

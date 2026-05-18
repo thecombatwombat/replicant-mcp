@@ -52,6 +52,12 @@ export interface ServerContext {
   gradle: GradleAdapter;
   ui: UiAutomatorAdapter;
   lastFindResults: FindElement[];
+  // THE-112 (CU-8): content fingerprints stored alongside lastFindResults.
+  // ui-action's elementIndex path re-dumps the tree, recomputes the
+  // fingerprint at the cached location, and compares — mismatch (or no node
+  // at that location) means the screen has changed since the find call and
+  // the index is stale.
+  lastFindFingerprints: string[];
 }
 
 export function createServerContext(): ServerContext {
@@ -70,6 +76,7 @@ export function createServerContext(): ServerContext {
     gradle: new GradleAdapter(processRunner),
     ui: new UiAutomatorAdapter(adb),
     lastFindResults: [],
+    lastFindFingerprints: [],
   };
 }
 

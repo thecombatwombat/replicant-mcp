@@ -25,6 +25,11 @@ export const ErrorCode = {
   INVALID_OPERATION: "INVALID_OPERATION",
   ELEMENT_NOT_FOUND: "ELEMENT_NOT_FOUND",
   AMBIGUOUS_MATCH: "AMBIGUOUS_MATCH",
+  // THE-112 (CU-8): the elementIndex referenced by ui-action no longer points
+  // to the same on-screen element it did at find time. Returned when the
+  // recomputed fingerprint at the cached location does not match the
+  // fingerprint stored when ui-query find captured it.
+  STALE_ELEMENT_INDEX: "STALE_ELEMENT_INDEX",
 
   // Safety errors
   COMMAND_BLOCKED: "COMMAND_BLOCKED",

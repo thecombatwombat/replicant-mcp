@@ -1,11 +1,11 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-05-17T05:06:27.584Z",
+  "generatedAt": "2026-05-17T08:20:28.299Z",
   "charsPerToken": 4,
   "instructionsChars": 137,
-  "schemaChars": 9986,
-  "totalChars": 10123,
-  "estimatedTokens": 2531,
+  "schemaChars": 10608,
+  "totalChars": 10745,
+  "estimatedTokens": 2687,
   "perTool": {
     "cache": {
       "chars": 542,
@@ -20,8 +20,8 @@
       "estTokens": 91
     },
     "adb-app": {
-      "chars": 654,
-      "estTokens": 164
+      "chars": 1104,
+      "estTokens": 276
     },
     "adb-logcat": {
       "chars": 576,
@@ -56,8 +56,8 @@
       "estTokens": 372
     },
     "ui-action": {
-      "chars": 1975,
-      "estTokens": 494
+      "chars": 2147,
+      "estTokens": 537
     },
     "ui-capture": {
       "chars": 596,

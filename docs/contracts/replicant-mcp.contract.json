@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-05-17T05:06:27.418Z",
+  "generatedAt": "2026-05-17T08:20:28.137Z",
   "tools": {
     "cache": {
       "inputSchema": {
@@ -452,7 +452,8 @@
               "launch",
               "stop",
               "clear-data",
-              "list"
+              "list",
+              "start-intent"
             ]
           },
           "apkPath": {
@@ -476,6 +477,25 @@
             "description": "Pagination offset",
             "type": "number",
             "minimum": 0
+          },
+          "action": {
+            "description": "Intent action (e.g., android.intent.action.VIEW)",
+            "type": "string"
+          },
+          "data": {
+            "description": "Intent data URI",
+            "type": "string"
+          },
+          "component": {
+            "description": "Component spec (pkg/.Activity or pkg/pkg.Activity)",
+            "type": "string"
+          },
+          "extras": {
+            "description": "String extras as key/value pairs (--es key value)",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -2372,6 +2392,10 @@
           },
           "deviceSpace": {
             "description": "x/y in device-space (default true). Set false only for image-space coords.",
+            "type": "boolean"
+          },
+          "verify": {
+            "description": "On `input`: capture the field's text before/after and report whether the input took effect. Requires a selector. Default false.",
             "type": "boolean"
           }
         },

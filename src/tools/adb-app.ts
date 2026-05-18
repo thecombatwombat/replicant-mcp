@@ -4,8 +4,31 @@ import { CACHE_TTLS, ReplicantError, ErrorCode } from "../types/index.js";
 import { numberInput, toolSchema } from "../schemas/inputs.js";
 import { toMcpJsonSchema } from "../schemas/derive.js";
 
+// String→string record that also accepts a JSON-string encoding. We can't
+// reuse `jsonObjectInput` because that one is strict-keyed; extras keys are
+// caller-supplied so we need an open record.
+const extrasInput = z.preprocess(
+  (v) => {
+    if (typeof v !== "string") return v;
+    try {
+      return JSON.parse(v);
+    } catch {
+      return v;
+    }
+  },
+  z.record(z.string(), z.string()),
+);
+
 export const adbAppInputSchema = toolSchema({
-  operation: z.enum(["install", "uninstall", "launch", "stop", "clear-data", "list"]),
+  operation: z.enum([
+    "install",
+    "uninstall",
+    "launch",
+    "stop",
+    "clear-data",
+    "list",
+    "start-intent",
+  ]),
   apkPath: z.string().optional().describe("APK path"),
   packageName: z.string().optional(),
   limit: numberInput({ min: 1, max: 100 })
@@ -13,6 +36,22 @@ export const adbAppInputSchema = toolSchema({
     .describe("Default: 20, max: 100"),
   filter: z.string().optional().describe("Filter by name (case-insensitive)"),
   offset: numberInput({ min: 0 }).optional().describe("Pagination offset"),
+  // CU-2 (THE-106): typed-intent fields for `start-intent`. Each field is
+  // validated by the adapter before any argv is built — no raw shell payload
+  // is constructed from these values, so URLs and JSON-shaped extras flow
+  // through without tripping the metacharacter guard.
+  action: z
+    .string()
+    .optional()
+    .describe("Intent action (e.g., android.intent.action.VIEW)"),
+  data: z.string().optional().describe("Intent data URI"),
+  component: z
+    .string()
+    .optional()
+    .describe("Component spec (pkg/.Activity or pkg/pkg.Activity)"),
+  extras: extrasInput
+    .optional()
+    .describe("String extras as key/value pairs (--es key value)"),
 });
 
 export type AdbAppInput = z.infer<typeof adbAppInputSchema>;
@@ -77,6 +116,40 @@ async function handleClearData(input: AdbAppInput, deviceId: string, context: Se
   return { cleared: input.packageName, deviceId };
 }
 
+async function handleStartIntent(
+  input: AdbAppInput,
+  deviceId: string,
+  context: ServerContext,
+): Promise<Record<string, unknown>> {
+  if (!input.action) {
+    throw new ReplicantError(
+      ErrorCode.INPUT_VALIDATION_FAILED,
+      "action is required for start-intent operation",
+      "Provide an intent action like android.intent.action.VIEW",
+    );
+  }
+  const result = await context.adb.startIntent(deviceId, {
+    action: input.action,
+    data: input.data,
+    package: input.packageName,
+    component: input.component,
+    extras: input.extras,
+  });
+  return {
+    intentStarted: {
+      action: input.action,
+      data: input.data,
+      package: input.packageName,
+      component: input.component,
+      extras: input.extras,
+    },
+    status: result.status,
+    ok: result.ok,
+    raw: result.raw,
+    deviceId,
+  };
+}
+
 async function handleList(input: AdbAppInput, deviceId: string, context: ServerContext): Promise<Record<string, unknown>> {
   const allPackages = await context.adb.getPackages(deviceId);
   const limit = input.limit ?? 20;
@@ -119,6 +192,7 @@ const operations: Record<string, AppHandler> = {
   stop: handleStop,
   "clear-data": handleClearData,
   list: handleList,
+  "start-intent": handleStartIntent,
 };
 
 export async function handleAdbAppTool(
@@ -131,7 +205,7 @@ export async function handleAdbAppTool(
     throw new ReplicantError(
       ErrorCode.INVALID_OPERATION,
       `Unknown operation: ${input.operation}`,
-      "Valid operations: install, uninstall, launch, stop, clear-data, list",
+      "Valid operations: install, uninstall, launch, stop, clear-data, list, start-intent",
     );
   }
   return handler(input, device.id, context);
@@ -139,7 +213,7 @@ export async function handleAdbAppTool(
 
 export const adbAppToolDefinition = {
   name: "adb-app",
-  description: "Manage applications.",
+  description: "Manage applications. start-intent fires a typed `am start` (URLs with & are safe).",
   inputSchema: toMcpJsonSchema(adbAppInputSchema),
   annotations: {
     readOnlyHint: false,

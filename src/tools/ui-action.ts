@@ -6,10 +6,12 @@ import { getElementCenter, handleFind, isAccessibilityNode } from "./ui-find.js"
 import { AccessibilityNode, flattenTree } from "../parsers/ui-dump.js";
 import { FindElement } from "../types/icon-recognition.js";
 import { rankBestTappable } from "./util-rank.js";
+import { computeAccessibilityFingerprint } from "./util-fingerprint.js";
 import { ScreenshotScalingEntry } from "./ui-capture.js";
 import { toDeviceSpace } from "../services/scaling.js";
 import { booleanInput, jsonObjectInput, numberInput, toolSchema } from "../schemas/inputs.js";
 import { toMcpJsonSchema } from "../schemas/derive.js";
+import { handleScrollOp } from "./ui-action-scroll.js";
 
 export const uiActionInputSchema = toolSchema({
   operation: z.enum(["tap", "input", "scroll"]),
@@ -56,6 +58,15 @@ export const uiActionInputSchema = toolSchema({
   deviceSpace: booleanInput()
     .optional()
     .describe("x/y in device-space (default true). Set false only for image-space coords."),
+  // THE-113 (CU-9): when true on `input`, capture the target field's text
+  // before and after the input call and report whether it changed/contains
+  // the desired text. Requires a selector (we need to know which field to
+  // inspect). Default false — opt-in because it costs an extra ui dump.
+  verify: booleanInput()
+    .optional()
+    .describe(
+      "On `input`: capture the field's text before/after and report whether the input took effect. Requires a selector. Default false.",
+    ),
 });
 
 export type UiActionInput = z.infer<typeof uiActionInputSchema>;
@@ -185,55 +196,89 @@ function pickSelectorMatch(
   return matches[0];
 }
 
-function findScrollableAncestor(
-  tree: AccessibilityNode[],
-  target: AccessibilityNode,
-): AccessibilityNode | null {
+// THE-112 (CU-8): stale-element check on the elementIndex path.
+//
+// `ui-query find` cached an element at this index plus its content
+// fingerprint. Between find and tap, the screen can change. Re-dump the tree,
+// locate the node whose center matches the cached center (within a small
+// tolerance so float rounding doesn't false-positive), recompute its
+// fingerprint, and compare.
+//
+// - If no node matches the cached center, STALE.
+// - If a node matches the center but fingerprint differs (text changed,
+//   resourceId changed, bounds shifted), STALE.
+// - If the cached element is non-accessibility (OCR/grid), its stored
+//   fingerprint is "" — skip the check (no stable identity).
+// - If `lastFindFingerprints` is missing or empty (older callers),
+//   skip the check (backward compat).
+//
+// Matches at exact (centerX, centerY). If multiple nodes share that center
+// (overlay siblings), prefer one with matching className.
+async function assertElementStillFresh(
+  context: ServerContext,
+  deviceId: string,
+  elementIndex: number,
+  element: FindElement,
+): Promise<void> {
+  const fingerprints = context.lastFindFingerprints;
+  if (!fingerprints || fingerprints.length === 0) return;
+  const cachedFingerprint = fingerprints[elementIndex];
+  if (cachedFingerprint === undefined || cachedFingerprint === "") return;
+  if (!isAccessibilityNode(element)) return;
+
+  const tree = await context.ui.dump(deviceId);
   const flat = flattenTree(tree);
 
-  let best: AccessibilityNode | null = null;
-  let smallestArea = Infinity;
-  for (const node of flat) {
-    if (!isScrollableContainer(node)) continue;
-    const { bounds: b } = node;
-    if (
-      target.centerX >= b.left &&
-      target.centerX <= b.right &&
-      target.centerY >= b.top &&
-      target.centerY <= b.bottom
-    ) {
-      const area = (b.right - b.left) * (b.bottom - b.top);
-      if (area < smallestArea) {
-        smallestArea = area;
-        best = node;
-      }
-    }
+  const cx = element.centerX;
+  const cy = element.centerY;
+  const candidates = flat.filter((n) => n.centerX === cx && n.centerY === cy);
+  const current: AccessibilityNode | undefined =
+    candidates.find((n) => n.className === element.className) ?? candidates[0];
+
+  if (!current) {
+    throw new ReplicantError(
+      ErrorCode.STALE_ELEMENT_INDEX,
+      `Element at index ${elementIndex} is stale: no node found at (${cx}, ${cy}).`,
+      "Re-run ui-query find — the screen has changed since the original find call.",
+      {
+        buildResult: {
+          elementIndex,
+          cachedCenter: { x: cx, y: cy },
+          cachedFingerprint,
+        },
+      },
+    );
   }
-  return best;
+
+  const liveFingerprint = computeAccessibilityFingerprint(current);
+  if (liveFingerprint !== cachedFingerprint) {
+    throw new ReplicantError(
+      ErrorCode.STALE_ELEMENT_INDEX,
+      `Element at index ${elementIndex} is stale: content fingerprint changed since find.`,
+      "Re-run ui-query find — the screen has changed since the original find call.",
+      {
+        buildResult: {
+          elementIndex,
+          cachedFingerprint,
+          liveFingerprint,
+        },
+      },
+    );
+  }
 }
 
-function isScrollableContainer(node: AccessibilityNode): boolean {
-  if (node.scrollable !== undefined) return node.scrollable;
-  const scrollableClassFragments = [
-    "ScrollView",
-    "RecyclerView",
-    "ListView",
-    "ViewPager",
-    "AndroidComposeView",
-    "ComposeView",
-    "GridView",
-    "Gallery",
-    "NumberPicker",
-  ];
-  return scrollableClassFragments.some((fragment) => node.className.includes(fragment));
+interface TapResolution {
+  x: number;
+  y: number;
+  usedSelector: boolean;
+  viaScreenshotId: boolean;
+  pickedExtras?: PickedExtras;
 }
 
-function resolveScreenshotIdTap(
+async function resolveScreenshotIdTap(
   input: UiActionInput,
   context: ServerContext,
-): { x: number; y: number } {
-  // THE-111: tap what's visible in a specific screenshot — convert
-  // imageX/imageY to device-space using that screenshot's scaling.
+): Promise<TapResolution> {
   if (input.imageX === undefined || input.imageY === undefined) {
     throw new ReplicantError(
       ErrorCode.INPUT_VALIDATION_FAILED,
@@ -249,7 +294,55 @@ function resolveScreenshotIdTap(
       "Take a new screenshot via ui-capture screenshot — entries are kept for 5 minutes.",
     );
   }
-  return toDeviceSpace(input.imageX, input.imageY, cached.data.scaleFactor);
+  const converted = toDeviceSpace(input.imageX, input.imageY, cached.data.scaleFactor);
+  return { x: converted.x, y: converted.y, usedSelector: false, viaScreenshotId: true };
+}
+
+async function resolveElementIndexTap(
+  input: UiActionInput,
+  context: ServerContext,
+  deviceId: string,
+): Promise<TapResolution> {
+  if (!context.lastFindResults[input.elementIndex!]) {
+    throw new ReplicantError(
+      ErrorCode.ELEMENT_NOT_FOUND,
+      `Element at index ${input.elementIndex} not found. Run 'find' first.`,
+      "Use ui-query find to locate elements, then reference them by index",
+    );
+  }
+  const element = context.lastFindResults[input.elementIndex!];
+  await assertElementStillFresh(context, deviceId, input.elementIndex!, element);
+  const center = getElementCenter(element);
+  return { x: center.x, y: center.y, usedSelector: false, viaScreenshotId: false };
+}
+
+async function resolveTap(
+  input: UiActionInput,
+  context: ServerContext,
+  config: UiConfig,
+  deviceId: string,
+): Promise<TapResolution> {
+  if (input.selector) {
+    const resolution = await resolveSelector(input, context, config, deviceId);
+    const pickedExtras: PickedExtras = {};
+    const match = pickSelectorMatch(resolution, input.selector, "tap", pickedExtras);
+    const center = getElementCenter(match);
+    return { x: center.x, y: center.y, usedSelector: true, viaScreenshotId: false, pickedExtras };
+  }
+  if (input.screenshotId !== undefined) {
+    return resolveScreenshotIdTap(input, context);
+  }
+  if (input.elementIndex !== undefined) {
+    return resolveElementIndexTap(input, context, deviceId);
+  }
+  if (input.x !== undefined && input.y !== undefined) {
+    return { x: input.x, y: input.y, usedSelector: false, viaScreenshotId: false };
+  }
+  throw new ReplicantError(
+    ErrorCode.INPUT_VALIDATION_FAILED,
+    "tap requires x/y, elementIndex, selector, or screenshotId+imageX+imageY",
+    "Provide one of: x+y coords, elementIndex from a prior find, a selector, or screenshotId paired with imageX/imageY.",
+  );
 }
 
 async function handleTap(
@@ -258,62 +351,59 @@ async function handleTap(
   config: UiConfig,
   deviceId: string,
 ): Promise<Record<string, unknown>> {
-  let x: number, y: number;
-  let usedSelector = false;
+  const tap = await resolveTap(input, context, config, deviceId);
 
-  let pickedExtras: PickedExtras | undefined;
-  let viaScreenshotId = false;
-  if (input.selector) {
-    const resolution = await resolveSelector(input, context, config, deviceId);
-    pickedExtras = {};
-    const match = pickSelectorMatch(resolution, input.selector, "tap", pickedExtras);
-    const center = getElementCenter(match);
-    x = center.x;
-    y = center.y;
-    usedSelector = true;
-  } else if (input.screenshotId !== undefined) {
-    ({ x, y } = resolveScreenshotIdTap(input, context));
-    viaScreenshotId = true;
-  } else if (input.elementIndex !== undefined) {
-    if (!context.lastFindResults[input.elementIndex]) {
-      throw new ReplicantError(
-        ErrorCode.ELEMENT_NOT_FOUND,
-        `Element at index ${input.elementIndex} not found. Run 'find' first.`,
-        "Use ui-query find to locate elements, then reference them by index",
-      );
-    }
-    const element = context.lastFindResults[input.elementIndex];
-    const center = getElementCenter(element);
-    x = center.x;
-    y = center.y;
-  } else if (input.x !== undefined && input.y !== undefined) {
-    x = input.x;
-    y = input.y;
-  } else {
-    throw new ReplicantError(
-      ErrorCode.INPUT_VALIDATION_FAILED,
-      "tap requires x/y, elementIndex, selector, or screenshotId+imageX+imageY",
-      "Provide one of: x+y coords, elementIndex from a prior find, a selector, or screenshotId paired with imageX/imageY.",
-    );
-  }
-
-  // Selector and elementIndex paths always yield device-space coords (the find
-  // result is already in device space). screenshotId path converted to
-  // device-space above. Only the raw x/y path lets the caller override the
-  // space; default true matches the new ui-query dump contract.
+  // Selector/elementIndex paths always yield device-space coords. screenshotId
+  // path is already converted. Only raw x/y lets the caller override.
   const fromResolvedElement =
-    usedSelector || input.elementIndex !== undefined || viaScreenshotId;
+    tap.usedSelector || input.elementIndex !== undefined || tap.viaScreenshotId;
   const deviceSpace = fromResolvedElement ? true : (input.deviceSpace ?? true);
-  await context.ui.tap(deviceId, x, y, deviceSpace);
-  const response: Record<string, unknown> = { tapped: { x, y, deviceSpace }, deviceId };
-  if (usedSelector) response.matchedSelector = input.selector;
-  if (pickedExtras?.pickedRationale) response.pickedRationale = pickedExtras.pickedRationale;
-  if (pickedExtras?.alternatives) response.alternatives = pickedExtras.alternatives;
-  if (viaScreenshotId) {
+  await context.ui.tap(deviceId, tap.x, tap.y, deviceSpace);
+
+  const response: Record<string, unknown> = {
+    tapped: { x: tap.x, y: tap.y, deviceSpace },
+    deviceId,
+  };
+  if (tap.usedSelector) response.matchedSelector = input.selector;
+  if (tap.pickedExtras?.pickedRationale) response.pickedRationale = tap.pickedExtras.pickedRationale;
+  if (tap.pickedExtras?.alternatives) response.alternatives = tap.pickedExtras.alternatives;
+  if (tap.viaScreenshotId) {
     response.viaScreenshotId = input.screenshotId;
     response.imageCoords = { x: input.imageX, y: input.imageY };
   }
   return response;
+}
+
+// THE-113 (CU-9): read the current text of the field identified by `selector`
+// by running a fresh `find` (without populating lastFindResults) and pulling
+// the text/contentDesc off the top accessibility match. Returns null when the
+// selector resolves to no element or a non-accessibility match (OCR/grid
+// can't reliably report current field contents).
+async function readSelectorText(
+  selector: NonNullable<UiActionInput["selector"]>,
+  context: ServerContext,
+  config: UiConfig,
+  deviceId: string,
+): Promise<string | null> {
+  // Snapshot lastFindResults around the side-effecting call: we don't want
+  // verify's internal find to clobber whatever the agent had in flight.
+  const savedResults = context.lastFindResults;
+  const savedFingerprints = context.lastFindFingerprints;
+  try {
+    const resolution = await resolveSelector(
+      { selector } as UiActionInput,
+      context,
+      config,
+      deviceId,
+    );
+    if (resolution.elements.length === 0) return null;
+    const match = resolution.elements[0];
+    if (!isAccessibilityNode(match)) return null;
+    return match.text ?? match.contentDesc ?? "";
+  } finally {
+    context.lastFindResults = savedResults;
+    context.lastFindFingerprints = savedFingerprints;
+  }
 }
 
 async function handleInput(
@@ -330,6 +420,20 @@ async function handleInput(
     );
   }
 
+  const verify = input.verify === true;
+  if (verify && !input.selector) {
+    throw new ReplicantError(
+      ErrorCode.INPUT_VALIDATION_FAILED,
+      "verify=true requires a selector",
+      "Provide a selector so we know which field to read before/after.",
+    );
+  }
+
+  let inputBefore: string | null = null;
+  if (verify && input.selector) {
+    inputBefore = await readSelectorText(input.selector, context, config, deviceId);
+  }
+
   if (input.selector) {
     const resolution = await resolveSelector(input, context, config, deviceId);
     const match = pickSelectorMatch(resolution, input.selector, "input");
@@ -338,11 +442,28 @@ async function handleInput(
   }
 
   await context.ui.input(deviceId, input.text);
-  return {
+
+  const result: Record<string, unknown> = {
     input: input.text,
     deviceId,
     ...(input.selector ? { matchedSelector: input.selector } : {}),
   };
+
+  if (verify && input.selector) {
+    const inputAfter = await readSelectorText(input.selector, context, config, deviceId);
+    // Verified = the new value contains the requested text, OR (looser) the
+    // field's text changed at all. We report both signals so the caller can
+    // decide which one matters for their use case.
+    const containsRequested = inputAfter !== null && inputAfter.includes(input.text);
+    const changed = inputAfter !== null && inputAfter !== inputBefore;
+    result.verified = containsRequested || changed;
+    result.containsRequested = containsRequested;
+    result.changed = changed;
+    result.inputBefore = inputBefore;
+    result.inputAfter = inputAfter;
+  }
+
+  return result;
 }
 
 async function handleScroll(
@@ -351,47 +472,15 @@ async function handleScroll(
   config: UiConfig,
   deviceId: string,
 ): Promise<Record<string, unknown>> {
-  if (!input.direction) {
-    throw new ReplicantError(
-      ErrorCode.INPUT_VALIDATION_FAILED,
-      "direction is required for scroll operation",
-      "Provide a direction: up, down, left, or right",
-    );
-  }
-  const amount = input.amount ?? 0.5;
-
-  if (input.selector) {
-    const resolution = await resolveSelector(input, context, config, deviceId);
-    const target = pickSelectorMatch(resolution, input.selector, "scroll");
-    if (!isAccessibilityNode(target)) {
-      // OCR/grid match — fall back to screen-center scroll with a warning.
-      await context.ui.scroll(deviceId, input.direction, amount);
-      return {
-        scrolled: { direction: input.direction, amount },
-        deviceId,
-        warning: "selector resolved to a non-accessibility match; scrolled the screen center.",
-      };
-    }
-    const tree = await context.ui.dump(deviceId);
-    const scrollable = findScrollableAncestor(tree, target);
-    if (!scrollable) {
-      await context.ui.scroll(deviceId, input.direction, amount);
-      return {
-        scrolled: { direction: input.direction, amount },
-        deviceId,
-        warning: "no scrollable container found; scrolled the screen center.",
-      };
-    }
-    await context.ui.scroll(deviceId, input.direction, amount, scrollable.bounds);
-    return {
-      scrolled: { direction: input.direction, amount, container: scrollable.className },
-      deviceId,
-      matchedSelector: input.selector,
-    };
-  }
-
-  await context.ui.scroll(deviceId, input.direction, amount);
-  return { scrolled: { direction: input.direction, amount }, deviceId };
+  // Delegates to ui-action-scroll.ts so this file stays under the 500-line
+  // file cap. The deps closure avoids a circular import: scroll needs
+  // resolveSelector + pickSelectorMatch but those live here.
+  return handleScrollOp(input, context, config, deviceId, {
+    resolveSelector: (i, ctx, cfg, did) =>
+      resolveSelector(i as UiActionInput, ctx, cfg, did),
+    pickSelectorMatch: (resolution, selector) =>
+      pickSelectorMatch(resolution, selector, "scroll"),
+  });
 }
 
 export const uiActionToolDefinition = {

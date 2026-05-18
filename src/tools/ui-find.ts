@@ -10,6 +10,7 @@ import {
 } from "../types/icon-recognition.js";
 import { getCurrentAppSafe } from "./util-current-app.js";
 import { rankBestTappable } from "./util-rank.js";
+import { computeFingerprints } from "./util-fingerprint.js";
 
 export interface FindInput {
   selector?: {
@@ -309,6 +310,7 @@ async function handleTextFind(
   }
 
   context.lastFindResults = result.elements;
+  context.lastFindFingerprints = computeFingerprints(result.elements);
 
   const response: Record<string, unknown> = {
     elements: result.elements.map((el, index) => formatElement(el, index, debug)),
@@ -348,6 +350,7 @@ async function handleSelectorFind(
     alternativeSummaries = ranked.alternativeSummaries;
   }
   context.lastFindResults = elements;
+  context.lastFindFingerprints = computeFingerprints(elements);
 
   const response: Record<string, unknown> = {
     elements: elements.map((el, index) => ({

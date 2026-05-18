@@ -152,15 +152,17 @@ export class ProcessRunner {
     const shellPayload = payloadArgs.join(" ").trim();
     if (!shellPayload) return;
 
-    // Block shell metacharacters that enable command chaining/substitution.
-    // $letter/$(/$ are blocked (variable expansion, command substitution) but
-    // bare $ before digits is allowed (e.g., input text '$100').
-    if (/[;&|`()]|\$[({a-zA-Z_]/.test(shellPayload)) {
-      throw new ReplicantError(
-        ErrorCode.COMMAND_BLOCKED,
-        "Shell metacharacters are not allowed in shell commands",
-        "Use simple commands without chaining, pipes, or substitution"
-      );
+    // CU-2 (THE-106): argv-aware metacharacter check. Each arg is scanned
+    // individually for shell composition patterns. This is a TIGHTENING of the
+    // previous joined-string check, which over-blocked any URL or quoted
+    // string containing a literal `&`, `|`, etc. — even though execa never
+    // hands the joined string to a shell. The contract is: a single arg may
+    // contain literal `&`/`|` as data (URL query strings, content), but no
+    // arg may START with a chain operator or contain unbalanced shell
+    // structure that would let a payload split into multiple commands if it
+    // were ever passed through `sh -c`.
+    for (const arg of payloadArgs) {
+      this.validateArgForShellComposition(arg);
     }
 
     // Block shell wrapper commands (sh -c, bash -c)
@@ -188,6 +190,126 @@ export class ProcessRunner {
           `Shell command '${shellPayload}' is not allowed`,
           "Use safe commands only"
         );
+      }
+    }
+  }
+
+  // Per-arg composition check (CU-2 / THE-106, follow-ups #2 and #3).
+  //
+  // The OLD guard joined every payload arg with spaces and ran a single
+  // regex against the result. That caught real chains (`ls; rm`) but also
+  // blocked any single arg containing `&`, `|`, `(`, etc. as DATA — e.g.
+  // `am start ... -d "https://example.com/?foo=bar&baz=qux"`.
+  //
+  // Follow-up #2 added a quote-aware char walk for single `&` only,
+  // while `&&`/`||`/`;`/pipe-with-whitespace stayed on raw regexes. That
+  // split surface meant `'https://x/?a=1&&b=2'` (a legitimate quoted URL
+  // emitted by `AdbAdapter.startIntent`) tripped the `&&` regex even though
+  // the device shell sees the `&&` as literal data inside the single quotes
+  // (Greptile P1 #1). The same scanner also mis-walked the POSIX
+  // close-escape-reopen pattern `'\''` (emitted by `quoteForDeviceShell`
+  // for embedded apostrophes), leaving the chars after the escape outside
+  // any quote span (Greptile P1 #2).
+  //
+  // Follow-up #3 unifies everything into ONE character walk in
+  // `scanArgForComposition`. Two cheap whole-arg pre-checks remain as
+  // regexes (`^(.*)$` subshell wrapper and the chain-operator-at-start
+  // shape `^(&&|\|\||[;&|])`); every other composition check lives in the
+  // scanner so quote and POSIX-escape state stay consistent.
+  private validateArgForShellComposition(arg: string): void {
+    if (arg.trim() === "") return;
+    if (SUBSHELL_WRAPPER.test(arg)) {
+      throwShellMetacharError();
+    }
+    if (CHAIN_AT_START.test(arg)) {
+      throwShellMetacharError();
+    }
+    scanArgForComposition(arg);
+  }
+}
+
+function throwShellMetacharError(): never {
+  throw new ReplicantError(
+    ErrorCode.COMMAND_BLOCKED,
+    "Shell metacharacters are not allowed in shell commands",
+    "Use simple commands without chaining, pipes, or substitution",
+  );
+}
+
+// Whole-arg pre-checks (cheap, regex-friendly shapes).
+const SUBSHELL_WRAPPER = /^\(.*\)$/;
+const CHAIN_AT_START = /^(&&|\|\||[;&|])/;
+
+// Single source of truth for "is this character a composition operator
+// outside a quoted span?". One walk, one quote+escape state machine.
+//
+// Quote rules (mirroring /bin/sh):
+//   - Single quotes are literal; nothing escapes inside them. A `'` always
+//     closes the span — `quoteForDeviceShell` relies on this and emits
+//     `'\''` (close, escaped `'`, reopen) for embedded apostrophes. The
+//     scanner therefore handles the backslash AFTER the close-quote, before
+//     the reopen — at which point we're outside any quote span and the
+//     POSIX-escape rule (advance past the next char) covers it.
+//   - Double quotes allow `\` to escape; we don't try to be exhaustive
+//     about which chars `\` escapes inside `"..."` because none of the
+//     composition operators we check do anything special there anyway.
+//
+// Composition rules (only enforced OUTSIDE both quote spans):
+//   - backtick, `$(`, `${`, `$IDENT` (letter/underscore)
+//   - `&&` / `||` (rejected on the first char so the second isn't
+//     double-processed)
+//   - `;`
+//   - bare `&` (not part of `&&`)
+//   - `|` with whitespace neighbour (glued `a|b` allowed — matches the
+//     pre-#3 loose contract and Greptile didn't flag it)
+//   - POSIX escape: `\` advances past the next char so `\&` etc. don't
+//     fire. Crucial for `quoteForDeviceShell`'s `'\''` pattern, which is
+//     read as: close-quote, escape-`'`, then a fresh open-quote starts.
+function scanArgForComposition(arg: string): void {
+  let inSingle = false;
+  let inDouble = false;
+  for (let i = 0; i < arg.length; i++) {
+    const ch = arg[i];
+    if (!inSingle && !inDouble && ch === "\\") {
+      i++;
+      continue;
+    }
+    if (!inDouble && ch === "'") {
+      inSingle = !inSingle;
+      continue;
+    }
+    if (!inSingle && ch === '"') {
+      inDouble = !inDouble;
+      continue;
+    }
+    if (inSingle || inDouble) continue;
+    if (ch === "`") throwShellMetacharError();
+    if (ch === "$") {
+      const next = arg[i + 1];
+      if (next === "(" || next === "{") throwShellMetacharError();
+      if (next !== undefined && /[a-zA-Z_]/.test(next)) throwShellMetacharError();
+      continue;
+    }
+    if (ch === ";") throwShellMetacharError();
+    if (ch === "&") {
+      // `&&` is composition; throw on the FIRST `&` so the loop doesn't
+      // double-process the pair. A bare `&` (any neighbour, including
+      // letters/digits as in `cmd&PWNED`) is also composition — `/bin/sh`
+      // treats `&` as a control operator regardless of context.
+      throwShellMetacharError();
+    }
+    if (ch === "|") {
+      // `||` chain — also caught here on the first `|`.
+      if (arg[i + 1] === "|") throwShellMetacharError();
+      // `cmd | other` — pipe with whitespace neighbour. Glued `a|b` is
+      // allowed (URL alternates, regex literals).
+      const prev = arg[i - 1];
+      const next = arg[i + 1];
+      if (
+        (prev !== undefined && /\s/.test(prev)) ||
+        (next !== undefined && /\s/.test(next))
+      ) {
+        throwShellMetacharError();
       }
     }
   }

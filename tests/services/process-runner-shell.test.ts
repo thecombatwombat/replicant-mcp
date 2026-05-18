@@ -523,3 +523,104 @@ describe("ProcessRunner shell payload — argv-aware metacharacter check (CU-2)"
     ]);
   });
 });
+
+// CU-2 follow-up #3 (Greptile P1s on commit c12813b). Two gaps after the
+// quote-aware single-`&` scanner shipped:
+//   (1) `&&`, `||`, `;`, and pipe-with-whitespace were still checked by raw
+//       regexes that ignore quote spans, so any one of them appearing INSIDE
+//       a single-quoted URL token (the exact shape `AdbAdapter.startIntent`
+//       emits) tripped COMMAND_BLOCKED.
+//   (2) The scanner walked `'\''` (POSIX close-escape-reopen) as
+//       close → skip-backslash → open → close, leaving the next chars
+//       outside any quoted span — so a `&` inside that quoted region was
+//       wrongly treated as composition.
+// Fix: one unified char walk drives every composition check, and outside any
+// quote span a `\` advances `i` past the next char (POSIX escape).
+describe("ProcessRunner shell composition scanner — quote-aware & POSIX escape (CU-2 follow-up #3)", () => {
+  const runner = new ProcessRunner();
+
+  // P1 #1 regression: `&&` inside a single-quoted URL is data, not a chain.
+  it("allows `&&` inside a single-quoted URL token", async () => {
+    await runner.run("adb", [
+      "-s",
+      "emulator-5554",
+      "shell",
+      "am",
+      "start",
+      "-W",
+      "-a",
+      "android.intent.action.VIEW",
+      "-d",
+      "'https://x/?state=abc&&redirect=1'",
+    ]);
+  });
+
+  it("allows `||` inside a single-quoted URL token", async () => {
+    await runner.run("adb", [
+      "-s",
+      "emulator-5554",
+      "shell",
+      "am",
+      "start",
+      "-a",
+      "android.intent.action.VIEW",
+      "-d",
+      "'https://x/?a=1||b=2'",
+    ]);
+  });
+
+  it("allows `;` inside a single-quoted value (data, not a chain)", async () => {
+    await runner.run("adb", [
+      "-s",
+      "emulator-5554",
+      "shell",
+      "am",
+      "start",
+      "--es",
+      "value",
+      "'a;b'",
+    ]);
+  });
+
+  it("still rejects `;` outside any quote span", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "a;b"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  // P1 #2 regression: `quoteForDeviceShell("it's & more")` emits
+  // `'it'\''s & more'`. The scanner must treat the whole thing as one
+  // quoted region (with an escaped `'` in the middle), keeping the inner
+  // `&` inside a quoted span.
+  it("allows the POSIX close-escape-reopen quote pattern `'\\''` with embedded `&`", async () => {
+    await runner.run("adb", [
+      "-s",
+      "emulator-5554",
+      "shell",
+      "am",
+      "start",
+      "--es",
+      "msg",
+      "'it'\\''s & more'",
+    ]);
+  });
+
+  // Negative cases: unquoted glued operators must still reject.
+  it("still rejects unquoted `cmd&PWNED`", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "cmd&PWNED"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("still rejects unquoted `cmd&&other`", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "cmd&&other"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+
+  it("still rejects unquoted `cmd||other`", async () => {
+    await expect(
+      runner.run("adb", ["-s", "emulator-5554", "shell", "cmd||other"]),
+    ).rejects.toThrow("Shell metacharacters are not allowed");
+  });
+});

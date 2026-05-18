@@ -337,20 +337,32 @@ describe("AdbAdapter", () => {
       expect(args[dIdx + 1]).toBe(`'ab'\\''cd'`);
     });
 
-    it("host-side guard still rejects `;` in data as defense-in-depth", async () => {
-      // Adapter-side quoting is the primary defence for typed callers, but
-      // ProcessRunner.validateShellPayload also scans every shell arg for
-      // composition characters. `;` inside a quoted token is functionally
-      // safe on the device, but the host guard remains conservative — this
-      // test pins that behaviour so a future loosening of the guard requires
-      // an explicit decision.
+    it("host-side guard treats composition chars inside quoted data as literal (CU-2 follow-up #3)", async () => {
+      // `quoteForDeviceShell` wraps user-controlled data in single quotes;
+      // the device shell then sees `;`, `&&`, `||`, etc. as literal bytes
+      // inside the quoted token, not control operators. The host-side
+      // scanner in ProcessRunner.validateShellPayload was originally
+      // regex-based and ignored quote spans, so it rejected `;` here as
+      // defense-in-depth — Greptile flagged that as a P1 because it broke
+      // legitimate URLs (the `&&` redirect parameter shape is real). The
+      // scanner is now quote-aware, so the guard agrees with the device
+      // shell. The realAdapter call will fail with a device-not-found
+      // error (no emulator attached), but it MUST NOT fail with
+      // "Shell metacharacters" — that's what pins the new contract.
       const realAdapter = new AdbAdapter(new ProcessRunner());
-      await expect(
-        realAdapter.startIntent("emulator-5554", {
+      let caught: unknown;
+      try {
+        await realAdapter.startIntent("emulator-5554", {
           action: "android.intent.action.VIEW",
           data: "https://x/?a=1; echo PWNED",
-        }),
-      ).rejects.toThrow("Shell metacharacters");
+        });
+      } catch (err) {
+        caught = err;
+      }
+      // The call WILL reject (no device attached) — what matters is that
+      // the rejection isn't from the host-side metacharacter guard.
+      const message = caught instanceof Error ? caught.message : String(caught);
+      expect(message).not.toMatch(/Shell metacharacters/);
     });
 
     it("throws when am start prints Error even on exit 0", async () => {

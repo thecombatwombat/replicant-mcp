@@ -7,6 +7,7 @@ import {
   createUiCommand,
   createCacheCommand,
   createDoctorCommand,
+  createServeCommand,
 } from "./cli/index.js";
 import { VERSION } from "./version.js";
 
@@ -23,5 +24,6 @@ program.addCommand(createEmulatorCommand());
 program.addCommand(createUiCommand());
 program.addCommand(createCacheCommand());
 program.addCommand(createDoctorCommand());
+program.addCommand(createServeCommand());
 
 program.parse();

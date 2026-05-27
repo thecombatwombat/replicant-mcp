@@ -241,6 +241,7 @@ replicant-mcp uses progressive disclosure (summaries first, details on demand) t
 ## More Info
 
 - **Configuration:** Set `REPLICANT_CONFIG` for advanced options. See [docs/configuration.md](docs/configuration.md).
+- **Remote mode:** Run replicant-mcp on the machine your phone is plugged into and drive it from an agent on another machine over Tailscale. See [docs/remote.md](docs/remote.md).
 - **Logging:** Set `REPLICANT_LOG_LEVEL` (`error`, `warn`, `info`, `debug`) and `REPLICANT_LOG_FORMAT` (`json` for structured output) to control server logging. Logs are written to stderr.
 - **Troubleshooting:** Common issues and solutions in [docs/troubleshooting.md](docs/troubleshooting.md).
 - **Tool documentation:** Ask Claude to call `rtfm` with a category like "build", "adb", "emulator", or "ui".
@@ -253,6 +254,7 @@ replicant-mcp uses progressive disclosure (summaries first, details on demand) t
 |----------|-------------|
 | [Architecture](docs/architecture.md) | Design overview and progressive disclosure pattern |
 | [Configuration](docs/configuration.md) | Config file reference, environment variables, Gradle setup |
+| [Remote Mode](docs/remote.md) | Run replicant-mcp on a phone-host machine and drive it remotely over Tailscale |
 | [API Stability](docs/api-stability.md) | Tool API versioning policy and deprecation process |
 | [Security Model](docs/security.md) | adb-shell safety model, command denylist, threat boundaries |
 | [Support Matrix](docs/support-matrix.md) | Tested OS, Node.js, Android SDK, and emulator versions |

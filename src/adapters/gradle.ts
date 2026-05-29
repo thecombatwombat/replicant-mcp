@@ -41,7 +41,9 @@ export class GradleAdapter {
         ErrorCode.BUILD_FAILED,
         `Build failed: ${parsed.failedTask || "unknown error"}`,
         "Check gradle-get-details for full error output",
-        { buildResult: { ...parsed } }
+        // Carry the full build output so the tool handler can cache it under a
+        // buildId, making gradle-get-details work for failed builds too.
+        { buildResult: { ...parsed }, fullOutput: result.stdout + result.stderr }
       );
     }
 

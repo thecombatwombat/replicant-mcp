@@ -53,6 +53,8 @@ export interface ErrorContext {
   stderr?: string;
   checkedPaths?: string[];
   buildResult?: Record<string, unknown>;
+  fullOutput?: string;
+  buildId?: string;
 }
 
 export interface ToolError {

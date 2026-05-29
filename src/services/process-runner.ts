@@ -1,6 +1,7 @@
 import { execa, ExecaError } from "execa";
 import { spawn } from "node:child_process";
 import { ReplicantError, ErrorCode } from "../types/index.js";
+import { logger } from "../utils/logger.js";
 import type { EnvironmentService } from "./environment.js";
 
 export interface RunOptions {
@@ -113,6 +114,18 @@ export class ProcessRunner {
     const child = spawn(command, args, {
       detached: true,
       stdio: "ignore",
+    });
+    // Detached fire-and-forget: a failed exec (e.g. ENOENT/EACCES when the
+    // binary path is wrong) emits an async 'error' event. Without a listener
+    // Node re-throws it as an uncaughtException and kills the MCP process, so
+    // handle it here. The caller surfaces the failure via its own detection
+    // (e.g. EmulatorAdapter.start throws EMULATOR_START_FAILED when no device
+    // appears).
+    child.on("error", (error) => {
+      logger.warn("Detached process failed to spawn", {
+        command,
+        error: String(error),
+      });
     });
     child.unref();
   }

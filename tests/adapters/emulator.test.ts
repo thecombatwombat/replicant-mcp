@@ -40,6 +40,7 @@ describe("EmulatorAdapter.start", () => {
   let mockRunner: {
     runAdb: ReturnType<typeof vi.fn>;
     runEmulator: ReturnType<typeof vi.fn>;
+    runEmulatorDetached: ReturnType<typeof vi.fn>;
   };
   let adapter: EmulatorAdapter;
 
@@ -47,10 +48,11 @@ describe("EmulatorAdapter.start", () => {
     mockRunner = {
       runAdb: vi.fn(),
       runEmulator: vi.fn(),
+      runEmulatorDetached: vi.fn(),
     };
     adapter = new EmulatorAdapter(mockRunner as any);
-    // runEmulator returns a promise that "times out" (rejects) as expected
-    mockRunner.runEmulator.mockRejectedValue(new Error("timeout"));
+    // Emulator is launched detached (fire-and-forget); resolves immediately.
+    mockRunner.runEmulatorDetached.mockResolvedValue(undefined);
   });
 
   it("returns the correct emulator when starting with no others running", async () => {

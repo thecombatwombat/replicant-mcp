@@ -1,5 +1,7 @@
 import { execa, ExecaError } from "execa";
+import { spawn } from "node:child_process";
 import { ReplicantError, ErrorCode } from "../types/index.js";
+import { logger } from "../utils/logger.js";
 import type { EnvironmentService } from "./environment.js";
 
 export interface RunOptions {
@@ -102,6 +104,37 @@ export class ProcessRunner {
 
     const emulatorPath = await this.environment.getEmulatorPath();
     return this.run(emulatorPath, args, options);
+  }
+
+  // Launch a long-lived process (e.g. the emulator) fully detached so it
+  // outlives this MCP process. Unlike run(), there is NO timeout that would
+  // SIGTERM the child — the emulator must keep running after we return.
+  runDetached(command: string, args: string[]): void {
+    this.validateCommand(command, args);
+    const child = spawn(command, args, {
+      detached: true,
+      stdio: "ignore",
+    });
+    // Detached fire-and-forget: a failed exec (e.g. ENOENT/EACCES when the
+    // binary path is wrong) emits an async 'error' event. Without a listener
+    // Node re-throws it as an uncaughtException and kills the MCP process, so
+    // handle it here. The caller surfaces the failure via its own detection
+    // (e.g. EmulatorAdapter.start throws EMULATOR_START_FAILED when no device
+    // appears).
+    child.on("error", (error) => {
+      logger.warn("Detached process failed to spawn", {
+        command,
+        error: String(error),
+      });
+    });
+    child.unref();
+  }
+
+  async runEmulatorDetached(args: string[]): Promise<void> {
+    const emulatorPath = this.environment
+      ? await this.environment.getEmulatorPath()
+      : "emulator";
+    this.runDetached(emulatorPath, args);
   }
 
   async runAvdManager(args: string[], options: RunOptions = {}): Promise<RunResult> {

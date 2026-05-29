@@ -48,15 +48,14 @@ export class EmulatorAdapter {
     // Snapshot existing emulators before starting a new one
     const existingIds = await this.getRunningEmulatorIds();
 
-    // Start emulator in background - don't wait for it
-    // Returns immediately, emulator boots in background
-    this.runner.runEmulator([
+    // Start emulator fully detached so it outlives this MCP process.
+    // (Previously this used runEmulator() with a 5s timeout, but that timeout
+    // SIGTERMs the non-detached child — killing the emulator mid-boot.)
+    await this.runner.runEmulatorDetached([
       "-avd", avdName,
       "-no-snapshot-load",
       "-no-boot-anim",
-    ], { timeoutMs: 5000 }).catch(() => {
-      // Expected to "timeout" as emulator runs forever
-    });
+    ]);
 
     // Give it a moment to register
     await new Promise((r) => setTimeout(r, 2000));

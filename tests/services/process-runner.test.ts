@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { ProcessRunner } from "../../src/services/process-runner.js";
+import { logger } from "../../src/utils/logger.js";
 
 describe("ProcessRunner", () => {
   const runner = new ProcessRunner();
@@ -100,6 +101,28 @@ describe("ProcessRunner", () => {
         // May fail if adb not installed, but shouldn't fail due to environment service
         expect(error).not.toMatchObject({ code: "ADB_NOT_FOUND" });
       }
+    });
+  });
+
+  describe("runDetached", () => {
+    it("spawns a detached process without throwing", () => {
+      expect(() => runner.runDetached("echo", ["detached"])).not.toThrow();
+    });
+
+    it("handles a spawn 'error' (missing binary) without crashing the process", async () => {
+      const warnSpy = vi.spyOn(logger, "warn").mockImplementation(() => {});
+
+      // A bogus path passes validateCommand but fails to exec (ENOENT). The
+      // async 'error' event must be handled, not left to crash the process.
+      expect(() =>
+        runner.runDetached("replicant-nonexistent-binary-xyz", [])
+      ).not.toThrow();
+
+      // 'error' fires on a later tick; wait for the handler to log it.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(warnSpy).toHaveBeenCalled();
+
+      warnSpy.mockRestore();
     });
   });
 });

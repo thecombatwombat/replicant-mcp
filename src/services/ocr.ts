@@ -3,36 +3,49 @@ import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { createWorker, Worker } from "tesseract.js";
 import { OcrResult, OcrElement } from "../types/ocr.js";
-import { logger } from "../utils/logger.js";
+import { ReplicantError, ErrorCode } from "../types/index.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // eng.traineddata ships at the package root (../.. from dist/services).
 const LANG_DIR = join(__dirname, "../..");
+const LANG_FILE = join(LANG_DIR, "eng.traineddata");
 
 let worker: Worker | null = null;
 
 /**
- * Point tesseract.js at the bundled language file.
+ * Locate the bundled language model.
  *
  * With langPath unset, tesseract.js downloads eng.traineddata from the jsdelivr
- * CDN on first use (see tesseract.js/src/worker-script/index.js). That made OCR
- * require network access and silently ignored the copy we already ship.
+ * CDN on first use (see tesseract.js/src/worker-script/index.js), ignoring the
+ * copy we ship. The model is part of both the npm package (package.json "files")
+ * and the MCPB bundle, and CI asserts it is present, so a missing file means a
+ * damaged install — fail locally rather than quietly reaching for the network.
  */
-function resolveLangPath(): string | undefined {
-  if (existsSync(join(LANG_DIR, "eng.traineddata"))) {
-    return LANG_DIR;
+function resolveLangPath(): string {
+  if (!existsSync(LANG_FILE)) {
+    throw new ReplicantError(
+      ErrorCode.SCREENSHOT_FAILED,
+      "OCR language model not found",
+      "Reinstall replicant-mcp — eng.traineddata ships with the package",
+      { checkedPaths: [LANG_FILE] },
+    );
   }
-  logger.warn("Bundled eng.traineddata not found; tesseract.js will download it", {
-    searched: LANG_DIR,
-  });
-  return undefined;
+  return LANG_DIR;
 }
 
 async function getWorker(): Promise<Worker> {
   if (!worker) {
-    const langPath = resolveLangPath();
-    worker = await createWorker("eng", undefined, langPath ? { langPath } : undefined);
+    worker = await createWorker("eng", undefined, {
+      langPath: resolveLangPath(),
+      // tesseract.js defaults gzip to true and would look for
+      // eng.traineddata.gz; we ship the model uncompressed.
+      gzip: false,
+      // Without this, tesseract.js writes a 5MB copy of the model into the
+      // process working directory — which for an MCP server is the user's
+      // project, or wherever the host happened to launch it.
+      cacheMethod: "none",
+    });
   }
   return worker;
 }

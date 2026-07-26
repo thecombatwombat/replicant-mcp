@@ -177,6 +177,47 @@ try {
     );
   }
 
+  // Run OCR for real, from a directory that is NOT the bundle root. Checking only
+  // that eng.traineddata exists is not enough: tesseract.js reads
+  // <cachePath>/eng.traineddata before consulting langPath, and cachePath
+  // defaults to the working directory. Running from the bundle root therefore
+  // succeeds by accident and hides a broken langPath (e.g. the gzip default
+  // makes it look for eng.traineddata.gz). Claude Desktop's working directory is
+  // not the bundle root, so this must be exercised from elsewhere.
+  const ocrCwd = join(workDir, "neutral-cwd");
+  execFileSync("mkdir", ["-p", ocrCwd]);
+  const ocrProbe = `
+    const path = ${JSON.stringify(unpacked)};
+    const sharp = require(path + "/node_modules/sharp");
+    const svg = '<svg width="360" height="110"><rect width="360" height="110" fill="white"/>'
+      + '<text x="18" y="72" font-family="Helvetica" font-size="44" fill="black">Settings</text></svg>';
+    const img = path + "/../ocr-probe.png";
+    sharp(Buffer.from(svg)).png().toFile(img)
+      .then(() => import(path + "/dist/services/ocr.js"))
+      .then(async (ocr) => {
+        const words = await ocr.extractText(img);
+        await ocr.terminateOcr();
+        const text = words.map((w) => w.text).join(" ");
+        if (!/Settings/i.test(text)) throw new Error("unexpected OCR output: " + text);
+        process.exit(0);
+      })
+      .catch((e) => { console.error(String(e && e.message || e)); process.exit(1); });
+  `;
+  try {
+    execFileSync(process.execPath, ["-e", ocrProbe], {
+      cwd: ocrCwd,
+      stdio: "pipe",
+      timeout: 120_000,
+    });
+    check("OCR runs offline from a non-bundle working directory", true);
+  } catch (err) {
+    check(
+      "OCR runs offline from a non-bundle working directory",
+      false,
+      String(err.stderr ?? err.message ?? err).split("\n").slice(0, 3).join("\n      "),
+    );
+  }
+
   // ---- Live MCP session ----------------------------------------------------
   console.log("\nMCP protocol:");
   const entry = join(unpacked, "dist", "index.js");

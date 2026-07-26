@@ -21,6 +21,10 @@ cd "$PROJECT_DIR"
 
 STAGE="$PROJECT_DIR/.mcpb-build"
 OUTPUT="${1:-$PROJECT_DIR/replicant-mcp.mcpb}"
+# Resolve to an absolute path. Packing happens after `cd "$STAGE"`, so a relative
+# path would write the bundle inside the staging directory and lose it to the
+# cleanup below.
+[[ "$OUTPUT" == /* ]] || OUTPUT="$PROJECT_DIR/$OUTPUT"
 
 # Platforms the bundle carries sharp binaries for. sharp ships its native code as
 # per-platform optional dependencies, so a bundle built on one machine only has
@@ -135,5 +139,11 @@ npx --yes @anthropic-ai/mcpb pack . "$OUTPUT"
 cd "$PROJECT_DIR"
 rm -rf "$STAGE"
 
+# Never exit 0 without the artifact actually being where the caller asked for it.
+if [[ ! -f "$OUTPUT" ]]; then
+  echo "❌ Pack reported success but no bundle at: $OUTPUT"
+  exit 1
+fi
+
 echo ""
-echo "✅ Bundle built: $OUTPUT"
+echo "✅ Bundle built: $OUTPUT ($(du -h "$OUTPUT" | cut -f1))"

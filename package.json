@@ -19,6 +19,8 @@
     "test:coverage": "vitest --run --coverage",
     "check-prereqs": "bash scripts/check-prerequisites.sh",
     "smoke-test": "bash scripts/smoke-test.sh",
+    "build:bundle": "bash scripts/build-bundle.sh",
+    "verify:bundle": "node scripts/verify-bundle.mjs",
     "test:device": "tsx scripts/real-device-test.ts",
     "start": "npm run build && node dist/index.js",
     "lint": "eslint src/ tests/",
@@ -56,7 +58,8 @@
     "docs/contracts/",
     "README.md",
     "LICENSE",
-    "icon.png"
+    "icon.png",
+    "eng.traineddata"
   ],
   "engines": {
     "node": ">=18.0.0"

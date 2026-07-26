@@ -141,14 +141,19 @@ npm run build
 # Rebuild MCPB Desktop Extensions bundle (includes fresh dist/ + updated manifest)
 if [[ -f manifest.json ]]; then
   echo "📦 Rebuilding MCPB bundle..."
-  npx mcpb pack . replicant-mcp.mcpb
+  bash scripts/build-bundle.sh replicant-mcp.mcpb
   # Verify bundle version matches
   BUNDLE_VERSION=$(unzip -p replicant-mcp.mcpb package.json | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>process.stdout.write(JSON.parse(d).version))")
   if [[ "$BUNDLE_VERSION" != "$NEW_VERSION" ]]; then
     echo "❌ Bundle version mismatch: bundle=$BUNDLE_VERSION, expected=$NEW_VERSION"
     exit 1
   fi
-  echo "   ✅ Bundle verified at v$NEW_VERSION"
+  echo "   ✅ Bundle version matches v$NEW_VERSION"
+
+  # Boot the packed bundle before it can be released. A version string inside a
+  # bundle that cannot start is what shipped v1.6.1–v1.6.7.
+  echo "🔍 Verifying bundle runs..."
+  node scripts/verify-bundle.mjs replicant-mcp.mcpb
 fi
 
 echo "📝 Committing..."
@@ -156,7 +161,8 @@ git add package.json package-lock.json
 [[ -f .mcp/server.json ]] && git add .mcp/server.json
 [[ -f manifest.json ]] && git add manifest.json
 [[ -f .cursor-plugin/plugin.json ]] && git add .cursor-plugin/plugin.json
-[[ -f replicant-mcp.mcpb ]] && git add replicant-mcp.mcpb
+# replicant-mcp.mcpb is deliberately NOT committed — it is a ~60MB build artifact,
+# rebuilt by CI and attached to the GitHub Release (see .github/workflows/release.yml).
 git commit -m "chore: release v$NEW_VERSION"
 
 echo "🏷️  Tagging v$NEW_VERSION..."

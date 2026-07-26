@@ -1,11 +1,38 @@
+import { existsSync } from "fs";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 import { createWorker, Worker } from "tesseract.js";
 import { OcrResult, OcrElement } from "../types/ocr.js";
+import { logger } from "../utils/logger.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// eng.traineddata ships at the package root (../.. from dist/services).
+const LANG_DIR = join(__dirname, "../..");
 
 let worker: Worker | null = null;
 
+/**
+ * Point tesseract.js at the bundled language file.
+ *
+ * With langPath unset, tesseract.js downloads eng.traineddata from the jsdelivr
+ * CDN on first use (see tesseract.js/src/worker-script/index.js). That made OCR
+ * require network access and silently ignored the copy we already ship.
+ */
+function resolveLangPath(): string | undefined {
+  if (existsSync(join(LANG_DIR, "eng.traineddata"))) {
+    return LANG_DIR;
+  }
+  logger.warn("Bundled eng.traineddata not found; tesseract.js will download it", {
+    searched: LANG_DIR,
+  });
+  return undefined;
+}
+
 async function getWorker(): Promise<Worker> {
   if (!worker) {
-    worker = await createWorker("eng");
+    const langPath = resolveLangPath();
+    worker = await createWorker("eng", undefined, langPath ? { langPath } : undefined);
   }
   return worker;
 }

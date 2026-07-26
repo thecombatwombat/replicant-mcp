@@ -1,57 +1,79 @@
+# ⚠️  Do NOT build the shipped bundle by packing this directory.
+#
+# Use `bash scripts/build-bundle.sh`, which assembles the bundle in a staging
+# directory with production-only, multi-platform dependencies. Packing the repo
+# root relies on this file to subtract everything unwanted, which shipped six
+# broken releases (node_modules was excluded, so the server could not start).
+#
+# This file remains only as a safety net for an accidental `mcpb pack .`.
+#
+# Every pattern below is ANCHORED with a leading slash. Unanchored patterns match
+# at any depth, including inside node_modules — a bare `src/` also matched
+# node_modules/tesseract.js/src, deleting that package's declared entry point.
+
 # Source (dist/ has compiled output)
-src/
-tsconfig.json
-eslint.config.js
+/src/
+/tsconfig.json
+/eslint.config.js
 
 # Tests
-tests/
-vitest.config.ts
-coverage/
+/tests/
+/vitest.config.ts
+/coverage/
 
 # Development
-.beads/
-.claude/
-.entire/
-.replicant/
-.git/
-.cursor-plugin/
-.github/
-.githooks/
-.gitattributes
-.mcp/
-.mcp.json
-.planning/
-.serena/
-.tool-versions
-scripts/
-greptile.json
-smithery.yaml
-glama.json
+/.beads/
+/.claude/
+/.entire/
+/.intent/
+/.omc/
+/.replicant/
+/.git/
+/.cursor-plugin/
+/.github/
+/.githooks/
+/.gitattributes
+/.mcp/
+/.mcp.json
+/.planning/
+/.serena/
+/.tool-versions
+/scripts/
+/greptile.json
+/smithery.yaml
+/glama.json
 
-# Docs (except README and LICENSE)
-docs/
-AGENTS.md
-CHANGELOG.md
-CLAUDE.md
-CONTRIBUTING.md
-DECISIONS.md
-SECURITY.md
-SUPPORT.md
+# Docs — docs/rtfm and docs/contracts are runtime files and must ship.
+# The rtfm tool reads docs/rtfm at runtime; excluding it makes rtfm throw ENOENT.
+/docs/*.md
+/docs/plans/
+/docs/migration/
+/AGENTS.md
+/CHANGELOG.md
+/CLAUDE.md
+/CONTRIBUTING.md
+/DECISIONS.md
+/SECURITY.md
+/SUPPORT.md
 
 # AI assistant working notes (untracked or local-only)
-CODEX-*.md
+/CODEX-*.md
+/REPLICANT-CO-*.MD
 
 # Large assets
-demo.gif
-icon.svg
+/demo.gif
+/icon.svg
 
-# Dependencies (mcpb handles install at runtime)
-node_modules/
-package-lock.json
+# Build inputs not needed at runtime
+/package-lock.json
 
 # Secrets
-.mcpregistry_*
+/.mcpregistry_*
 
 # Build artifacts
 *.mcpb
-.worktrees/
+/.mcpb-build/
+/.worktrees/
+
+# Browser-only tesseract builds (~25MB); Node loads the .js + .wasm pair
+node_modules/tesseract.js-core/*.wasm.js

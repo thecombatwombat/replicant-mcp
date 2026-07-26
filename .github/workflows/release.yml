@@ -59,13 +59,20 @@ jobs:
         env:
           EXPECTED_VERSION: ${{ env.VERSION }}
         run: |
-          npx mcpb pack . replicant-mcp.mcpb
+          bash scripts/build-bundle.sh replicant-mcp.mcpb
           BUNDLE_VERSION=$(unzip -p replicant-mcp.mcpb package.json | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>process.stdout.write(JSON.parse(d).version))")
           if [[ "$BUNDLE_VERSION" != "$EXPECTED_VERSION" ]]; then
             echo "❌ MCPB bundle version mismatch: bundle=$BUNDLE_VERSION, expected=$EXPECTED_VERSION"
             exit 1
           fi
-          echo "✅ MCPB bundle verified at v$EXPECTED_VERSION"
+          echo "✅ MCPB bundle version matches v$EXPECTED_VERSION"
+
+      # Gate the release on the bundle actually starting. v1.6.1–v1.6.7 shipped a
+      # bundle with no node_modules: Claude Desktop reported "Server disconnected"
+      # and no release check noticed, because only the version string was read.
+      - name: Verify MCPB bundle runs
+        if: hashFiles('manifest.json') != ''
+        run: node scripts/verify-bundle.mjs replicant-mcp.mcpb
 
       # MCP Registry pre-flight: install + validate + auth before any irreversible publish.
       # Failures here abort the release before npm publish, preserving "as-atomic-as-feasible" semantics.

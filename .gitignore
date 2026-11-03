@@ -39,3 +39,10 @@ coverage/
 .beads/
 issues.jsonl
 .replicant/
+
+# MCPB bundle — a 60MB binary rebuilt by scripts/build-bundle.sh on every
+# release and attached to the GitHub Release. Committing it grew the repo by
+# the full bundle size each release.
+replicant-mcp.mcpb
+*.mcpb
+.mcpb-build/

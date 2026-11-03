@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { existsSync } from "fs";
+import { join } from "path";
 import { extractText, terminateOcr, searchText } from "../../src/services/ocr.js";
 
 // Mock tesseract.js with v7 API structure (blocks -> paragraphs -> lines -> words)
@@ -40,6 +42,33 @@ describe("OCR Service", () => {
   afterEach(async () => {
     await terminateOcr();
     vi.clearAllMocks();
+  });
+
+  describe("worker configuration", () => {
+    // Regression: OCR previously ran with no langPath, so tesseract.js downloaded
+    // eng.traineddata from a CDN and ignored the copy shipped in the package.
+    // Adding langPath alone was still broken — tesseract.js defaults gzip to true
+    // and looked for eng.traineddata.gz, which we do not ship.
+    it("loads the bundled uncompressed model without touching the network or cwd", async () => {
+      const tesseract = await import("tesseract.js");
+
+      await extractText("/fake/path.png");
+
+      expect(tesseract.createWorker).toHaveBeenCalledWith(
+        "eng",
+        undefined,
+        expect.objectContaining({
+          langPath: expect.any(String),
+          gzip: false,
+          cacheMethod: "none",
+        }),
+      );
+
+      const options = vi.mocked(tesseract.createWorker).mock.calls[0][2] as {
+        langPath: string;
+      };
+      expect(existsSync(join(options.langPath, "eng.traineddata"))).toBe(true);
+    });
   });
 
   describe("extractText", () => {

@@ -25,6 +25,8 @@ Android device  -->  Replicant MCP (local)  -->  AI assistant
 
 Replicant MCP runs entirely on your machine. It does not transmit data to any external server, and it does not include telemetry, analytics, or crash reporting.
 
+On-device text recognition (used by `ui-query` and `ui-capture` in visual mode) runs locally against a language model file shipped inside the package. No image or text is uploaded, and no model is fetched at runtime.
+
 ## AI assistant processing
 
 Replicant MCP sends device data (screenshots, logs, UI state) to whichever AI assistant invokes it (e.g., Claude, ChatGPT). **That data is then subject to your AI provider's privacy policy**, not this one. Review your provider's data handling practices. For example:

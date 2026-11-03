@@ -136,6 +136,10 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # The action's default also installs the legacy 'tools' package,
+          # which current runner SDK images no longer provide.
+          packages: 'platform-tools'
 
       - name: Install dependencies
         run: npm ci
@@ -181,6 +185,10 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # The action's default also installs the legacy 'tools' package,
+          # which current runner SDK images no longer provide.
+          packages: 'platform-tools'
 
       - name: Install dependencies
         run: npm ci
